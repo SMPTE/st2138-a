@@ -1,4 +1,4 @@
-# SMPTE _ST _2138 - _Elements Repository for SMPTE ST 2138 Catena_
+# SMPTE ST 2138 - Elements Repository for SMPTE ST 2138 Catena
 
 _This repository is <public> | <private>._ 
 
