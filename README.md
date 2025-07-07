@@ -1,4 +1,4 @@
-# SMPTE _DOC NUMBER_ - _TITLE_
+# SMPTE _ST _2138 - _Elements Repository for SMPTE ST 2138 Catena_
 
 _This repository is <public> | <private>._ 
 
