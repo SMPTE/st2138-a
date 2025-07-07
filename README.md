@@ -1,6 +1,6 @@
 # SMPTE ST 2138 - Elements Repository for SMPTE ST 2138 Catena API Implementation
 
-_This repository is <public> | <private>._ 
+_This repository is public._ 
 
 Please consult [CONTRIBUTING.md](./CONTRIBUTING.md), [CONFIDENTIALITY.md](./CONFIDENTIALITY.md), [LICENSE.md](./LICENSE.md) and [PATENTS.md](./PATENTS.md) for important notices.
 
