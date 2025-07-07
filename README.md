@@ -16,6 +16,8 @@ The draft version(s) of this document is accessible to SMPTE Standards Community
 
 ## Project details
 
-< description from AG-06 >
+Produce a document describing the Catena model, a standardized control plane for media devices and services.
 
-< and other useful information >
+This document specifies schema for plug-and-play communication and control of media services and devices across cloud, on-premises, and hybrid cloud/on-premises platforms.
+This document also defines a number of Access Scopes that reflect how media production equipment is used in a variety of use cases. 
+
