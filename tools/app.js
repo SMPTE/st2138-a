@@ -37,24 +37,24 @@ const fs = require('fs');
 const jsonMap = require('json-source-map');
 
 class Validator {
-    constructor(schemaDir) {
-        let deviceSchemaFile = path.join(schemaDir, 'catena.device_schema.json');
-        let paramSchemaFile = path.join(schemaDir, 'catena.param_schema.json');
-        if (!fs.existsSync(deviceSchemaFile)) {
-            // bail if we cannot open the schema definition file
-            throw new Error(`Cannot open device schema file at: ${deviceSchemaFile}`);
-        }
+    constructor(schemaDir = 'interface/schemata') {
+        let paramSchemaFile = path.join(schemaDir, 'param.yaml');
         if (!fs.existsSync(paramSchemaFile)) {
             // bail if we cannot open the schema definition file
             throw new Error(`Cannot open parameter schema file at: ${paramSchemaFile}`);
         }
 
         // read the schema definition files
-        this.deviceSchema = JSON.parse(fs.readFileSync(deviceSchemaFile, 'utf8'));
-        this.paramSchema = JSON.parse(fs.readFileSync(paramSchemaFile, 'utf8'));
+        this.paramSchema = YAML.parse(fs.readFileSync(paramSchemaFile, 'utf8'));
+        // Note: device schema not found, you may need to create it or remove device validation functionality
 
-        ajv.addSchema(this.deviceSchema);
-        ajv.addSchema(this.paramSchema);
+        // Remove the $schema and $id properties to avoid AJV conflicts
+        const schemaForAjv = { ...this.paramSchema };
+        delete schemaForAjv.$schema;
+        delete schemaForAjv.$id;
+        
+        // Compile the schema directly instead of adding it
+        this.paramValidator = ajv.compile(schemaForAjv);
     }
 
     /**
@@ -140,15 +140,7 @@ class Validator {
      * @returns {boolean} - true if the data is valid, false otherwise
      */
     validateDevice(data) {
-        let valid = false;
-        const schema = this.deviceSchema;
-        if (ajv.validate(schema, data)) {
-            console.log(`Input was valid against the device schema.`);
-            valid = true;
-        } else {
-            this.showErrors();
-        }
-        return valid;
+        throw new Error('Device schema not available. Please create a device schema file or remove device validation functionality.');
     }
 
     /**
@@ -158,12 +150,11 @@ class Validator {
      */
     validateParam(data) {
         let valid = false;
-        const schema = this.paramSchema;
-        if (ajv.validate(schema, data)) {
+        if (this.paramValidator(data)) {
             console.log(`Input was valid against the parameter schema.`);
             valid = true;
         } else {
-            this.showErrors();
+            this.showErrors(this.paramValidator.errors);
         }
         return valid;
     }
@@ -172,12 +163,13 @@ class Validator {
      * showErrors
      * Displays the validation errors
      */
-    showErrors() {
-        if (!ajv.errors) {
+    showErrors(errors = null) {
+        const errorsToShow = errors || ajv.errors;
+        if (!errorsToShow) {
             console.log('No errors found.');
             return;
         }
-        for (const err of ajv.errors) {
+        for (const err of errorsToShow) {
             switch (err.keyword) {
                 case "maximum":
                     console.log(err.limit);
@@ -190,4 +182,54 @@ class Validator {
     }
 }
 
+// Main program execution
+function main() {
+    const args = process.argv.slice(2);
+    
+    if (args.length === 0) {
+        console.log('Usage: node app.js <file-path> [schema-type]');
+        console.log('  <file-path>: Path to the file to validate');
+        console.log('  [schema-type]: "param" or "device" (default: param)');
+        console.log('');
+        console.log('Examples:');
+        console.log('  node app.js examples/param.on_off.yaml');
+        console.log('  node app.js examples/param.on_off.yaml param');
+        process.exit(1);
+    }
+    
+    const filePath = args[0];
+    const schemaType = args[1] || 'param';
+    
+    try {
+        const validator = new Validator();
+        let isValid = false;
+        
+        if (schemaType === 'param') {
+            isValid = validator.validateParamFile(filePath);
+        } else if (schemaType === 'device') {
+            isValid = validator.validateDeviceFile(filePath);
+        } else {
+            console.error(`Unknown schema type: ${schemaType}`);
+            process.exit(1);
+        }
+        
+        if (isValid) {
+            console.log('✅ Validation successful!');
+            process.exit(0);
+        } else {
+            console.log('❌ Validation failed!');
+            process.exit(1);
+        }
+    } catch (error) {
+        console.error(`Error: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+// Run main program if this file is executed directly
+if (require.main === module) {
+    main();
+}
+
+// Export for use as a module
 module.exports = Validator;
