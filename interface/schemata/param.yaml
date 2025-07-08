@@ -1,0 +1,93 @@
+#
+# Copyright (c) by the Society of Motion Picture and Television Engineers
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation and/or
+# other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors
+# may be used to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+$id: https://raw.githubusercontent.com/SMPTE/st2138-a/main/schemas/param.yaml
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Schema for Catena's Param object
+description: |
+  Defines the parameter's type, constraints on its value, UI hints, access control
+  and other properties.
+type: object
+properties:
+  name: 
+    $ref: #/$defs/polyglot_text
+unevaluatedProperties: false
+
+$defs:
+  polyglot_text:
+    title: Polyglot Text
+    description: Text that a client can display in one of multiple languages
+    type: object
+    properties:
+      display_strings:
+        type: object
+        anyOf:
+          - $ref: #/$defs/language_code
+          - $ref: #/$defs/language_pack_reference
+        minProperties: 1
+        additionalProperties: false
+      additionalProperties: false
+
+  language_code:
+    title: Language Codes Table
+    description: |
+      A table of standard language identifying codes.
+    $comment: |
+      There may be a published reference we can use instead of inlining this here.
+      Note that this is not (yet) a complete list of all possible language codes.
+      For readability and maintenance considerations, the codes are grouped by 
+      major language.
+    type: object
+    patternProperties:
+      ^(en|en-AU|en-CA|en-HK|en-IE|en-MY)$:
+        title: English Language group
+        type: string
+      ^(es|es-ES|es-AR|es-BO|es-CL|es-CO)$:
+        title: Spanish Language group
+        type: string
+      ^(fr|fr-FR|fr-BE|fr-CA|fr-CH)$:
+        title: French Language group
+        type: string
+      ^(de|de-DE|de-AT|de-CH)$:
+        title: German Language group
+        type: string
+    additionalProperties: false
+
+  language_pack_reference:
+    title: Language Pack Reference
+    description: |
+      A reference to a language pack.
+    type: object
+    properties:
+      $key:
+        type: string
+        description: The ID of the language pack.
+    required:
+      - $key
+    additionalProperties: false
