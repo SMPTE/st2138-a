@@ -27,7 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-$id: https://raw.githubusercontent.com/SMPTE/st2138-a/main/schemas/param.yaml
+$id: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml
 $schema: https://json-schema.org/draft/2020-12/schema
 title: Schema for Catena's Param object
 description: |
@@ -36,7 +36,7 @@ description: |
 type: object
 properties:
   name: 
-    $ref: #/$defs/polyglot_text
+    $ref: "#/$defs/polyglot_text"
 unevaluatedProperties: false
 
 $defs:
@@ -46,13 +46,12 @@ $defs:
     type: object
     properties:
       display_strings:
-        type: object
         anyOf:
-          - $ref: #/$defs/language_code
-          - $ref: #/$defs/language_pack_reference
+          - type: object
+          - $ref: "#/$defs/language_code"
+          - $ref: "#/$defs/language_pack_reference"
         minProperties: 1
-        additionalProperties: false
-      additionalProperties: false
+    additionalProperties: false
 
   language_code:
     title: Language Codes Table
