@@ -17,44 +17,44 @@
  * Supports both JSON and YAML input formats.
  */
 
-// load the validation engine
-const Ajv = require('ajv');
+const fs = require("fs");
+const path = require("path");
+const yaml = require("yaml");
+const Ajv2020 = require("ajv/dist/2020");
+
+// 1. Set up AJV for 2020-12 + unevaluatedProperties
+const ajv = new Ajv2020({
+  strict: true,
+  strictSchema: true,
+  strictRequired: true,
+  unevaluated: true
+});
+
+// 2. Load the param YAML schema
+const schemaPath = path.resolve(__dirname, "../interface/schemata/param.yaml");
+const rawYaml = fs.readFileSync(schemaPath, "utf8");
+const schema = yaml.parse(rawYaml);
+
+// 3. Compile the schema
+const validate = ajv.compile(schema);
+
+// 4. Add formats
 const addFormats = require('ajv-formats').default;
-const ajv = new Ajv({strict: false});  
 addFormats(ajv);
 
-// load YAML parser
-const YAML = require('yaml');
+// 5. Validate an object that should be rejected
+const testData = {
+  wibble: "this should not be allowed"
+};
 
-// our use of "strict" as a schema interferes with ajv's strict mode.
-// so we only turn it on after loading ajv
+
+
 'use strict';
-
-// import the json-source-map library
-// import the path and fs libraries
-const path = require('node:path');
-const fs = require('fs');
-const jsonMap = require('json-source-map');
 
 class Validator {
     constructor(schemaDir = 'interface/schemata') {
-        let paramSchemaFile = path.join(schemaDir, 'param.yaml');
-        if (!fs.existsSync(paramSchemaFile)) {
-            // bail if we cannot open the schema definition file
-            throw new Error(`Cannot open parameter schema file at: ${paramSchemaFile}`);
-        }
-
-        // read the schema definition files
-        this.paramSchema = YAML.parse(fs.readFileSync(paramSchemaFile, 'utf8'));
-        // Note: device schema not found, you may need to create it or remove device validation functionality
-
-        // Remove the $schema and $id properties to avoid AJV conflicts
-        const schemaForAjv = { ...this.paramSchema };
-        delete schemaForAjv.$schema;
-        delete schemaForAjv.$id;
-        
-        // Compile the schema directly instead of adding it
-        this.paramValidator = ajv.compile(schemaForAjv);
+ 
+        this.paramValidator = validate;
     }
 
     /**
@@ -71,7 +71,7 @@ class Validator {
 
         try {
             if (format === 'yaml') {
-                return YAML.parse(inputData);
+                return yaml.parse(inputData);
             } else {
                 return JSON.parse(inputData);
             }
@@ -187,29 +187,33 @@ function main() {
     const args = process.argv.slice(2);
     
     if (args.length === 0) {
-        console.log('Usage: node app.js <file-path> [schema-type]');
-        console.log('  <file-path>: Path to the file to validate');
-        console.log('  [schema-type]: "param" or "device" (default: param)');
+        console.log('Usage: node app.js path-to-file');
+        console.log('  path-to-file: Path to the file to validate');
+        console.log('  schema is inferred from the start of the filename');
         console.log('');
         console.log('Examples:');
         console.log('  node app.js examples/param.on_off.yaml');
-        console.log('  node app.js examples/param.on_off.yaml param');
+        console.log('  node app.js examples/device.my_device.yaml');
+        console.log('  node app.js examples/constraint.int_range.yaml');
         process.exit(1);
     }
     
     const filePath = args[0];
-    const schemaType = args[1] || 'param';
+    const filename = path.basename(filePath);
+    const schemaType = filename.split('.')[0]; // Get first part before dot
     
     try {
         const validator = new Validator();
         let isValid = false;
+        
+        console.log(`Detected schema type: ${schemaType}`);
         
         if (schemaType === 'param') {
             isValid = validator.validateParamFile(filePath);
         } else if (schemaType === 'device') {
             isValid = validator.validateDeviceFile(filePath);
         } else {
-            console.error(`Unknown schema type: ${schemaType}`);
+            console.error(`Unknown schema type: ${schemaType}. Expected 'param' or 'device'.`);
             process.exit(1);
         }
         

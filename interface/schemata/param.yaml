@@ -39,6 +39,7 @@ properties:
     $ref: "#/$defs/polyglot_text"
 unevaluatedProperties: false
 
+
 $defs:
   polyglot_text:
     title: Polyglot Text
@@ -46,8 +47,8 @@ $defs:
     type: object
     properties:
       display_strings:
+        type: object
         anyOf:
-          - type: object
           - $ref: "#/$defs/language_code"
           - $ref: "#/$defs/language_pack_reference"
         minProperties: 1
