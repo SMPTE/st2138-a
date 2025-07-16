@@ -37,7 +37,12 @@ type: object
 properties:
   name: 
     $ref: "#/$defs/polyglot_text"
-unevaluatedProperties: false
+# to allow for the schema to be extended, replace additionalProperties with unevaluatedProperties.
+# note that this requires a validator that supports the 2022-12 draft of the spec.
+# AJV does have support, but Cursor / vscode's intellisense syntax highlighting does not.
+# The tools/validate.js script works with the 2022-12 draft of the spec.
+# unevaluatedProperties: false
+additionalProperties: false
 
 
 $defs:
