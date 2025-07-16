@@ -1,4 +1,7 @@
 name:
   display_strings:
     en: On/Off
+
+type: INT32
+
     

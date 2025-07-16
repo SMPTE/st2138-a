@@ -37,6 +37,10 @@ type: object
 properties:
   name: 
     $ref: "#/$defs/polyglot_text"
+  type:
+    $ref: "#/$defs/param_type"
+
+
 # to allow for the schema to be extended, replace additionalProperties with unevaluatedProperties.
 # note that this requires a validator that supports the 2022-12 draft of the spec.
 # AJV does have support, but Cursor / vscode's intellisense syntax highlighting does not.
@@ -96,3 +100,26 @@ $defs:
     required:
       - $key
     additionalProperties: false
+
+  param_type:
+    title: Parameter's data type
+    description: The parameter's data type
+    type: string
+    enum: 
+      - UNDEFINED
+      - EMPTY
+      - INT32
+      - FLOAT32
+      - STRING
+      - STRUCT
+      - STRUCT_VARIANT
+      - INT32_ARRAY
+      - FLOAT32_ARRAY
+      - STRING_ARRAY
+      - BINARY
+      - STRUCT_ARRAY
+      - STRUCT_VARIANT_ARRAY
+      - DATA
+    default: UNDEFINED
+
+
