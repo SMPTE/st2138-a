@@ -39,7 +39,10 @@ properties:
     $ref: "#/$defs/polyglot_text"
   type:
     $ref: "#/$defs/param_type"
-
+  value:
+    $ref: "#/$defs/value"
+  constraint:
+    $ref: "#/$defs/constraint"
 
 # to allow for the schema to be extended, replace additionalProperties with unevaluatedProperties.
 # note that this requires a validator that supports the 2022-12 draft of the spec.
@@ -47,6 +50,10 @@ properties:
 # The tools/validate.js script works with the 2022-12 draft of the spec.
 # unevaluatedProperties: false
 additionalProperties: false
+
+# specialize the value schema for each param_type
+allOf:
+ - $ref: "#/$defs/apply_int32"
 
 
 $defs:
@@ -122,4 +129,113 @@ $defs:
       - DATA
     default: UNDEFINED
 
+# parameter values are polymorphic dependent on type
+# there are a collection of apply_value_to_param_type schemas that specialize the value schema
+# for each param_type.
+# the value schema is the union of all of these specialized schemas.
+  value:
+    title: Parameter Value
+    description: "Value of the parameter. Its schema is polymorphic dependent on type."
 
+  constraint:
+    title: Constraint to define the parameter's allowed values
+    description: Polymorphic depending on the type of constraint applied
+    type: object
+    properties:
+      type:
+        title: Constraint Type
+        description: The type of constraint applied
+        type: string
+        enum:
+          - INT_CHOICE
+          - INT_RANGE
+          - ALARM_TABLE
+    required:
+      - type
+    oneOf:
+      - $ref: "#/$defs/int32_constraint"
+
+  apply_int32:
+    title: INT32 specialism
+    description: Applies INT32 values & constraints, disables properties that don't work with this type
+    if:
+      type: object
+      properties:
+        type:
+          const: INT32
+    then:
+      type: object
+      properties:
+        value:
+          $ref: "#/$defs/int32_value"
+        constraint:
+          oneOf:
+            - $ref: "#/$defs/int32_constraint"
+
+  int32_value:
+    title: INT32 Value
+    description: Defines INT32 as a primitive number type
+    type: object
+    properties:
+      int32_value:
+        $ref: "#/$defs/int32"
+    required:
+      - int32_value
+    additionalProperties: false
+    
+  int32: 
+    title: INT32
+    description: Defines INT32 as a primitive number type
+    type: integer
+    minimum: -2147483648
+    maximum: 2147483647
+
+  int32_constraint:
+    title: INT32 Constraint
+    description: Polymorphic depending on the type of constraint applied
+    type: object
+    properties:
+      type:
+        title: Constraint Type
+        description: The type of constraint applied
+        type: string
+        enum:
+          - INT_CHOICE
+          - INT_RANGE
+          - ALARM_TABLE
+    required:
+      - type
+    allOf:
+      - if:
+          type: object
+          properties:
+            type:
+              const: INT_CHOICE
+        then:
+          type: object
+          properties:
+            int32_choice:
+              type: object
+              properties:
+                choices:
+                  type: array
+                  items:
+                    $ref: "#/$defs/int32_choice"
+              required:
+                - choices
+              additionalProperties: false
+  
+  int32_choice:
+    title: INT_CHOICE Constraint
+    description: Maps strings intended for use in pick-lists to integer values
+    type: object
+    properties:
+      value:
+        $ref: "#/$defs/int32"
+      name:
+        $ref: "#/$defs/polyglot_text"
+    required:
+      - value
+      - name
+    additionalProperties: false
+      

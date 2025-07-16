@@ -1,7 +1,26 @@
+# Example of a simple on/off parameter
+
 name:
   display_strings:
     en: On/Off
-
+    fr: Marche/Arrêt
+    es: Encendido/Apagado
 type: INT32
-
-    
+value:
+  int32_value: 0
+constraint:
+  type: INT_CHOICE
+  int32_choice:
+    choices:
+      - value: 0
+        name:
+          display_strings:
+            en: On
+            fr: Marche
+            es: Encendido
+      - value: 1
+        name:
+          display_strings:
+            en: Off
+            fr: Arrêt
+            es: Apagado
