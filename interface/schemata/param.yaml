@@ -147,13 +147,22 @@ $defs:
         description: The type of constraint applied
         type: string
         enum:
+          - UNDEFINED
           - INT_CHOICE
           - INT_RANGE
           - ALARM_TABLE
+          - INT_RANGE
+          - FLOAT_RANGE
+          - INT_CHOICE
+          - STRING_CHOICE
+          - STRING_STRING_CHOICE
+          - ALARM_TABLE
+        default: UNDEFINED
     required:
       - type
     oneOf:
       - $ref: "#/$defs/int32_constraint"
+
 
   apply_int32:
     title: INT32 specialism
@@ -194,19 +203,8 @@ $defs:
     title: INT32 Constraint
     description: Polymorphic depending on the type of constraint applied
     type: object
-    properties:
-      type:
-        title: Constraint Type
-        description: The type of constraint applied
-        type: string
-        enum:
-          - INT_CHOICE
-          - INT_RANGE
-          - ALARM_TABLE
-    required:
-      - type
     allOf:
-      - if:
+      - if: # INT_CHOICE
           type: object
           properties:
             type:
@@ -214,6 +212,8 @@ $defs:
         then:
           type: object
           properties:
+            type:
+              const: INT_CHOICE
             int32_choice:
               type: object
               properties:
@@ -224,6 +224,7 @@ $defs:
               required:
                 - choices
               additionalProperties: false
+          additionalProperties: false
   
   int32_choice:
     title: INT_CHOICE Constraint

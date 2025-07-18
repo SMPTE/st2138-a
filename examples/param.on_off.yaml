@@ -1,4 +1,6 @@
 # Example of a simple on/off parameter
+# The values are constrained to 0 or 1
+# which map to button labels in multiple languages
 
 name:
   display_strings:
@@ -15,12 +17,13 @@ constraint:
       - value: 0
         name:
           display_strings:
-            en: On
-            fr: Marche
-            es: Encendido
-      - value: 1
-        name:
-          display_strings:
             en: Off
             fr: Arrêt
             es: Apagado
+      - value: 1
+        name:
+          display_strings:
+            en: On
+            fr: Marche
+            es: Encendido
+
