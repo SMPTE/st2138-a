@@ -112,21 +112,7 @@ $defs:
     title: Parameter's data type
     description: The parameter's data type
     type: string
-    enum: 
-      - UNDEFINED
-      - EMPTY
-      - INT32
-      - FLOAT32
-      - STRING
-      - STRUCT
-      - STRUCT_VARIANT
-      - INT32_ARRAY
-      - FLOAT32_ARRAY
-      - STRING_ARRAY
-      - BINARY
-      - STRUCT_ARRAY
-      - STRUCT_VARIANT_ARRAY
-      - DATA
+    enum: [UNDEFINED, EMPTY, INT32, FLOAT32, STRING, STRUCT, STRUCT_VARIANT, INT32_ARRAY, FLOAT32_ARRAY, STRING_ARRAY, BINARY, STRUCT_ARRAY, STRUCT_VARIANT_ARRAY, DATA]
     default: UNDEFINED
 
 # parameter values are polymorphic dependent on type
@@ -146,17 +132,7 @@ $defs:
         title: Constraint Type
         description: The type of constraint applied
         type: string
-        enum:
-          - UNDEFINED
-          - INT_CHOICE
-          - INT_RANGE
-          - ALARM_TABLE
-          - INT_RANGE
-          - FLOAT_RANGE
-          - INT_CHOICE
-          - STRING_CHOICE
-          - STRING_STRING_CHOICE
-          - ALARM_TABLE
+        enum: [UNDEFINED, INT_CHOICE, INT_RANGE, ALARM_TABLE, FLOAT_RANGE, STRING_CHOICE, STRING_STRING_CHOICE, ALARM_TABLE]
         default: UNDEFINED
     required:
       - type
@@ -225,7 +201,34 @@ $defs:
                 - choices
               additionalProperties: false
           additionalProperties: false
-  
+      - if: # INT_RANGE
+          type: object
+          properties:
+            type:
+              const: INT_RANGE
+        then:
+          type: object
+          properties:
+            type:
+              const: INT_RANGE
+            int32_range:
+              type: object
+              properties:
+                min_value:
+                  $ref: "#/$defs/int32"
+                max_value:
+                  $ref: "#/$defs/int32"
+                step:
+                  $ref: "#/$defs/int32"
+                display_min_value:
+                  $ref: "#/$defs/int32"
+                display_max_value:
+                  $ref: "#/$defs/int32"
+              required:
+                - min_value
+                - max_value
+              additionalProperties: false
+          additionalProperties: false
   int32_choice:
     title: INT_CHOICE Constraint
     description: Maps strings intended for use in pick-lists to integer values

@@ -1,0 +1,21 @@
+# Example of an integer range parameter
+# The values are constrained lie within the range min_value to max_value
+# It's often desirable for the display range to use round numbers that
+# are not necessarily the same as the actual min/max values.
+
+name:
+  display_strings:
+    en: Fader, dB
+type: INT32
+value:
+  int32_value: 0
+constraint:
+  type: INT_RANGE
+  int32_range:
+    min_value: -100
+    max_value: 10
+    step: 1
+    display_min_value: -100
+    display_max_value: 20
+
+
