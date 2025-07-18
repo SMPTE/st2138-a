@@ -1,0 +1,48 @@
+# Example of an alarm table parameter
+# The alarm table is a bit map of 32 bits
+# Each bit can be set to 0 or 1
+# The bit value is the bit position in the alarm table
+# The severity is the severity of the alarm
+# The description is a, possibly multi-language, description of the alarm
+
+name:
+  display_strings:
+    en: Alarms
+    fr: Alarmes
+    es: Alarmas
+type: INT32
+value:
+  int32_value: 0
+constraint:
+  type: ALARM_TABLE
+  alarm_table:
+    alarms:
+      - bit_value: 0
+        severity: SEVERE
+        description:
+          display_strings:
+            en: Evacuate the studio!
+            fr: Evacuer le studio!
+            es: Evacuar el estudio!
+      - bit_value: 1
+        severity: WARNING
+        description:
+          display_strings:
+            en: Don't touch that dial!
+            fr: Ne touchez pas à ce bouton!
+            es: No toques ese botón!
+      - bit_value: 2
+        severity: INFO
+        description:
+          display_strings:
+            en: The studio is now safe.
+            fr: Le studio est maintenant sûr.
+            es: El estudio está ahora seguro.
+      - bit_value: 3
+        severity: UNKNOWN
+        description:
+          display_strings:
+            en: Something happened but I don't know what.
+            fr: Quelque chose est arrivé mais je ne sais pas quoi.
+            es: Algo pasó pero no sé qué.
+

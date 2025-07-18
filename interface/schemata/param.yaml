@@ -139,7 +139,6 @@ $defs:
     oneOf:
       - $ref: "#/$defs/int32_constraint"
 
-
   apply_int32:
     title: INT32 specialism
     description: Applies INT32 values & constraints, disables properties that don't work with this type
@@ -229,6 +228,48 @@ $defs:
                 - max_value
               additionalProperties: false
           additionalProperties: false
+      - if: # ALARM_TABLE
+          type: object
+          properties:
+            type:
+              const: ALARM_TABLE
+        then:
+          type: object
+          properties:
+            type:
+              const: ALARM_TABLE
+            alarm_table:
+              type: object
+              properties:
+                alarms:
+                  type: array
+                  items:
+                    $ref: "#/$defs/alarm"
+                  maxItems: 32
+              required:
+                - alarms
+              additionalProperties: false
+          additionalProperties: false
+
+  alarm: 
+    title: Alarm
+    description: | 
+      Defines an alarm in terms of its severity and a description of the problem causing it.
+      Alarms occupy one bit in the alarm table allowing up to 32 different alarms to be reported.
+    type: object
+    properties:
+      bit_value:
+        type: integer
+        minimum: 0
+        maximum: 31
+      severity:
+        type: string
+        enum: [INFO, WARNING, SEVERE, UNKNOWN]
+      description:
+        $ref: "#/$defs/polyglot_text"
+    required: [bit_value, severity, description]
+    additionalProperties: false
+
   int32_choice:
     title: INT_CHOICE Constraint
     description: Maps strings intended for use in pick-lists to integer values
