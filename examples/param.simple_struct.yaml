@@ -1,0 +1,46 @@
+# example of a simple struct parameter
+
+name:
+  display_strings:
+    en: Location
+    fr: Lieu
+
+type: STRUCT
+
+params:
+  latitude:
+    type: FLOAT32
+    name:
+      display_strings:
+        en: Latitude
+        fr: Latitude
+    value:
+      float32_value: 0.0
+    constraint:
+      type: FLOAT_RANGE
+      float32_range:
+        min_value: -90.0
+        max_value: 90.0
+
+  longitude:
+    type: FLOAT32
+    name:
+      display_strings:
+        en: Longitude
+        fr: Longitude
+    value:
+      float32_value: 0.0
+    constraint:
+      type: FLOAT_RANGE
+      float32_range:
+        min_value: -180.0
+        max_value: 180.0
+
+value: # Leeds United's Elland Road Stadium
+  struct_value:
+    fields:
+      latitude:
+        float32_value: 53.777778
+      longitude:
+        float32_value: -1.572222
+

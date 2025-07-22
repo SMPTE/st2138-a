@@ -45,6 +45,8 @@ properties:
     oneOf:
       - $ref: "#/$defs/constraint_ref"
       - $ref: "#/$defs/constraint"
+  params:
+    $ref: "#/$defs/params"
 
 
 # to allow for the schema to be extended, replace additionalProperties with unevaluatedProperties.
@@ -59,9 +61,22 @@ allOf:
  - $ref: "#/$defs/apply_int32"
  - $ref: "#/$defs/apply_float32"
  - $ref: "#/$defs/apply_string"
-
+ - $ref: "#/$defs/apply_struct"
 
 $defs:
+  params:
+    title: Parameters Map
+    description: |
+      A map of simple_oids to parameter descriptors.
+      The keys are the names of the parameters.
+    type: object
+    patternProperties:
+      ^[a-zA-Z]\w{0,30}$:
+        # the regex on the line above shoul be identical to the one in #$defs/simple_oid
+        $ref: "#"
+    minProperties: 1
+    additionalProperties: false
+
   polyglot_text:
     title: Polyglot Text
     description: Text that a client can display in one of multiple languages
@@ -144,15 +159,24 @@ $defs:
     oneOf:
       - $ref: "#/$defs/int32_constraint"
 
+  simple_oid:
+    title: Simple OID
+    description: |
+      A simple OID is used as a key in a map of string keys to values.
+      Because it is also potentially used by code generators, its length and
+      character set are restricted.
+    type: string
+    pattern: ^[a-zA-Z]\w{0,30}$
+    default: ""
+
+
   constraint_ref:
     title: Constraint Reference
     description: A reference to a constraint that is shared by multiple parameters.
     type: object
     properties: 
       ref_oid:
-        type: string
-        description: The ID of the constraint.
-        pattern: ^[a-zA-Z]\w{0,30}$
+        $ref: "#/$defs/simple_oid"
     required:
       - ref_oid
     additionalProperties: false
@@ -489,4 +513,50 @@ $defs:
       - choices
     additionalProperties: false
 
-  
+  apply_struct:
+    title: STRUCT specialism
+    description: Applies STRUCT values & constraints, disables properties that don't work with this type
+    if:
+      type: object
+      properties:
+        type:
+          const: STRUCT
+    then:
+      type: object
+      properties:
+        value:
+          $ref: "#/$defs/struct_value"
+        
+        # structs have no constraints, their children may
+        constraint: false
+
+  struct_value:
+    title: STRUCT Value
+    description: Defines STRUCT as a map of string keys to values
+    type: object
+    properties:
+      struct_value:
+        type: object
+        properties:
+          fields:
+            $ref: "#/$defs/struct_fields"
+        required:
+          - fields
+        additionalProperties: false
+    required:
+      - struct_value
+    additionalProperties: false
+
+  struct_fields:
+    title: STRUCT Fields
+    description: Defines a map of string keys to values
+    type: object
+    patternProperties:
+      ^[a-zA-Z]\w{0,30}$:
+        # the regex on the line above shoul be identical to the one in #$defs/simple_oid
+        $ref: "#/$defs/value"
+    minProperties: 1
+    additionalProperties: false
+
+ 
+      
