@@ -57,6 +57,7 @@ additionalProperties: false
 # specialize the value schema for each param_type
 allOf:
  - $ref: "#/$defs/apply_int32"
+ - $ref: "#/$defs/apply_float32"
 
 
 $defs:
@@ -118,11 +119,11 @@ $defs:
     enum: [UNDEFINED, EMPTY, INT32, FLOAT32, STRING, STRUCT, STRUCT_VARIANT, INT32_ARRAY, FLOAT32_ARRAY, STRING_ARRAY, BINARY, STRUCT_ARRAY, STRUCT_VARIANT_ARRAY, DATA]
     default: UNDEFINED
 
-# parameter values are polymorphic dependent on type
-# there are a collection of apply_value_to_param_type schemas that specialize the value schema
-# for each param_type.
-# the value schema is the union of all of these specialized schemas.
   value:
+    # parameter values are polymorphic dependent on type
+    # there are a collection of apply_value_to_param_type schemas that specialize the value schema
+    # for each param_type.
+    # the value schema is the union of all of these specialized schemas.
     title: Parameter Value
     description: "Value of the parameter. Its schema is polymorphic dependent on type."
 
@@ -155,8 +156,6 @@ $defs:
       - ref_oid
     additionalProperties: false
 
-      
-
   apply_int32:
     title: INT32 specialism
     description: Applies INT32 values & constraints, disables properties that don't work with this type
@@ -174,7 +173,6 @@ $defs:
           oneOf:
             - $ref: "#/$defs/int32_constraint"
             - $ref: "#/$defs/constraint_ref"
-
 
   int32_value:
     title: INT32 Value
@@ -304,3 +302,75 @@ $defs:
       - name
     additionalProperties: false
       
+  apply_float32:
+    title: FLOAT specialism
+    description: Applies FLOAT32 values & constraints, disables properties that don't work with this type
+    if:
+      type: object
+      properties:
+        type:
+          const: FLOAT32
+    then:
+      type: object
+      properties:
+        value:
+          $ref: "#/$defs/float32_value"
+        constraint:
+          oneOf:
+            - $ref: "#/$defs/float32_constraint"
+            - $ref: "#/$defs/constraint_ref"
+
+  float32_value:
+    title: FLOAT32 Value
+    description: Defines FLOAT32 as a primitive number type
+    type: object
+    properties:
+      float32_value:
+        $ref: "#/$defs/float32"
+    required:
+      - float32_value
+    additionalProperties: false
+  
+  float32:
+    title: FLOAT32
+    description: Defines FLOAT32 as a primitive number type
+    type: number
+    minimum: -3.4028234663852886e+38
+    maximum: 3.4028234663852886e+38
+    default: 0.0
+
+  float32_constraint:
+    title: FLOAT32 Constraint
+    description: |
+      There is currently only one constraint type for FLOAT32, FLOAT_RANGE.
+      The intent of this schema is to allow for future expansion of constraint types.
+    type: object
+    allOf:
+      - if: # FLOAT_RANGE
+          type: object
+          properties:
+            type:
+              const: FLOAT_RANGE
+        then:
+          type: object
+          properties:
+            type:
+              const: FLOAT_RANGE
+            float32_range:
+              type: object
+              properties:
+                min_value:
+                  $ref: "#/$defs/float32"
+                max_value:
+                  $ref: "#/$defs/float32"
+                step:
+                  $ref: "#/$defs/float32"
+                display_min_value:
+                  $ref: "#/$defs/float32"
+                display_max_value:
+                  $ref: "#/$defs/float32"
+              required:
+                - min_value
+                - max_value
+              additionalProperties: false
+          additionalProperties: false
