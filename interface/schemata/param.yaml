@@ -42,7 +42,10 @@ properties:
   value:
     $ref: "#/$defs/value"
   constraint:
-    $ref: "#/$defs/constraint"
+    oneOf:
+      - $ref: "#/$defs/constraint_ref"
+      - $ref: "#/$defs/constraint"
+
 
 # to allow for the schema to be extended, replace additionalProperties with unevaluatedProperties.
 # note that this requires a validator that supports the 2022-12 draft of the spec.
@@ -139,6 +142,21 @@ $defs:
     oneOf:
       - $ref: "#/$defs/int32_constraint"
 
+  constraint_ref:
+    title: Constraint Reference
+    description: A reference to a constraint that is shared by multiple parameters.
+    type: object
+    properties: 
+      ref_oid:
+        type: string
+        description: The ID of the constraint.
+        pattern: ^[a-zA-Z]\w{0,30}$
+    required:
+      - ref_oid
+    additionalProperties: false
+
+      
+
   apply_int32:
     title: INT32 specialism
     description: Applies INT32 values & constraints, disables properties that don't work with this type
@@ -155,6 +173,8 @@ $defs:
         constraint:
           oneOf:
             - $ref: "#/$defs/int32_constraint"
+            - $ref: "#/$defs/constraint_ref"
+
 
   int32_value:
     title: INT32 Value
