@@ -1,0 +1,33 @@
+# This is an example of a string string choice parameter.
+# It is used to select a string from a list of choices presented in one of potentially many languages.
+# The choices are defined in the constraint section.
+# The strict option is used to ensure that the selection is one of the choices.
+# If false, users should be able to type in a value that is not in the choices array.
+
+type: STRING
+
+name: 
+  display_strings:
+    en: String Choice Example
+    fr: Exemple de choix de chaîne
+
+value:
+  string_value: "Hello"
+
+constraint:
+  type: STRING_STRING_CHOICE
+  string_string_choice:
+    choices:
+      - value: Hello
+        name:
+          display_strings:
+            en: Hello
+            fr: Bonjour
+      - value: World
+        name:
+          display_strings:
+            en: World
+            fr: Monde
+    strict: false
+
+

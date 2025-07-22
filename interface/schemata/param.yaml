@@ -58,6 +58,7 @@ additionalProperties: false
 allOf:
  - $ref: "#/$defs/apply_int32"
  - $ref: "#/$defs/apply_float32"
+ - $ref: "#/$defs/apply_string"
 
 
 $defs:
@@ -374,3 +375,118 @@ $defs:
                 - max_value
               additionalProperties: false
           additionalProperties: false
+
+  apply_string:
+    title: STRING specialism
+    description: Applies STRING values & constraints, disables properties that don't work with this type
+    if:
+      type: object
+      properties:
+        type:
+          const: STRING
+    then:
+      type: object
+      properties:
+        value:
+          $ref: "#/$defs/string_value"
+        constraint:
+          oneOf:
+            - $ref: "#/$defs/string_constraint"
+            - $ref: "#/$defs/constraint_ref"
+
+  string_value:
+    title: STRING Value
+    description: Defines STRING as a primitive string type
+    type: object
+    properties:
+      string_value:
+        type: string
+    required:
+      - string_value
+    additionalProperties: false
+
+  string_constraint:
+    title: STRING Constraint
+    description: Provides two ways of constraining a string value to a set of choices
+    type: object
+    allOf:
+      - if: # STRING_CHOICE
+          type: object
+          properties:
+            type:
+              const: STRING_CHOICE
+        then:
+          type: object
+          properties:
+            type:
+              const: STRING_CHOICE
+            string_choice:
+              $ref: "#/$defs/string_choice"
+          required:
+            - string_choice
+          additionalProperties: false
+          
+      - if: # STRING_STRING_CHOICE
+          type: object
+          properties:
+            type:
+              const: STRING_STRING_CHOICE
+        then:
+          type: object
+          properties:
+            type:
+              const: STRING_STRING_CHOICE
+            string_string_choice:
+              $ref: "#/$defs/string_string_choice"
+          additionalProperties: false
+
+  string_choice:
+    title: STRING_CHOICE Constraint
+    description: | 
+      Maps strings intended for use in pick-lists to string values.
+      Not multi-lingual.
+      Has a flag, strict, that if true, will only allow values that are in the choices array.
+      If false, will allow any string value.
+    type: object
+    properties:
+      choices:
+        type: array
+        items:
+          type: string
+      strict:
+        type: boolean
+        default: false
+    required:
+      - choices
+    additionalProperties: false
+
+  string_string_choice:
+    title: STRING_STRING_CHOICE Constraint
+    description: | 
+      Maps strings intended for use in pick-lists to string values.
+      Has a flag, strict, that if true, will only allow values that are in the choices array.
+      If false, will allow any string value.
+      Has multi-language support.
+    type: object
+    properties:
+      choices:
+        type: array
+        items:
+          type: object
+          properties:
+            value:
+              type: string  
+            name:
+              $ref: "#/$defs/polyglot_text"
+          required:
+            - name
+            - value
+          additionalProperties: false
+      strict:
+        type: boolean
+        default: false
+    required:
+      - choices
+    additionalProperties: false
+
+  
