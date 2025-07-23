@@ -66,6 +66,7 @@ allOf:
  - $ref: "#/$defs/apply_string"
  - $ref: "#/$defs/apply_struct"
  - $ref: "#/$defs/apply_struct_variant"
+ - $ref: "#/$defs/apply_int32_array"
 
 $defs:
   param_map:
@@ -601,4 +602,40 @@ $defs:
           - value
         additionalProperties: false
     additionalProperties: false
-    
+
+  apply_int32_array:
+    title: INT32_ARRAY specialism
+    description: Applies INT32_ARRAY values, disables properties that don't work with this type
+    if:
+      type: object
+      properties:
+        type:
+          const: INT32_ARRAY
+    then:
+      type: object
+      properties:
+        value:
+          $ref: "#/$defs/int32_array_values"
+        constraint:
+          oneOf:
+            - $ref: "#/$defs/int32_constraint"
+            - $ref: "#/$defs/constraint_ref"
+
+  int32_array_values:
+    title: INT32_ARRAY Value
+    description: Defines INT32_ARRAY as an array of INT32 values
+    type: object
+    properties:
+      int32_array_values:
+        type: object
+        properties:
+          ints:
+            type: array
+            items:
+              $ref: "#/$defs/int32"
+        required:
+          - ints
+        additionalProperties: false
+    required:
+      - int32_array_values
+    additionalProperties: false
