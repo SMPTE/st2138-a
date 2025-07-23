@@ -68,6 +68,7 @@ allOf:
  - $ref: "#/$defs/apply_struct_variant"
  - $ref: "#/$defs/apply_int32_array"
  - $ref: "#/$defs/apply_float32_array"
+ - $ref: "#/$defs/apply_string_array"
 
 $defs:
   param_map:
@@ -677,4 +678,41 @@ $defs:
     required:
       - float32_array_values
     additionalProperties: false
-    
+
+  apply_string_array:
+    title: STRING_ARRAY specialism
+    description: Applies STRING_ARRAY values, disables properties that don't work with this type
+    if:
+      type: object
+      properties:
+        type:
+          const: STRING_ARRAY
+    then:
+      type: object
+      properties:
+        value:
+          $ref: "#/$defs/string_array_values"
+        constraint:
+          oneOf:
+            - $ref: "#/$defs/string_constraint"
+            - $ref: "#/$defs/constraint_ref"
+
+  string_array_values:
+    title: STRING_ARRAY Value
+    description: Defines STRING_ARRAY as an array of STRING values
+    type: object
+    properties:
+      string_array_values:
+        type: object
+        properties:
+          strings:
+            type: array
+            items:
+              type: string
+        required:
+          - strings
+        additionalProperties: false
+    required:
+      - string_array_values
+    additionalProperties: false
+

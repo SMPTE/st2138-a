@@ -1,0 +1,21 @@
+# Example of a STRING_ARRAY parameter
+
+name: # with a bow to George Carlin
+  display_strings:
+    en: Seven Words You Can't Say on TV
+
+type: STRING_ARRAY
+
+value:
+  string_array_values:
+    strings: # ok, they're just often mispronounced ;-)
+      - Worcester
+      - Leicestershire
+      - Anemone
+      - Isthmus
+      - Colonel 
+      - Sixth
+      - Scone  # rhymes with "gone", not "cone". Fight me!
+
+
+
