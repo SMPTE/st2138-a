@@ -35,12 +35,12 @@ const schemaPath = path.resolve(__dirname, "../interface/schemata/param.yaml");
 const rawYaml = fs.readFileSync(schemaPath, "utf8");
 const schema = yaml.parse(rawYaml);
 
-// 3. Compile the schema
-const validate = ajv.compile(schema);
-
-// 4. Add formats
+// 3. Add formats
 const addFormats = require('ajv-formats').default;
 addFormats(ajv);
+
+// 4. Compile the schema
+const validate = ajv.compile(schema);
 
 // 5. Validate an object that should be rejected
 const testData = {
