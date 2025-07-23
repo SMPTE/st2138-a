@@ -67,6 +67,7 @@ allOf:
  - $ref: "#/$defs/apply_struct"
  - $ref: "#/$defs/apply_struct_variant"
  - $ref: "#/$defs/apply_int32_array"
+ - $ref: "#/$defs/apply_float32_array"
 
 $defs:
   param_map:
@@ -639,3 +640,41 @@ $defs:
     required:
       - int32_array_values
     additionalProperties: false
+
+  apply_float32_array:
+    title: FLOAT32_ARRAY specialism
+    description: Applies FLOAT32_ARRAY values, disables properties that don't work with this type
+    if:
+      type: object
+      properties:
+        type:
+          const: FLOAT32_ARRAY
+    then:
+      type: object
+      properties:
+        value:
+          $ref: "#/$defs/float32_array_values"
+        constraint:
+          oneOf:
+            - $ref: "#/$defs/float32_constraint"
+            - $ref: "#/$defs/constraint_ref"
+
+  float32_array_values:
+    title: FLOAT32_ARRAY Value
+    description: Defines FLOAT32_ARRAY as an array of FLOAT32 values
+    type: object
+    properties:
+      float32_array_values:
+        type: object
+        properties:
+          floats:
+            type: array
+            items:
+              $ref: "#/$defs/float32"
+        required:
+          - floats
+        additionalProperties: false
+    required:
+      - float32_array_values
+    additionalProperties: false
+    

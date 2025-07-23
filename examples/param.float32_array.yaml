@@ -1,0 +1,19 @@
+# Example of a FLOAT32_ARRAY parameter
+
+name:
+  display_strings:
+    en: Mathematical Constants
+
+type: FLOAT32_ARRAY
+
+value:
+  float32_array_values:
+    floats:
+      - 3.141592653589793
+      - 2.718281828459045
+      - 1.618033988749895
+      - 0.5772156649015329
+      - 0.3010299956639812
+      - 0.2357022603955158
+      - 0.1971526284342158
+      - 0.1732050807568877
