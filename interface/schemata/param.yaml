@@ -69,6 +69,7 @@ allOf:
  - $ref: "#/$defs/apply_int32_array"
  - $ref: "#/$defs/apply_float32_array"
  - $ref: "#/$defs/apply_string_array"
+ - $ref: "#/$defs/apply_struct_array"
 
 $defs:
   param_map:
@@ -716,3 +717,36 @@ $defs:
       - string_array_values
     additionalProperties: false
 
+  apply_struct_array:
+    title: STRUCT_ARRAY specialism
+    description: Applies STRUCT_ARRAY values, disables properties that don't work with this type
+    if:
+      type: object
+      properties:
+        type:
+          const: STRUCT_ARRAY
+    then:
+      type: object
+      properties:
+        value:
+          $ref: "#/$defs/struct_array_values"
+        constraint: false
+
+  struct_array_values:
+    title: STRUCT_ARRAY Value
+    description: Defines STRUCT_ARRAY as an array of STRUCT values
+    type: object
+    properties:
+      struct_array_values:
+        type: object
+        properties:
+          struct_values:
+            type: array
+            items:
+              $ref: "#/$defs/struct_value"
+        required:
+          - struct_values
+        additionalProperties: false
+    required:
+      - struct_array_values
+    additionalProperties: false
