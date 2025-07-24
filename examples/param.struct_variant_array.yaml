@@ -1,0 +1,42 @@
+# Example of a STRUCT_VARIANT_ARRAY parameter
+# The elements of the array can be of different types listed in the params member
+
+name:
+  display_strings:
+    en: Contact Methods
+
+type: STRUCT_VARIANT_ARRAY
+
+params:
+  email:
+    type: STRING
+  phone:
+    type: INT32
+  address:
+    type: STRUCT
+    params:
+      street:
+        type: STRING
+      city:
+        type: STRING
+      postcode:
+        type: STRING
+
+value:
+  struct_variant_array_values:
+    struct_variant_values:
+      - struct_variant_value:
+          struct_variant_type: email
+          value:
+            email: john.doe@example.com
+      - struct_variant_value:
+          struct_variant_type: phone
+          value:
+            phone: 1234567890
+      - struct_variant_value:
+          struct_variant_type: address
+          value:
+            address:
+              street: 123 Main St
+              city: Anytown
+              postcode: 12345

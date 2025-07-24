@@ -70,6 +70,7 @@ allOf:
  - $ref: "#/$defs/apply_float32_array"
  - $ref: "#/$defs/apply_string_array"
  - $ref: "#/$defs/apply_struct_array"
+ - $ref: "#/$defs/apply_struct_variant_array"
 
 $defs:
   param_map:
@@ -749,4 +750,38 @@ $defs:
         additionalProperties: false
     required:
       - struct_array_values
+    additionalProperties: false
+
+  apply_struct_variant_array:
+    title: STRUCT_VARIANT_ARRAY specialism
+    description: Applies STRUCT_VARIANT_ARRAY values, disables properties that don't work with this type
+    if:
+      type: object
+      properties:
+        type:
+          const: STRUCT_VARIANT_ARRAY
+    then:
+      type: object
+      properties:
+        value:
+          $ref: "#/$defs/struct_variant_array_values"
+        constraint: false
+
+  struct_variant_array_values:
+    title: STRUCT_VARIANT_ARRAY Value
+    description: Defines STRUCT_VARIANT_ARRAY as an array of STRUCT_VARIANT values
+    type: object
+    properties:
+      struct_variant_array_values:
+        type: object
+        properties:
+          struct_variant_values:
+            type: array
+            items:
+              $ref: "#/$defs/struct_variant_value"
+        required:
+          - struct_variant_values
+        additionalProperties: false
+    required:
+      - struct_variant_array_values
     additionalProperties: false
