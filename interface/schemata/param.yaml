@@ -829,6 +829,11 @@ $defs:
             contentMediaType: application/octet-stream
             contentEncoding: base64
             description: The SHA-256 digest of the payload
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: key/value pairs about the payload, e.g. mime-type, etc.
         required:
           - payload
         additionalProperties: false
