@@ -1,0 +1,12 @@
+# Example of a DATA parameter
+
+name:
+  display_strings:
+    en: Image
+
+type: DATA
+
+value:
+  data_payload:
+    payload: https://example.com/image.png
+    payload_encoding: UNCOMPRESSED
