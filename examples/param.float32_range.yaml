@@ -15,4 +15,4 @@ constraint:
     min_value: -20.0
     max_value: 20000.0
     display_min_value: 0.0
-    display_max_value: 20
+    display_max_value: 20000.0
