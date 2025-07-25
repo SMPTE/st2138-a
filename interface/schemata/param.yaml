@@ -55,6 +55,11 @@ properties:
     $ref: "#/$defs/read_only"
   precision: # only valid for FLOAT32 and FLOAT32_ARRAY, removed from other specializations
     $ref: "#/$defs/precision"
+  max_length: # only valid for STRING and STRING_ARRAY, removed from other specializations
+    $ref: "#/$defs/max_length"
+  total_length: # only valid for STRING_ARRAY, removed from other specializations
+    $ref: "#/$defs/total_length"
+
 
 
 # to allow for the schema to be extended, replace additionalProperties with unevaluatedProperties.
@@ -220,7 +225,8 @@ $defs:
             - $ref: "#/$defs/int32_constraint"
             - $ref: "#/$defs/constraint_ref"
         precision: false
-
+        max_length: false
+        total_length: false
 
   int32_value:
     title: INT32 Value
@@ -367,7 +373,8 @@ $defs:
           oneOf:
             - $ref: "#/$defs/float32_constraint"
             - $ref: "#/$defs/constraint_ref"
-        
+        max_length: false
+        total_length: false
 
   float32_value:
     title: FLOAT32 Value
@@ -442,6 +449,7 @@ $defs:
             - $ref: "#/$defs/string_constraint"
             - $ref: "#/$defs/constraint_ref"
         precision: false
+        total_length: false
 
   string_value:
     title: STRING Value
@@ -555,6 +563,8 @@ $defs:
         # structs have no constraints, their children may
         constraint: false
         precision: false
+        max_length: false
+        total_length: false
 
   struct_value:
     title: STRUCT Value
@@ -599,6 +609,8 @@ $defs:
           $ref: "#/$defs/struct_variant_value"
         constraint: false
         precision: false
+        max_length: false
+        total_length: false
 
   struct_variant_value:
     title: STRUCT_VARIANT Value
@@ -637,6 +649,8 @@ $defs:
             - $ref: "#/$defs/int32_constraint"
             - $ref: "#/$defs/constraint_ref"
         precision: false
+        max_length: false
+        total_length: false
 
   int32_array_values:
     title: INT32_ARRAY Value
@@ -674,7 +688,8 @@ $defs:
           oneOf:
             - $ref: "#/$defs/float32_constraint"
             - $ref: "#/$defs/constraint_ref"
-
+        max_length: false
+        total_length: false
 
   float32_array_values:
     title: FLOAT32_ARRAY Value
@@ -748,6 +763,8 @@ $defs:
           $ref: "#/$defs/struct_array_values"
         constraint: false
         precision: false
+        max_length: false
+        total_length: false
 
   struct_array_values:
     title: STRUCT_ARRAY Value
@@ -783,6 +800,8 @@ $defs:
           $ref: "#/$defs/struct_variant_array_values"
         constraint: false
         precision: false
+        max_length: false
+        total_length: false
 
   struct_variant_array_values:
     title: STRUCT_VARIANT_ARRAY Value
@@ -818,6 +837,8 @@ $defs:
           $ref: "#/$defs/data_value"
         constraint: false
         precision: false
+        max_length: false
+        total_length: false
 
   data_value:
     title: DATA Value
@@ -870,4 +891,19 @@ $defs:
     default: 0
     minimum: 0
     maximum: 10
-  
+
+  max_length:
+    title: Maximum String Length
+    description: |
+      The maximum length of a string value, 
+      or the maximum length of an element in a string array
+    type: integer
+    default: 0
+    minimum: 0
+
+  total_length:
+    title: Total String Array Size
+    description: The total length of a string array value
+    type: integer
+    default: 0
+    minimum: 0

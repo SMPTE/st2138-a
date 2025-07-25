@@ -20,3 +20,8 @@ value:
 
 read_only: true
 
+# not strictly necessary, but it's a good idea to set these limits
+# to avoid buffer overflows
+max_length: 32
+total_length: 256
+

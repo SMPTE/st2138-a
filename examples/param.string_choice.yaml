@@ -23,4 +23,4 @@ constraint:
       - World
     strict: true
 
-
+max_length: 32
