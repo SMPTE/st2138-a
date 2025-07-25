@@ -51,6 +51,9 @@ properties:
     $ref: "#/$defs/param_map"
   template_oid:
     $ref: "#/$defs/template_oid"
+  read_only:
+    $ref: "#/$defs/read_only"
+  
 
 # to allow for the schema to be extended, replace additionalProperties with unevaluatedProperties.
 # note that this requires a validator that supports the 2022-12 draft of the spec.
@@ -829,13 +832,21 @@ $defs:
             contentMediaType: application/octet-stream
             contentEncoding: base64
             description: The SHA-256 digest of the payload
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
-          description: key/value pairs about the payload, e.g. mime-type, etc.
+          metadata:
+            type: object
+            additionalProperties:
+              type: string
+            description: key/value pairs about the payload, e.g. mime-type, etc.
         required:
           - payload
         additionalProperties: false
     required:
       - data_payload
+
+  read_only:
+    title: Read Only flag
+    description: If true, the parameter is read-only
+    type: boolean
+    default: false
+
+  

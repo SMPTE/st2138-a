@@ -1,4 +1,5 @@
 # Example of a STRING_ARRAY parameter
+# this one also illustrates usage of the read_only flag
 
 name: # with a bow to George Carlin
   display_strings:
@@ -17,5 +18,5 @@ value:
       - Sixth
       - Scone  # rhymes with "gone", not "cone". Fight me!
 
-
+read_only: true
 
