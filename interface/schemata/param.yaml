@@ -53,7 +53,9 @@ properties:
     $ref: "#/$defs/template_oid"
   read_only:
     $ref: "#/$defs/read_only"
-  
+  precision: # only valid for FLOAT32 and FLOAT32_ARRAY, removed from other specializations
+    $ref: "#/$defs/precision"
+
 
 # to allow for the schema to be extended, replace additionalProperties with unevaluatedProperties.
 # note that this requires a validator that supports the 2022-12 draft of the spec.
@@ -217,6 +219,8 @@ $defs:
           oneOf:
             - $ref: "#/$defs/int32_constraint"
             - $ref: "#/$defs/constraint_ref"
+        precision: false
+
 
   int32_value:
     title: INT32 Value
@@ -363,6 +367,7 @@ $defs:
           oneOf:
             - $ref: "#/$defs/float32_constraint"
             - $ref: "#/$defs/constraint_ref"
+        
 
   float32_value:
     title: FLOAT32 Value
@@ -436,6 +441,7 @@ $defs:
           oneOf:
             - $ref: "#/$defs/string_constraint"
             - $ref: "#/$defs/constraint_ref"
+        precision: false
 
   string_value:
     title: STRING Value
@@ -548,6 +554,7 @@ $defs:
         
         # structs have no constraints, their children may
         constraint: false
+        precision: false
 
   struct_value:
     title: STRUCT Value
@@ -591,6 +598,7 @@ $defs:
         value:
           $ref: "#/$defs/struct_variant_value"
         constraint: false
+        precision: false
 
   struct_variant_value:
     title: STRUCT_VARIANT Value
@@ -628,6 +636,7 @@ $defs:
           oneOf:
             - $ref: "#/$defs/int32_constraint"
             - $ref: "#/$defs/constraint_ref"
+        precision: false
 
   int32_array_values:
     title: INT32_ARRAY Value
@@ -666,6 +675,7 @@ $defs:
             - $ref: "#/$defs/float32_constraint"
             - $ref: "#/$defs/constraint_ref"
 
+
   float32_array_values:
     title: FLOAT32_ARRAY Value
     description: Defines FLOAT32_ARRAY as an array of FLOAT32 values
@@ -702,6 +712,7 @@ $defs:
           oneOf:
             - $ref: "#/$defs/string_constraint"
             - $ref: "#/$defs/constraint_ref"
+        precision: false
 
   string_array_values:
     title: STRING_ARRAY Value
@@ -736,6 +747,7 @@ $defs:
         value:
           $ref: "#/$defs/struct_array_values"
         constraint: false
+        precision: false
 
   struct_array_values:
     title: STRUCT_ARRAY Value
@@ -770,6 +782,7 @@ $defs:
         value:
           $ref: "#/$defs/struct_variant_array_values"
         constraint: false
+        precision: false
 
   struct_variant_array_values:
     title: STRUCT_VARIANT_ARRAY Value
@@ -804,6 +817,7 @@ $defs:
         value:
           $ref: "#/$defs/data_value"
         constraint: false
+        precision: false
 
   data_value:
     title: DATA Value
@@ -849,4 +863,11 @@ $defs:
     type: boolean
     default: false
 
+  precision:
+    title: Precision
+    description: The number of decimal places to display for floating point values
+    type: integer
+    default: 0
+    minimum: 0
+    maximum: 10
   
