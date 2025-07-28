@@ -1,0 +1,16 @@
+# Example of using the oid_aliases property
+# This maps the parameter called "dashboard_ui" to the oid
+# that DashBoard uses to load a custom UI located as an asset
+# or external object in status_update.grid
+
+name:
+  display_strings:
+    en: DashBoard UI
+
+type: STRING
+
+oid_aliases:
+  - "0xFF0E"
+
+value:
+  string_value: eo://status_update.grid

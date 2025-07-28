@@ -236,13 +236,7 @@ message Value {
 
 message Import {
   string url = 1;
-  string digest = 2;
-
-  enum DigestAlgorithm {
-    UNDEFINED = 0;
-    SHA256 = 1;
-  }
-  DigestAlgorithm method = 3;
+  string digest = 2; // SHA256 digest of the import file
 }
 
 message GetParamPayload {

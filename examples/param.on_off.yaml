@@ -33,3 +33,8 @@ constraint:
 widget: button
 access_scope: st2138:op
 minimal_set: true
+help:
+  display_strings:
+    en: Turn the device on or off
+    fr: Mettre le dispositif en marche ou en arrêt
+    es: Encender o apagar el dispositivo
