@@ -40,13 +40,13 @@ properties:
     type: object
     patternProperties:
       ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
-        $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml
+        $ref: ./param.yaml
     additionalProperties: false
   commands:
     type: object
     patternProperties:
       ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
-        $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml
+        $ref: ./param.yaml
     additionalProperties: false
   access_scopes:
     $ref: "#/$defs/access_scopes"
@@ -158,7 +158,7 @@ $defs:
     type: object
     patternProperties:
       ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
-        $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml#/$defs/constraint
+        $ref: "./param.yaml#/$defs/constraint"
     additionalProperties: false
 
   language_packs:
@@ -211,7 +211,7 @@ $defs:
     type: object
     properties:
       name:
-        $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml#/$defs/polyglot_text
+        $ref: "./param.yaml#/$defs/polyglot_text"
       menus:
         $ref: "#/$defs/menus"
     additionalProperties: false
@@ -233,13 +233,13 @@ $defs:
     type: object
     properties:
       name:
-        $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml#/$defs/polyglot_text
+        $ref: "./param.yaml#/$defs/polyglot_text"
       param_oids:
         $ref: "#/$defs/oid_list"
       command_oids:
         $ref: "#/$defs/oid_list"
       client_hints:
-        $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml#/$defs/client_hints
+        $ref: "./param.yaml#/$defs/client_hints"
       hidden:
         title: Hidden
         description: |
