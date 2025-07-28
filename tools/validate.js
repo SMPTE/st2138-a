@@ -30,31 +30,42 @@ const ajv = new Ajv2020({
   unevaluated: true
 });
 
-// 2. Load the param YAML schema
-const schemaPath = path.resolve(__dirname, "../interface/schemata/param.yaml");
-const rawYaml = fs.readFileSync(schemaPath, "utf8");
-const schema = yaml.parse(rawYaml);
-
-// 3. Add formats
-const addFormats = require('ajv-formats').default;
+const addFormats = require("ajv-formats").default;
 addFormats(ajv);
 
-// 4. Compile the schema
-const validate = ajv.compile(schema);
+function loadSchemaFromFile(filename) {
+    const fullPath = path.resolve(__dirname, "../interface/schemata", filename);
+    const raw = fs.readFileSync(fullPath, "utf8");
+    return yaml.parse(raw);
+  }
+  
+  // Register both schemas using their $id
+  const paramSchema = loadSchemaFromFile("param.yaml");
+  const deviceSchema = loadSchemaFromFile("device.yaml");
+  
+  ajv.addSchema(paramSchema); // must have $id
+  ajv.addSchema(deviceSchema); // must have $id
 
-// 5. Validate an object that should be rejected
-const testData = {
-  wibble: "this should not be allowed"
-};
+// Load example file to validate
+const dataPath = path.resolve(__dirname, "../examples/param.audio_meter.yaml");
+const data = yaml.parse(fs.readFileSync(dataPath, "utf8"));
 
-
+// Run validation
+const valid = ajv.getSchema(paramSchema.$id)(data);
+if (!valid) {
+  console.error("❌ Invalid:", validate.errors);
+  process.exit(1);
+} else {
+  console.log("✅ Valid!");
+}
 
 'use strict';
 
 class Validator {
     constructor(schemaDir = 'interface/schemata') {
  
-        this.paramValidator = validate;
+        this.paramValidator = ajv.getSchema(paramSchema.$id);
+        this.deviceValidator = ajv.getSchema(deviceSchema.$id);
     }
 
     /**
@@ -103,12 +114,26 @@ class Validator {
     }
 
     /**
-     * Validates input file against device schema
+     * Validates input file against the schema indicated by the filename
      * @param {string} filePath - Path to the input file
      * @returns {boolean} - true if the data is valid, false otherwise
      */
     validateDeviceFile(filePath) {
-        throw new Error('Device schema not available. Please create a device schema file or remove device validation functionality.');
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`Cannot open input file at: ${filePath}`);
+        }
+
+        const inputData = fs.readFileSync(filePath, 'utf8');
+        const fileExtension = path.extname(filePath).toLowerCase();
+        
+        // Determine format based on file extension
+        let format = 'json';
+        if (fileExtension === '.yaml' || fileExtension === '.yml') {
+            format = 'yaml';
+        }
+
+        const data = this.parseInput(inputData, format);
+        return this.validateDevice(data);
     }
 
     /**
@@ -140,7 +165,14 @@ class Validator {
      * @returns {boolean} - true if the data is valid, false otherwise
      */
     validateDevice(data) {
-        throw new Error('Device schema not available. Please create a device schema file or remove device validation functionality.');
+        let valid = false;
+        if (this.deviceValidator(data)) {
+            console.log(`Input was valid against the device schema.`);
+            valid = true;
+        } else {
+            this.showErrors(this.deviceValidator.errors);
+        }
+        return valid;    
     }
 
     /**
