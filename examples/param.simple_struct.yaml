@@ -44,3 +44,6 @@ value: # Leeds United's Elland Road Stadium
       longitude:
         float32_value: -1.572222
 
+client_hints:
+  ui_type: map
+  website: https://leedsunited.com

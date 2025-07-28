@@ -63,6 +63,9 @@ properties:
     $ref: "#/$defs/widget"
   access_scope:
     $ref: "#/$defs/access_scope"
+  client_hints:
+    $ref: "#/$defs/client_hints"
+    
 
 
 
@@ -925,3 +928,18 @@ $defs:
       case the device's default access scope is used.
     type: string
     enum: [st2138:mon, st2138:op, st2138:cfg, st2138:adm]
+
+  client_hints:
+    title: Client Hints
+    description: |
+      Additional information to assist clients in rendering the parameter.
+      The keys are arbitrary, and the values are arbitrary strings.
+      Length limit of 32 characters is to prevent abuse.
+    type: object
+    patternProperties:
+      ^[a-zA-Z0-9_-]{1,32}$:
+        type: string
+    additionalProperties: false
+
+
+
