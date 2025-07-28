@@ -46,6 +46,8 @@ properties:
     $ref: "#/$defs/access_scopes"
   default_scope:
     $ref: "#/$defs/default_scope"
+  slot:
+    $ref: "#/$defs/slot"
 additionalProperties: false
 
 $defs:
@@ -74,3 +76,24 @@ $defs:
       explicitly, or implicitly by inheritance
     type: string
     default: ""
+
+  slot:
+    title: Slot
+    description: |
+      The slot number of the device. Must be unique within the connection.
+    type: integer
+    default: 0
+    minimum: 0
+    maximum: 65535
+
+  slot_list:
+    title: Slot List
+    description: |
+      A list of slot numbers.
+    type: array
+    items:
+      $ref: "#/$defs/slot"
+    uniqueItems: true
+    additionalItems: false
+
+    

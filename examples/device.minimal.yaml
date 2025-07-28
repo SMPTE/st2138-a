@@ -2,6 +2,8 @@
 # This is a valid device model, but it is not a complete device model.
 # It is used to test the device schema.
 
+slot: 1
+
 params:
   product:
     type: STRUCT
