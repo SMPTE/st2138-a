@@ -64,6 +64,8 @@ properties:
     $ref: "#/$defs/constraint_map"
   language_packs:
     $ref: "#/$defs/language_packs"
+  menu_groups:
+    $ref: "#/$defs/menu_groups"
 additionalProperties: false
 
 $defs:
@@ -110,7 +112,6 @@ $defs:
     items:
       $ref: "#/$defs/slot"
     uniqueItems: true
-    additionalItems: false
 
   detail_level:
     title: Detail Level
@@ -194,4 +195,70 @@ $defs:
         additionalProperties:
           type: string
 
+  menu_groups:
+    title: Menu Groups
+    description: |
+      A map of menu groups.
+    type: object
+    patternProperties:
+      ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
+        $ref: "#/$defs/menu_group"
+  
+  menu_group:
+    title: Menu Group
+    description: |
+      A operationally logical grouping of menus.
+    type: object
+    properties:
+      name:
+        $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml#/$defs/polyglot_text
+      menus:
+        $ref: "#/$defs/menus"
+    additionalProperties: false
 
+  menus:
+    title: Menus
+    description: |
+      A map of menus.
+    type: object
+    patternProperties:
+      ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
+        $ref: "#/$defs/menu"
+    additionalProperties: false
+
+  menu:
+    title: Menu
+    description: |
+      A logical grouping of parameters or commands (or both)
+    type: object
+    properties:
+      name:
+        $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml#/$defs/polyglot_text
+      param_oids:
+        $ref: "#/$defs/oid_list"
+      command_oids:
+        $ref: "#/$defs/oid_list"
+      client_hints:
+        $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml#/$defs/client_hints
+      hidden:
+        title: Hidden
+        description: |
+          Whether the menu should be hidden in the client GUI.
+        type: boolean
+        default: false
+      disabled:
+        title: Disabled
+        description: |
+          Whether the menu should be disabled (shown as read-only) in the client GUI.
+        type: boolean
+        default: false
+    additionalProperties: false
+    
+  oid_list:
+    title: OID List
+    description: |
+      A list of fully qualified OIDs.
+    type: array
+    items:
+      type: string
+      format: json-pointer

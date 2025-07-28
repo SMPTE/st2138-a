@@ -109,4 +109,25 @@ language_packs:
         status: Status
         product: Producto
 
+# Minimal example of a menu group "Status" that gets its name from a 
+# language pack.
+# It contains just one collection of menus, "Product" That also gets
+# its name from a language pack.
+# The menu contains just the product parameter and no commands.
+# The menu group is neither hidden nor disabled.
+menu_groups:
+  status:
+    name: 
+      display_strings:
+        $key: status
+    menus:
+      product:
+        name:
+          display_strings:
+            $key: product
+        param_oids:
+          - /product
+        hidden: false
+        disabled: false
+
 
