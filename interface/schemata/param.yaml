@@ -59,6 +59,10 @@ properties:
     $ref: "#/$defs/max_length"
   total_length: # only valid for STRING_ARRAY, removed from other specializations
     $ref: "#/$defs/total_length"
+  widget:
+    $ref: "#/$defs/widget"
+  access_scope:
+    $ref: "#/$defs/access_scope"
 
 
 
@@ -907,3 +911,17 @@ $defs:
     type: integer
     default: 0
     minimum: 0
+
+  widget:
+    title: UI Widget
+    description: Recommended UI widget to use for the parameter
+    type: string
+
+  access_scope:
+    title: Access Scope
+    description: |
+      The parameter's access scope. If not present, the parameter's parent's
+      access scope is used unless the parameter is a top-level one, in which
+      case the device's default access scope is used.
+    type: string
+    enum: [st2138:mon, st2138:op, st2138:cfg, st2138:adm]

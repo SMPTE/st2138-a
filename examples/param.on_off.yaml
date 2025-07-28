@@ -27,3 +27,4 @@ constraint:
             fr: Marche
             es: Encendido
 widget: button
+access_scope: st2138:op
