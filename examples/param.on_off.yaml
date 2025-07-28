@@ -26,4 +26,4 @@ constraint:
             en: On
             fr: Marche
             es: Encendido
-
+widget: button
