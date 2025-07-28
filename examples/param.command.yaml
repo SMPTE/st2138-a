@@ -1,0 +1,17 @@
+# Example of a command object with response flag
+# This example is a <Play> button for a tape transport
+# The value is the requested play speed.
+# This command does not provide a response.
+
+name:
+  display_strings:
+    en: ▶︎
+
+widget: button
+
+type: FLOAT32
+
+value:
+  float32_value: 1.0
+
+response: false

@@ -65,7 +65,8 @@ properties:
     $ref: "#/$defs/access_scope"
   client_hints:
     $ref: "#/$defs/client_hints"
-    
+  response:
+    $ref: "#/$defs/response"
 
 
 
@@ -941,5 +942,10 @@ $defs:
         type: string
     additionalProperties: false
 
-
+  response: 
+    title: Response
+    description: | 
+      Flag to indicate whether the parent command object produces a response.
+    type: boolean
+    default: false
 
