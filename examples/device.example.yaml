@@ -1,0 +1,88 @@
+# Example of a device model
+# While valid, it's purpose is to show the different elements of a device
+# rather than do any media processing.
+
+# Slot must be unique within the context of an API connection
+slot: 1
+
+# How much information the device will provide to the client.
+detail_level: FULL
+
+# Whether the device supports multi-set.
+multi_set_enabled: true
+
+# Whether the device supports subscriptions.
+subscriptions: false
+
+# Constraints can be shared between parameters if they're defined here.
+constraints:
+  # Example of a shared constraint. Parameters can use via ref_oid.
+  on_off:
+    type: INT_CHOICE
+    int32_choice:
+      choices:
+        - value: 0
+          name:
+            display_strings:
+              en: Off
+              fr: Arrêt
+              es: Apagado
+        - value: 1
+          name:
+            display_strings:
+              en: On
+              fr: Marche
+              es: Encendido
+
+# Our device's parameters - the minimum required by the Catena Model standard.
+params:
+  product:
+    type: STRUCT
+    name:
+      display_strings:
+        en: Product Information
+    params:
+      name:
+        type: STRING
+        value: 
+          string_value: Minimal Device
+      version:
+        type: STRING
+        value:
+          string_value: 1.0.0
+      vendor:
+        type: STRING
+        value:
+          string_value: SMPTE
+    
+# list the access scopes supported by the device.
+# this one supports all scopes.
+access_scopes:
+  - st2138:mon
+  - st2138:mon:w
+  - st2138:op
+  - st2138:op:w
+  - st2138:cfg
+  - st2138:cfg:w
+  - st2138:adm
+  - st2138:adm:w
+
+# The default scope is the one used when no scope is specified.
+default_scope: st2138:mon
+
+# Commands are the actions that the device can perform.
+# Unlike parameters, commands are alwaysstateless.
+commands:
+  play: # an example command
+    name:
+      display_strings:
+        en: ▶︎
+    widget: button
+    type: FLOAT32
+    value:
+      float32_value: 1.0
+    response: false
+
+
+
+

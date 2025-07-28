@@ -42,12 +42,26 @@ properties:
       ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
         $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml
     additionalProperties: false
+  commands:
+    type: object
+    patternProperties:
+      ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
+        $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml
+    additionalProperties: false
   access_scopes:
     $ref: "#/$defs/access_scopes"
   default_scope:
     $ref: "#/$defs/default_scope"
   slot:
     $ref: "#/$defs/slot"
+  detail_level:
+    $ref: "#/$defs/detail_level"
+  multi_set_enabled:
+    $ref: "#/$defs/multi_set_enabled"
+  subscriptions:
+    $ref: "#/$defs/subscriptions"
+  constraints:
+    $ref: "#/$defs/constraint_map"
 additionalProperties: false
 
 $defs:
@@ -95,5 +109,53 @@ $defs:
       $ref: "#/$defs/slot"
     uniqueItems: true
     additionalItems: false
+
+  detail_level:
+    title: Detail Level
+    description: |
+      The level of detail in device messages and parameter updates.
+      'full' indicates that all parameters are reported, 
+      'minimal' that only the minimal set is, 
+      'subscriptions' reports the minimal set plus identified subscribed
+      parameters, 
+      'commands' reports only descriptors for commands and not for parameters,
+      and 'none' indicates that no parameters or commands should be
+      automatically reported by the device (parameter descriptors, command
+      descriptors, and values can still be pulled).
+    type: string
+    enum:
+      - FULL
+      - MINIMAL
+      - SUBSCRIPTIONS
+      - COMMANDS
+      - NONE
+    default: FULL
+
+  multi_set_enabled:
+    title: Multi Set Enabled Flag
+    description: |
+      If true, the device supports multi-set operations. These are idempotent
+      operations that can be used to set multiple parameters in a single
+      operation.
+    type: boolean
+    default: false
+
+  subscriptions:
+    title: Subscriptions
+    description: |
+      When true, indicates that the device supports subscription-based 
+      access to subsets of parameters.
+    type: boolean
+    default: false
+
+  constraint_map:
+    title: Constraint Map
+    description: |
+      A map of top-level shared constraints
+    type: object
+    patternProperties:
+      ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
+        $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml#/$defs/constraint
+    additionalProperties: false
 
     
