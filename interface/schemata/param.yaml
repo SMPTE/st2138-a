@@ -78,8 +78,6 @@ properties:
   stateless:
     $ref: "#/$defs/stateless"
 
-
-
 # to allow for the schema to be extended, replace additionalProperties with unevaluatedProperties.
 # note that this requires a validator that supports the 2022-12 draft of the spec.
 # AJV does have support, but Cursor / vscode's intellisense syntax highlighting does not.
@@ -1007,7 +1005,6 @@ $defs:
             description: The SHA-256 digest of the import file.
         required: [file]
         additionalProperties: false
-
 
   oid_aliases:
     title: OID Aliases
