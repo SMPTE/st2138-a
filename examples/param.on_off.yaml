@@ -1,6 +1,8 @@
 # Example of a simple on/off parameter
 # The values are constrained to 0 or 1
 # which map to button labels in multiple languages
+# the UI is hinted to use a button with two states
+# the access scope is set to operate
 
 name:
   display_strings:
