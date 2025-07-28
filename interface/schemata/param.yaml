@@ -75,6 +75,8 @@ properties:
     $ref: "#/$defs/import"
   oid_aliases:
     $ref: "#/$defs/oid_aliases"
+  stateless:
+    $ref: "#/$defs/stateless"
 
 
 
@@ -1016,4 +1018,11 @@ $defs:
     type: array
     items:
       type: string
-    
+
+  stateless:
+    title: Stateless Flag
+    description: |
+      When true, indicates that the parameter is stateless and should not be
+      persisted. Examples: time of day, audio meter, etc.
+    type: boolean
+    default: false
