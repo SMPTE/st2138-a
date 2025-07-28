@@ -62,6 +62,8 @@ properties:
     $ref: "#/$defs/subscriptions"
   constraints:
     $ref: "#/$defs/constraint_map"
+  language_packs:
+    $ref: "#/$defs/language_packs"
 additionalProperties: false
 
 $defs:
@@ -158,4 +160,38 @@ $defs:
         $ref: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/param.yaml#/$defs/constraint
     additionalProperties: false
 
-    
+  language_packs:
+    title: Language Packs
+    description: |
+      Language Packs A map of language identifiers to resource dictionaries
+      or language packs for each language supported. The keys are 
+      from the ISO 639-1 language code, e.g. 
+      \"es\" for Global Spanish.
+      \"es-CO\" for Colombian Spanish.
+      \"pl\" for Jezyk polski"
+    type: object
+    properties:
+      packs:
+        type: object
+        additionalProperties:
+          $ref: "#/$defs/language_pack"
+
+  language_pack:
+    title: Language Pack
+    description: |
+      Language Pack A map of string identifiers, e.g. \"greeting\" to strings
+      which are all in the same language.
+    type: object
+    properties:
+      name:
+        type: string
+        description: |
+          The name of the language pack.
+      words:
+        type: object
+        description: |
+          A map of string identifiers to strings.
+        additionalProperties:
+          type: string
+
+

@@ -83,6 +83,30 @@ commands:
       float32_value: 1.0
     response: false
 
-
+# Language packs can be used to simplify and future proof strings that appear
+# in the UI such as parameter names. Instead of defining the display strings
+# inline in the various object definitions, we can define them here and reference
+# them by name.
+# The API also supports field installations of language packs.
+language_packs:
+  packs:
+    en:
+      name:
+        English
+      words:
+        status: Status
+        product: Product
+    fr:
+      name:
+        French
+      words:
+        status: Statut
+        product: Produit
+    es:
+      name:
+        Spanish
+      words:
+        status: Status
+        product: Producto
 
 
