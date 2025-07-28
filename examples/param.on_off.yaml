@@ -3,6 +3,8 @@
 # which map to button labels in multiple languages
 # the UI is hinted to use a button with two states
 # the access scope is set to operate
+# the parameter is flagged as being part of the device's minimal set of
+# parameters
 
 name:
   display_strings:
@@ -30,3 +32,4 @@ constraint:
             es: Encendido
 widget: button
 access_scope: st2138:op
+minimal_set: true

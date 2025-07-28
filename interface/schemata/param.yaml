@@ -67,6 +67,8 @@ properties:
     $ref: "#/$defs/client_hints"
   response:
     $ref: "#/$defs/response"
+  minimal_set:
+    $ref: "#/$defs/minimal_set"
 
 
 
@@ -948,4 +950,13 @@ $defs:
       Flag to indicate whether the parent command object produces a response.
     type: boolean
     default: false
+
+  minimal_set:
+    title: Minimal Set Flag
+    description: |
+      When true, indicates that the parameter is part of the minimal set of
+      parameters that should be reported by the device.
+    type: boolean
+    default: false
+    
 
