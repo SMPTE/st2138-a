@@ -48,7 +48,7 @@ get:
       required: false
       description: The level of detail to request the device in
       schema:
-        $ref: ../../schemata/device.yaml#/$defs/detail_level
+        $ref: "../../schemata/device.yaml#/$defs/detail_level"
 
   tags:
     - Discovery
@@ -61,18 +61,15 @@ get:
           schema:
             $ref: ../../schemata/device.yaml
   
-          example: 
-            {
-              "data": [
-                "device": {  
-                  "slot": 1,  
-                  "multiSetEnabled": true,
-                  "subscriptions": true,
-                  "accessScopes": [ "st2138:mon", "st2138:op", "st2138:cfg", "st2138:adm"],
-                  "defaultScope": "st2138:op"
-                }
-              ]
+          example:   
+            {  
+              "slot": 1,  
+              "multi_set_enabled": true,
+              "subscriptions": true,
+              "access_scopes": [ "st2138:mon", "st2138:op", "st2138:cfg", "st2138:adm"],
+              "default_scope": "st2138:op"
             }
+           
     
     "500":
       $ref: '../openapi.yaml#/components/responses/InternalServerError'

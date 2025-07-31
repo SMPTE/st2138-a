@@ -46,7 +46,7 @@ get:
           schema:
             $ref: ../../schemata/device.yaml#/$defs/slot_list
   
-          example: { "slots": [2,3,5,7,11] }
+          example: [2,3,5,7,11]
     
     "500":
       $ref: '../openapi.yaml#/components/responses/InternalServerError'
