@@ -67,22 +67,22 @@ components:
 
   responses:
 
-    "NotFound": # 404
+    NotFound: # 404
       description: The requested resource was not found
 
-    "BadRequest": # 400
+    BadRequest: # 400
       description: Bad Request - Invalid input parameters or malformed request
 
-    "Unauthorized": # 401
+    Unauthorized: # 401
       description: Unauthorized, access token is either missing or invalid
 
-    "Forbidden": # 403
+    Forbidden: # 403
       description: Forbidden, insufficient permission for access
 
-    "InternalServerError": # 500
+    InternalServerError: # 500
       description: An error occurred while processing the request
 
-    "ServiceUnavailable": # 503
+    ServiceUnavailable: # 503
       description: The service is temporarily unavailable
 
   securitySchemes:

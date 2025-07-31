@@ -41,25 +41,27 @@ get:
       required: true
       description: The slot of the device model to request components from
       schema:
-        $ref: ../../schemata/device.yaml#/$defs/slot
+        $ref: "https://smpte.github.io/st2138-a/interface/schemata/device.yaml#/$defs/slot"
+        
   
     - name: Detail-Level
       in: header
       required: false
       description: The level of detail to request the device in
       schema:
-        $ref: "../../schemata/device.yaml#/$defs/detail_level"
+        $ref: "https://smpte.github.io/st2138-a/interface/schemata/device.yaml#/$defs/detail_level"
+        default: "full"
 
   tags:
     - Discovery
 
   responses:
-    "200":
+    '200':
       description: A device model
       content:
         application/json:
           schema:
-            $ref: ../../schemata/device.yaml
+            $ref: https://smpte.github.io/st2138-a/interface/schemata/device.yaml
   
           example:   
             {  
@@ -69,22 +71,21 @@ get:
               "access_scopes": [ "st2138:mon", "st2138:op", "st2138:cfg", "st2138:adm"],
               "default_scope": "st2138:op"
             }
-           
     
-    "500":
+    '500':
       $ref: '../openapi.yaml#/components/responses/InternalServerError'
 
-    "400":
+    '400':
       $ref: '../openapi.yaml#/components/responses/BadRequest'
 
-    "401":
+    '401':
       $ref: '../openapi.yaml#/components/responses/Unauthorized'
 
-    "403":
+    '403':
       $ref: '../openapi.yaml#/components/responses/Forbidden'
 
-    "404":
+    '404':
       $ref: '../openapi.yaml#/components/responses/NotFound'
 
-    "503":
+    '503':
       $ref: '../openapi.yaml#/components/responses/ServiceUnavailable'

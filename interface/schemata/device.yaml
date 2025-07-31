@@ -37,17 +37,9 @@ description: |
 type: object
 properties:
   params:
-    type: object
-    patternProperties:
-      ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
-        $ref: "#/$defs/param"
-    additionalProperties: false
+    $ref: "#/$defs/param_map"
   commands:
-    type: object
-    patternProperties:
-      ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
-        $ref: "#/$defs/param"
-    additionalProperties: false
+    $ref: "#/$defs/param_map"
   access_scopes:
     $ref: "#/$defs/access_scopes"
   default_scope:
@@ -341,9 +333,9 @@ $defs:
       The keys are the names of the parameters.
     type: object
     patternProperties:
-      ^[a-zA-Z]\w{0,30}$:
+      ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
         # the regex on the line above shoul be identical to the one in #$defs/simple_oid
-        $ref: "#"
+        $ref: "#/$defs/param"
     minProperties: 1
     additionalProperties: false
 

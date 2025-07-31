@@ -39,29 +39,29 @@ get:
     - Discovery
 
   responses:
-    "200":
+    '200':
       description: A list of the slot numbers that are occupied by a device
       content:
         application/json:
           schema:
-            $ref: ../../schemata/device.yaml#/$defs/slot_list
+            $ref: https://smpte.github.io/st2138-a/interface/schemata/device.yaml#/$defs/slot_list
   
           example: [2,3,5,7,11]
     
-    "500":
+    '500':
       $ref: '../openapi.yaml#/components/responses/InternalServerError'
 
-    "400":
+    '400':
       $ref: '../openapi.yaml#/components/responses/BadRequest'
           
-    "401":
+    '401':
       $ref: '../openapi.yaml#/components/responses/Unauthorized'
 
-    "403":
+    '403':
       $ref: '../openapi.yaml#/components/responses/Forbidden'
 
-    "404":
+    '404':
       $ref: '../openapi.yaml#/components/responses/NotFound'
 
-    "503":
+    '503':
       $ref: '../openapi.yaml#/components/responses/ServiceUnavailable'
