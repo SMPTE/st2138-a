@@ -27,7 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-$id: https://raw.githubusercontent.com/SMPTE/st2138-a/main/interface/schemata/device.yaml
+$id: https://smpte.github.io/st2138-a/interface/schemata/device.yaml
 $schema: https://json-schema.org/draft/2020-12/schema
 title: Schema for Catena's Device Model
 description: |
