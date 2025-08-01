@@ -44,7 +44,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: https://smpte.github.io/st2138-a/interface/schemata/device.yaml#/$defs/slot_list
+            $ref: "../../schemata/device.json#/$defs/slot_list"
   
           example: [2,3,5,7,11]
     

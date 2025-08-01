@@ -41,7 +41,7 @@ get:
       required: true
       description: The slot of the device model to request components from
       schema:
-        $ref: "https://smpte.github.io/st2138-a/interface/schemata/device.yaml#/$defs/slot"
+        $ref: "../../schemata/device.json#/$defs/slot"
         
   
     - name: Detail-Level
@@ -49,7 +49,7 @@ get:
       required: false
       description: The level of detail to request the device in
       schema:
-        $ref: "https://smpte.github.io/st2138-a/interface/schemata/device.yaml#/$defs/detail_level"
+        $ref: "../../schemata/device.json#/$defs/detail_level"
         default: "full"
 
   tags:
@@ -61,7 +61,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: https://smpte.github.io/st2138-a/interface/schemata/device.yaml
+            $ref: "../../schemata/device.json"
   
           example:   
             {  

@@ -1,4 +1,5 @@
 node_modules/
 package-lock.json
-schemata/json/
+schemata/device.json
 .redocly.yaml
+

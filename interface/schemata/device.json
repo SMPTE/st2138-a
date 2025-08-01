@@ -1,5 +1,4 @@
 {
-  "$id": "https://smpte.github.io/st2138-a/interface/schemata/device.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Schema for Catena's Device Model",
   "description": "Intended to assist humans to author Catena device models as JSON files as\nsome IDEs can use schemata such as this one to lint models.\n",

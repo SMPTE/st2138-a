@@ -27,9 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-# NB we convert this to a json file to avoid issues with the openapi
-# validator and swagger-ui
-$id: https://smpte.github.io/st2138-a/interface/schemata/device.json
+$id: https://smpte.github.io/st2138-a/interface/schemata/device.yaml
 $schema: https://json-schema.org/draft/2020-12/schema
 title: Schema for Catena's Device Model
 description: |
