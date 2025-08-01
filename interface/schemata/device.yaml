@@ -1249,3 +1249,49 @@ $defs:
       persisted. Examples: time of day, audio meter, etc.
     type: boolean
     default: false
+
+  device_component:
+    title: Device Component
+    description: |
+      The device model can be broken into smaller components: parameters,
+      commands, menus, etc.
+    type: object
+    oneOf:
+      - $ref: "#" # The entire device model can be sent as a single component
+      - $ref: "#/$defs/component_param"
+      - $ref: "#/$defs/component_command"
+      # - $ref: "#/$defs/component_menu"
+      # - $ref: "#/$defs/component_constraint"
+      # - $ref: "#/$defs/component_language_pack"
+
+  component_param:
+    title: Component Param
+    description: |
+      A top-level parameter descriptor plus its oid.
+      type: object
+    properties:
+      oid:
+        $ref: "#/$defs/simple_oid"
+      param:
+        $ref: "#/$defs/param"
+      required:
+        - oid
+        - param
+      additionalProperties: false
+
+  component_command:
+    title: Component Command
+    description: |
+      A command descriptor plus its oid.
+    type: object
+    properties:
+      oid:
+        $ref: "#/$defs/simple_oid"
+      command:
+        $ref: "#/$defs/param"
+      required:
+        - oid
+        - command
+      additionalProperties: false
+
+  

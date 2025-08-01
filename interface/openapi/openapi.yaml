@@ -63,6 +63,9 @@ paths:
   /{slot}:
     $ref: './paths/Device.yaml'
 
+  /{slot}/stream:
+    $ref: './paths/DeviceStream.yaml'
+
 components:
 
   responses:

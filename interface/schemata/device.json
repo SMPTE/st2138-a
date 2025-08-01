@@ -1566,6 +1566,57 @@
       "description": "When true, indicates that the parameter is stateless and should not be\npersisted. Examples: time of day, audio meter, etc.\n",
       "type": "boolean",
       "default": false
+    },
+    "device_component": {
+      "title": "Device Component",
+      "description": "The device model can be broken into smaller components: parameters,\ncommands, menus, etc.\n",
+      "type": "object",
+      "oneOf": [
+        {
+          "$ref": "#"
+        },
+        {
+          "$ref": "#/$defs/component_param"
+        },
+        {
+          "$ref": "#/$defs/component_command"
+        }
+      ]
+    },
+    "component_param": {
+      "title": "Component Param",
+      "description": "A top-level parameter descriptor plus its oid.\ntype: object\n",
+      "properties": {
+        "oid": {
+          "$ref": "#/$defs/simple_oid"
+        },
+        "param": {
+          "$ref": "#/$defs/param"
+        },
+        "required": [
+          "oid",
+          "param"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "component_command": {
+      "title": "Component Command",
+      "description": "A command descriptor plus its oid.\n",
+      "type": "object",
+      "properties": {
+        "oid": {
+          "$ref": "#/$defs/simple_oid"
+        },
+        "command": {
+          "$ref": "#/$defs/param"
+        },
+        "required": [
+          "oid",
+          "command"
+        ],
+        "additionalProperties": false
+      }
     }
   }
 }

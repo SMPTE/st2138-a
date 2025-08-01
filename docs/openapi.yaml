@@ -117,6 +117,61 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/stream:
+    get:
+      summary: Gets a device model with as a stream of stringified DeviceComponents.
+      operationId: DeviceStreamRequest
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model to request components from
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: Detail-Level
+          in: header
+          required: false
+          description: The level of detail to request the device in
+          schema:
+            $ref: '#/components/schemas/detail_level'
+      tags:
+        - Discovery
+      responses:
+        '200':
+          description: |
+            A stream of device components from the device in the
+            specified slot. These updates are sent as server-sent events and
+            have stringified JSON in their data field.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                data: <stringified ComponentParam>
+                data: <stringified ComponentConstraint>
+                data: <more DeviceComponents>
+              x-sse-event-schema:
+                title: Device Component
+                description: |
+                  The device model can be broken into smaller components: parameters,
+                  commands, menus, etc.
+                type: object
+                oneOf:
+                  - $ref: '#/components/schemas/device'
+                  - $ref: '#/components/schemas/component_param'
+                  - $ref: '#/components/schemas/component_command'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 components:
   responses:
     NotFound:
@@ -1193,6 +1248,65 @@ components:
         persisted. Examples: time of day, audio meter, etc.
       type: boolean
       default: false
+    device:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      title: Schema for Catena's Device Model
+      description: |
+        Intended to assist humans to author Catena device models as JSON files as
+        some IDEs can use schemata such as this one to lint models.
+      type: object
+      properties:
+        params:
+          $ref: '#/components/schemas/param_map'
+        commands:
+          $ref: '#/components/schemas/param_map'
+        access_scopes:
+          $ref: '#/components/schemas/access_scopes'
+        default_scope:
+          $ref: '#/components/schemas/default_scope'
+        slot:
+          $ref: '#/components/schemas/slot'
+        detail_level:
+          $ref: '#/components/schemas/detail_level'
+        multi_set_enabled:
+          $ref: '#/components/schemas/multi_set_enabled'
+        subscriptions:
+          $ref: '#/components/schemas/subscriptions'
+        constraints:
+          $ref: '#/components/schemas/constraint_map'
+        language_packs:
+          $ref: '#/components/schemas/language_packs'
+        menu_groups:
+          $ref: '#/components/schemas/menu_groups'
+      additionalProperties: false
+    component_param:
+      title: Component Param
+      description: |
+        A top-level parameter descriptor plus its oid.
+        type: object
+      properties:
+        oid:
+          $ref: '#/components/schemas/simple_oid'
+        param:
+          $ref: '#/components/schemas/param'
+        required:
+          - oid
+          - param
+        additionalProperties: false
+    component_command:
+      title: Component Command
+      description: |
+        A command descriptor plus its oid.
+      type: object
+      properties:
+        oid:
+          $ref: '#/components/schemas/simple_oid'
+        command:
+          $ref: '#/components/schemas/param'
+        required:
+          - oid
+          - command
+        additionalProperties: false
     access_scopes:
       title: Access Scopes
       description: |
@@ -1256,40 +1370,19 @@ components:
       patternProperties:
         ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
           $ref: '#/components/schemas/menu_group'
-    device:
-      $schema: https://json-schema.org/draft/2020-12/schema
-      title: Schema for Catena's Device Model
-      description: |
-        Intended to assist humans to author Catena device models as JSON files as
-        some IDEs can use schemata such as this one to lint models.
-      type: object
-      properties:
-        params:
-          $ref: '#/components/schemas/param_map'
-        commands:
-          $ref: '#/components/schemas/param_map'
-        access_scopes:
-          $ref: '#/components/schemas/access_scopes'
-        default_scope:
-          $ref: '#/components/schemas/default_scope'
-        slot:
-          $ref: '#/components/schemas/slot'
-        detail_level:
-          $ref: '#/components/schemas/detail_level'
-        multi_set_enabled:
-          $ref: '#/components/schemas/multi_set_enabled'
-        subscriptions:
-          $ref: '#/components/schemas/subscriptions'
-        constraints:
-          $ref: '#/components/schemas/constraint_map'
-        language_packs:
-          $ref: '#/components/schemas/language_packs'
-        menu_groups:
-          $ref: '#/components/schemas/menu_groups'
-      additionalProperties: false
     help:
       title: Help
       description: |
         Help text or tool tip for the parameter.
       $ref: '#/components/schemas/polyglot_text'
       default: ''
+    device_component:
+      title: Device Component
+      description: |
+        The device model can be broken into smaller components: parameters,
+        commands, menus, etc.
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/device'
+        - $ref: '#/components/schemas/component_param'
+        - $ref: '#/components/schemas/component_command'
