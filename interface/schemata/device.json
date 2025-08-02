@@ -470,6 +470,13 @@
       "pattern": "^[a-zA-Z]\\w{0,30}$",
       "default": ""
     },
+    "fqoid": {
+      "title": "Fully Qualified OID",
+      "description": "A fully qualified OID is used as a key in a map of string keys to values.\nIt is a simple OID with a leading slash. It's a \"headless\" json-pointer\nwith simple OIDs as the segments.\n",
+      "type": "string",
+      "pattern": "^([a-zA-Z]\\w{0,30})(/([a-zA-Z]\\w{0,30})){0,30}$",
+      "default": ""
+    },
     "template_oid": {
       "title": "Template OID",
       "description": "The fully qualified OID of the template that this parameter is based on.",
@@ -1569,7 +1576,7 @@
     },
     "device_component": {
       "title": "Device Component",
-      "description": "The device model can be broken into smaller components: parameters,\ncommands, menus, etc.\n",
+      "description": "The device model can be broken into smaller components: parameters,\ncommands, menus, etc. The entire device model can be sent as a single\ncomponent.\n",
       "type": "object",
       "oneOf": [
         {
@@ -1580,6 +1587,15 @@
         },
         {
           "$ref": "#/$defs/component_command"
+        },
+        {
+          "$ref": "#/$defs/component_menu"
+        },
+        {
+          "$ref": "#/$defs/component_constraint"
+        },
+        {
+          "$ref": "#/$defs/component_language_pack"
         }
       ]
     },
@@ -1614,6 +1630,61 @@
         "required": [
           "oid",
           "command"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "component_menu": {
+      "title": "Component Menu",
+      "description": "A menudescriptor plus its fqoid.\n",
+      "type": "object",
+      "properties": {
+        "oid": {
+          "$ref": "#/$defs/fqoid"
+        },
+        "menu": {
+          "$ref": "#/$defs/menu"
+        },
+        "required": [
+          "oid",
+          "menu"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "component_constraint": {
+      "title": "Component Constraint",
+      "description": "A constraint descriptor plus its oid.\n",
+      "type": "object",
+      "properties": {
+        "oid": {
+          "$ref": "#/$defs/simple_oid"
+        },
+        "constraint": {
+          "$ref": "#/$defs/constraint"
+        },
+        "required": [
+          "oid",
+          "constraint"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "component_language_pack": {
+      "title": "Component Language Pack",
+      "description": "A language pack plus its oid.\n",
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "language_pack": {
+          "$ref": "#/$defs/language_pack"
+        },
+        "required": [
+          "language",
+          "language_pack"
         ],
         "additionalProperties": false
       }

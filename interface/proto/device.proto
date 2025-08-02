@@ -144,7 +144,7 @@ message DeviceComponent {
    * Defines a command to be mapped to device.commands.oid */
   message ComponentCommand {
     string oid = 1;
-    Param param = 2;
+    Param command = 2;
   }
 
   /* A language pack. */

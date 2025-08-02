@@ -430,6 +430,16 @@ $defs:
     type: string
     pattern: ^[a-zA-Z]\w{0,30}$
     default: ""
+  
+  fqoid:
+    title: Fully Qualified OID
+    description: |
+      A fully qualified OID is used as a key in a map of string keys to values.
+      It is a simple OID with a leading slash. It's a "headless" json-pointer
+      with simple OIDs as the segments.
+    type: string
+    pattern: ^([a-zA-Z]\w{0,30})(/([a-zA-Z]\w{0,30})){0,30}$
+    default: ""
 
   template_oid:
     title: Template OID
@@ -1254,15 +1264,16 @@ $defs:
     title: Device Component
     description: |
       The device model can be broken into smaller components: parameters,
-      commands, menus, etc.
+      commands, menus, etc. The entire device model can be sent as a single
+      component.
     type: object
     oneOf:
-      - $ref: "#" # The entire device model can be sent as a single component
+      - $ref: "#"
       - $ref: "#/$defs/component_param"
       - $ref: "#/$defs/component_command"
-      # - $ref: "#/$defs/component_menu"
-      # - $ref: "#/$defs/component_constraint"
-      # - $ref: "#/$defs/component_language_pack"
+      - $ref: "#/$defs/component_menu"
+      - $ref: "#/$defs/component_constraint"
+      - $ref: "#/$defs/component_language_pack"
 
   component_param:
     title: Component Param
@@ -1294,4 +1305,48 @@ $defs:
         - command
       additionalProperties: false
 
-  
+  component_menu:
+    title: Component Menu
+    description: |
+      A menudescriptor plus its fqoid.
+    type: object
+    properties:
+      oid:
+        $ref: "#/$defs/fqoid"
+      menu:
+        $ref: "#/$defs/menu"
+      required:
+        - oid
+        - menu
+      additionalProperties: false
+
+  component_constraint:
+    title: Component Constraint
+    description: |
+      A constraint descriptor plus its oid.
+    type: object
+    properties:
+      oid:
+        $ref: "#/$defs/simple_oid"
+      constraint:
+        $ref: "#/$defs/constraint"
+      required:
+        - oid
+        - constraint
+      additionalProperties: false 
+
+  component_language_pack:
+    title: Component Language Pack
+    description: |
+      A language pack plus its oid.
+    type: object
+    properties:
+      language:
+        type: string
+        maxLength: 32
+      language_pack:
+        $ref: "#/$defs/language_pack"
+      required:
+        - language
+        - language_pack
+      additionalProperties: false
