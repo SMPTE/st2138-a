@@ -1688,6 +1688,71 @@
         ],
         "additionalProperties": false
       }
+    },
+    "exception": {
+      "title": "Exception",
+      "description": "One possible response to a command.\n",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "error_message": {
+          "$ref": "#/$defs/polyglot_text"
+        },
+        "details": {
+          "type": "string"
+        }
+      }
+    },
+    "empty": {
+      "title": "Empty",
+      "description": "An empty response to a command.\n",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "command_response": {
+      "title": "Command Response",
+      "description": "Possible responses to a command.\n",
+      "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "no_response": {
+              "$ref": "#/$defs/empty"
+            }
+          },
+          "required": [
+            "no_response"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "response": {
+              "$ref": "#/$defs/value"
+            }
+          },
+          "required": [
+            "response"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "exception": {
+              "$ref": "#/$defs/exception"
+            }
+          },
+          "required": [
+            "exception"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   }
 }

@@ -65,6 +65,9 @@ paths:
 
   /{slot}/stream:
     $ref: './paths/DeviceStream.yaml'
+  
+  /{slot}/command/{fqoid}:
+    $ref: './paths/Command.yaml'
 
 components:
 

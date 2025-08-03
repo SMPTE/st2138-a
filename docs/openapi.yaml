@@ -176,6 +176,77 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/command/{fqoid}:
+    post:
+      summary: Execute a command on a device model
+      operationId: ExecuteCommand
+      security:
+        - oauth2:
+            - st2138:op:w
+        - oauth2:
+            - st2138:cfg:w
+        - oauth2:
+            - st2138:adm:w
+        - oauth2:
+            - st2138:mon:w
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model to get the value from
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: fqoid
+          in: path
+          required: true
+          description: The fully qualified object ID of the command to execute
+          schema:
+            $ref: '#/components/schemas/fqoid'
+        - name: respond
+          in: query
+          required: false
+          description: flag to suppress the server's response unless set to true
+          schema:
+            type: string
+            enum:
+              - 'true'
+            default: 'true'
+      tags:
+        - Commands
+      requestBody:
+        required: false
+        description: Optional value to pass to the command if required
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/value'
+            example:
+              float32_value: 0.5
+      responses:
+        '200':
+          description: |
+            If 'respond' is true, the server's response will one or more 'Values',
+            empty responses, or exceptions. If 'respond' is false, the server will
+            not respond with content, just the status code.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/command_response'
+              example:
+                response:
+                  string_value: Command executed successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 components:
   responses:
     NotFound:
@@ -1363,6 +1434,24 @@ components:
           - language
           - language_pack
         additionalProperties: false
+    empty:
+      title: Empty
+      description: |
+        An empty response to a command.
+      type: object
+      additionalProperties: false
+    exception:
+      title: Exception
+      description: |
+        One possible response to a command.
+      type: object
+      properties:
+        type:
+          type: string
+        error_message:
+          $ref: '#/components/schemas/polyglot_text'
+        details:
+          type: string
     access_scopes:
       title: Access Scopes
       description: |
@@ -1426,6 +1515,33 @@ components:
       patternProperties:
         ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
           $ref: '#/components/schemas/menu_group'
+    command_response:
+      title: Command Response
+      description: |
+        Possible responses to a command.
+      type: object
+      oneOf:
+        - type: object
+          properties:
+            no_response:
+              $ref: '#/components/schemas/empty'
+          required:
+            - no_response
+          additionalProperties: false
+        - type: object
+          properties:
+            response:
+              $ref: '#/components/schemas/value'
+          required:
+            - response
+          additionalProperties: false
+        - type: object
+          properties:
+            exception:
+              $ref: '#/components/schemas/exception'
+          required:
+            - exception
+          additionalProperties: false
     help:
       title: Help
       description: |
