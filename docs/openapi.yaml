@@ -699,6 +699,66 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/param-info/stream:
+    get:
+      summary: Gets information about all top-level parameters within a device model
+      operationId: TopLevelParamInfoStream
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model containing the parameters to get info for
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: recursive
+          in: query
+          required: false
+          description: Optional flag to recursively get info for all children. The presence of this parameter enables recursion, regardless of its value. (The value is ignored; any value such as "true" will have the same effect.)
+          schema:
+            type: boolean
+          style: form
+          explode: false
+      tags:
+        - Parameters
+        - Subscriptions
+      responses:
+        '200':
+          description: |
+            Returns a stream of basic information about all top-level parameters in the device model.
+            The response is a sequence of stringified JSON objects, each containing information about a single parameter.
+            Each object in the stream has the following structure:
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                data: <stringified {info: ParamInfo, array_length: 0}>
+                data: <stringified {info: ParamInfo, array_length: 1}>
+                data: <stringified {info: ParamInfo, array_length: 2}>
+              x-sse-event-schema:
+                title: Param Info
+                description: |
+                  Information about a parameter - it's id and descriptor.
+                type: object
+                properties:
+                  oid:
+                    $ref: '#/components/schemas/fqoid'
+                  param:
+                    $ref: '#/components/schemas/param'
+                required:
+                  - oid
+                  - param
+                additionalProperties: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 components:
   responses:
     NotFound:
