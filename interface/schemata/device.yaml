@@ -206,6 +206,15 @@ $defs:
         $ref: "#/$defs/polyglot_text"
       menus:
         $ref: "#/$defs/menus"
+      order:
+        type: integer
+        default: 0
+        description: |
+          The display order of the menu group.
+      required:
+        - name
+        - menus
+        - order
     additionalProperties: false
 
   menus:
@@ -244,6 +253,11 @@ $defs:
           Whether the menu should be disabled (shown as read-only) in the client GUI.
         type: boolean
         default: false
+      order:
+        type: integer
+        default: 0
+        description: |
+          The display order of the menu.
     additionalProperties: false
     
   oid_list:

@@ -63,6 +63,9 @@ message Menu {
   /* Locator for a device specific custom user interface descriptor.
    * Additional properties to assist client including ui-url */
   map<string, string> client_hints = 6;
+
+  /* The menu's display order */
+  uint32 order = 7;
 }
 
 /* A group of 'theme' related menus. */
@@ -72,4 +75,7 @@ message MenuGroup {
 
   /* The menus in the group */
   map<string, Menu> menus = 2;
+
+  /* The menu group's display order */
+  uint32 order = 3;
 }

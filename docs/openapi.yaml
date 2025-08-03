@@ -1710,6 +1710,11 @@ components:
             Whether the menu should be disabled (shown as read-only) in the client GUI.
           type: boolean
           default: false
+        order:
+          type: integer
+          default: 0
+          description: |
+            The display order of the menu.
       additionalProperties: false
     menus:
       title: Menus
@@ -1730,6 +1735,15 @@ components:
           $ref: '#/components/schemas/polyglot_text'
         menus:
           $ref: '#/components/schemas/menus'
+        order:
+          type: integer
+          default: 0
+          description: |
+            The display order of the menu group.
+        required:
+          - name
+          - menus
+          - order
       additionalProperties: false
     int32_value:
       title: INT32 Value

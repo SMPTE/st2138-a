@@ -168,7 +168,17 @@
         },
         "menus": {
           "$ref": "#/$defs/menus"
-        }
+        },
+        "order": {
+          "type": "integer",
+          "default": 0,
+          "description": "The display order of the menu group.\n"
+        },
+        "required": [
+          "name",
+          "menus",
+          "order"
+        ]
       },
       "additionalProperties": false
     },
@@ -211,6 +221,11 @@
           "description": "Whether the menu should be disabled (shown as read-only) in the client GUI.\n",
           "type": "boolean",
           "default": false
+        },
+        "order": {
+          "type": "integer",
+          "default": 0,
+          "description": "The display order of the menu.\n"
         }
       },
       "additionalProperties": false
