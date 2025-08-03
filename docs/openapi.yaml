@@ -759,6 +759,168 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/value/{fqoid}:
+    get:
+      summary: Get a parameter's value
+      operationId: GetValue
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model containing the parameters to get info for
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: fqoid
+          in: path
+          required: true
+          description: Fully qualified OID of the parameter to get info for
+          schema:
+            $ref: '#/components/schemas/fqoid'
+          default: ''
+      tags:
+        - Parameters
+      responses:
+        '200':
+          description: The parameter value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/value'
+              example:
+                string_value: Hello, World!
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      summary: Set a parameter's value
+      operationId: SetValue
+      security:
+        - oauth2:
+            - st2138:op:w
+        - oauth2:
+            - st2138:cfg:w
+        - oauth2:
+            - st2138:adm:w
+        - oauth2:
+            - st2138:mon:w
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model containing the parameters to get info for
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: fqoid
+          in: path
+          required: true
+          description: Fully qualified OID of the parameter to get info for
+          schema:
+            $ref: '#/components/schemas/fqoid'
+          default: ''
+      tags:
+        - Parameters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/value'
+            example:
+              string_value: Hello, World!
+      responses:
+        '204':
+          description: Empty response - everything is OK
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/values:
+    put:
+      summary: Sets the values of multiple parameters idempotently - i.e. either all are set or none are
+      operationId: SetValues
+      security:
+        - oauth2:
+            - st2138:op:w
+        - oauth2:
+            - st2138:cfg:w
+        - oauth2:
+            - st2138:adm:w
+        - oauth2:
+            - st2138:mon:w
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model containing the parameters to get info for
+          schema:
+            $ref: '#/components/schemas/slot'
+      tags:
+        - Parameters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      fqoid:
+                        $ref: '#/components/schemas/fqoid'
+                      value:
+                        $ref: '#/components/schemas/value'
+            example:
+              values:
+                - fqoid: ipv4
+                  value:
+                    string_value: 192.168.1.1
+                - fqoid: gateway
+                  value:
+                    string_value: 192.168.1.254
+                - fqoid: subnet
+                  value:
+                    string_value: 255.255.255.0
+                - fqoid: dns
+                  value:
+                    string_value: 8.8.8.8
+                - fqoid: dns_alt
+                  value:
+                    string_value: 8.8.4.4
+      responses:
+        '204':
+          description: Empty response - everything is OK
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 components:
   responses:
     NotFound:

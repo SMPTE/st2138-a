@@ -87,6 +87,12 @@ paths:
   /{slot}/param-info/stream:
     $ref: './paths/TopLevelParamInfoStream.yaml'
 
+  /{slot}/value/{fqoid}:
+    $ref: './paths/Value.yaml'
+  
+  /{slot}/values:
+    $ref: './paths/Values.yaml'  
+
 components:
 
   responses:
