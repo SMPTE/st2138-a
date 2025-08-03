@@ -1794,6 +1794,24 @@
         "oid"
       ],
       "additionalProperties": false
+    },
+    "param_info": {
+      "title": "Param Info",
+      "description": "Information about a parameter - it's id and descriptor.\n",
+      "type": "object",
+      "properties": {
+        "oid": {
+          "$ref": "#/$defs/fqoid"
+        },
+        "param": {
+          "$ref": "#/$defs/param"
+        }
+      },
+      "required": [
+        "oid",
+        "param"
+      ],
+      "additionalProperties": false
     }
   }
 }

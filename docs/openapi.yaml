@@ -385,6 +385,7 @@ paths:
           content:
             application/json:
               schema:
+                $ref: '#/components/schemas/external_object_payload'
                 example:
                   cachable: true
                   payload:
@@ -392,7 +393,7 @@ paths:
                       size: '13'
                       last-modified: Fri Apr 8 12:00:00 2025
                       filename: asset.png
-                    digest: h654h654y564yh543
+                    digest: sha256:h654h654y564yh543
                     payloadEncoding: GZIP
                     payload: payloadString
         '401':
@@ -530,6 +531,97 @@ paths:
       responses:
         '204':
           description: Empty response - everything is OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/asset/{fqoid}/stream:
+    get:
+      summary: get an asset, or a stream of assets from the device
+      operationId: AssetStream
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model to get the value from
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: fqoid
+          in: path
+          required: true
+          description: The fully qualified object ID of the asset to get
+          schema:
+            $ref: '#/components/schemas/fqoid'
+          example: image.png
+      tags:
+        - Assets
+      responses:
+        '200':
+          description: |
+            The server's response will be a stream of ExternalObjectPayload
+            objects
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  data: <stringified ExternalObjectPayload>
+                  data: <stringified ExternalObjectPayload>
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/param-info/{fqoid}:
+    get:
+      summary: "Gets information about a parameter within a device model. \nBecause this is a unary request, recursive queries are not supported.\n"
+      operationId: ParamInfo
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model containing the parameters to get info for
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: fqoid
+          in: path
+          required: true
+          description: Fully qualified OID of the parameter to get info for
+          schema:
+            $ref: '#/components/schemas/fqoid'
+      tags:
+        - Parameters
+        - Subscriptions
+      responses:
+        '200':
+          description: |
+            Returns information about the parameter specified by the fqoid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/param_info'
+              example:
+                info:
+                  oid: text_box
+                  name:
+                    display_strings:
+                      en: Text Box
+                      fr: Boîte de Texte
+                      es: Caja de Texto
+                  type: STRING
+                  value:
+                    string_value: Hello, World!
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1853,6 +1945,20 @@ components:
           $ref: '#/components/schemas/data_payload'
       required:
         - payload
+      additionalProperties: false
+    param_info:
+      title: Param Info
+      description: |
+        Information about a parameter - it's id and descriptor.
+      type: object
+      properties:
+        oid:
+          $ref: '#/components/schemas/fqoid'
+        param:
+          $ref: '#/components/schemas/param'
+      required:
+        - oid
+        - param
       additionalProperties: false
     help:
       title: Help

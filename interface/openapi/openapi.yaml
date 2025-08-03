@@ -74,7 +74,14 @@ paths:
 
   /{slot}/asset/{fqoid}:
     $ref: './paths/Asset.yaml'
-  
+
+  /{slot}/asset/{fqoid}/stream:
+    $ref: './paths/AssetStream.yaml'
+
+  /{slot}/param-info/{fqoid}:
+    $ref: './paths/ParamInfo.yaml'
+
+
 
 components:
 
