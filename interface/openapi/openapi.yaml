@@ -102,6 +102,9 @@ paths:
   /{slot}/param/{fqoid}:
     $ref: './paths/Param.yaml'
     
+  /connect:
+    $ref: './paths/Connect.yaml'  
+    
 components:
 
   responses:

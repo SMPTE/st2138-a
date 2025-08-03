@@ -1116,6 +1116,61 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /connect:
+    get:
+      summary: Connects a client to a service for updates on value changes.
+      operationId: Connect
+      parameters:
+        - name: Detail-Level
+          in: header
+          required: false
+          description: The level of detail to connect in
+          schema:
+            $ref: '#/components/schemas/detail_level'
+        - name: force_connection
+          in: query
+          required: false
+          description: Optional flag to force a connection. The presence of this parameter forces the connection, regardless of its value. (The value is ignored; any value assigned such as "true" will have the same effect.) Only actioned if st2138:adm:w is present in the security header.
+          schema:
+            type: string
+            enum:
+              - 'true'
+      tags:
+        - Updates
+      responses:
+        '200':
+          description: |
+            A stream of push updates from the server. These updates are
+             sent as server-sent events and have stringified JSON in their data
+             field. This JSON contains a slot number and the data associated with
+             that slot.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  data: <stringified Value object>
+                  data: <stringified Exception object>
+                  data: <stringified DeviceComponent object>
+                  data: <stringified invalidated_external_object_id object>
+                  data: <stringified TrapMessage object>
+                  data: <boolean>
+                  data: <stringified RemoveComponents object>
+                  data: <stringified SlotList object>
+                  data: <stringified SlotList object>
+                  done
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 components:
   responses:
     NotFound:
