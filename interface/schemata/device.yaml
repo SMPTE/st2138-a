@@ -1092,41 +1092,47 @@ $defs:
         max_length: false
         total_length: false
 
+  data_payload:
+    title: DATA Payload
+    description: |
+      How data is sent to the client.
+    type: object
+    properties:
+      payload:
+        oneOf:
+          - type: string
+            format: uri
+            description: The URL of the data payload
+          - type: string
+            contentEncoding: base64
+            contentMediaType: application/octet-stream
+            description: The base64-encoded binary payload
+            pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
+      payload_encoding:
+        type: string
+        enum: [UNCOMPRESSED, GZIP, DEFLATE]
+        default: UNCOMPRESSED
+      digest:
+        type: string
+        contentMediaType: application/octet-stream
+        contentEncoding: base64
+        description: The SHA-256 digest of the payload
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
+        description: key/value pairs about the payload, e.g. mime-type, etc.
+    required:
+      - payload
+    additionalProperties: false
+
   data_value:
     title: DATA Value
     description: Defines DATA either a URL or a binary payload
     type: object
     properties:
       data_payload:
-        type: object
-        properties:
-          payload:
-            oneOf:
-              - type: string
-                format: uri
-                description: The URL of the data payload
-              - type: string
-                contentEncoding: base64
-                contentMediaType: application/octet-stream
-                description: The base64-encoded binary payload
-                pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
-          payload_encoding:
-            type: string
-            enum: [UNCOMPRESSED, GZIP, DEFLATE]
-            default: UNCOMPRESSED
-          digest:
-            type: string
-            contentMediaType: application/octet-stream
-            contentEncoding: base64
-            description: The SHA-256 digest of the payload
-          metadata:
-            type: object
-            additionalProperties:
-              type: string
-            description: key/value pairs about the payload, e.g. mime-type, etc.
-        required:
-          - payload
-        additionalProperties: false
+        $ref: "#/$defs/data_payload"
     required:
       - data_payload
 
@@ -1398,3 +1404,34 @@ $defs:
         required:
           - exception
         additionalProperties: false
+
+  external_object_payload:
+    title: External Object Payload
+    description: |
+      How assets/external objects are sent to the client.
+    type: object
+    properties:
+      cachable:
+        type: boolean
+        default: false
+      payload:
+        $ref: "#/$defs/data_payload"
+    required:
+      - payload
+    additionalProperties: false
+
+  external_object_request_payload:
+    title: External Object Request Payload
+    description: |
+      Information needed to identify the requested asset/external object.
+    type: object
+    properties:
+      slot:
+        $ref: "#/$defs/slot"
+      oid:
+        $ref: "#/$defs/fqoid"
+    required:
+      - slot
+      - oid
+    additionalProperties: false
+

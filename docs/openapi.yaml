@@ -273,7 +273,6 @@ paths:
           description: The fully qualified object ID of the command to execute
           schema:
             $ref: '#/components/schemas/fqoid'
-          default: pause
         - name: respond
           in: query
           required: false
@@ -338,6 +337,199 @@ paths:
                     required:
                       - exception
                     additionalProperties: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/asset/{fqoid}:
+    get:
+      summary: get an asset without streaming
+      operationId: GetAsset
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model to get the value from
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: fqoid
+          in: path
+          required: true
+          description: The fully qualified object ID of the asset to get
+          schema:
+            $ref: '#/components/schemas/fqoid'
+          example: image.png
+        - name: compression
+          in: query
+          required: false
+          description: The compression method to use. If not provided, the asset will be sent uncompressed.
+          schema:
+            type: string
+            enum:
+              - UNCOMPRESSED
+              - GZIP
+              - DEFLATE
+          example: UNCOMPRESSED
+      tags:
+        - Assets
+      responses:
+        '200':
+          description: |
+            The server's response will be one or more 'ExternalObjectPayloads'.
+          content:
+            application/json:
+              schema:
+                example:
+                  cachable: true
+                  payload:
+                    metadata:
+                      size: '13'
+                      last-modified: Fri Apr 8 12:00:00 2025
+                      filename: asset.png
+                    digest: h654h654y564yh543
+                    payloadEncoding: GZIP
+                    payload: payloadString
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      summary: load an asset
+      operationId: LoadAsset
+      security:
+        - oauth2:
+            - st2138:adm:w
+        - oauth2:
+            - st2138:op:w
+        - oauth2:
+            - st2138:cfg:w
+      tags:
+        - Assets
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model to get the value from
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: fqoid
+          in: path
+          required: true
+          description: The place to store the asset
+          schema:
+            $ref: '#/components/schemas/fqoid'
+          example: image.png
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/external_object_payload'
+      responses:
+        '204':
+          description: Empty response - everything is OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      summary: Overwrite an asset
+      operationId: OverwriteAsset
+      security:
+        - oauth2:
+            - st2138:adm:w
+        - oauth2:
+            - st2138:op:w
+        - oauth2:
+            - st2138:cfg:w
+      tags:
+        - Assets
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model to get the value from
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: fqoid
+          in: path
+          required: true
+          description: The place to store the asset
+          schema:
+            $ref: '#/components/schemas/fqoid'
+          example: image.png
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/external_object_payload'
+      responses:
+        '204':
+          description: Empty response - everything is OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      summary: Delete an asset
+      operationId: DeleteAsset
+      security:
+        - oauth2:
+            - st2138:adm:w
+        - oauth2:
+            - st2138:op:w
+        - oauth2:
+            - st2138:cfg:w
+      tags:
+        - Assets
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model to get the value from
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: fqoid
+          in: path
+          required: true
+          description: The fully qualified object ID of the asset to delete
+          schema:
+            $ref: '#/components/schemas/fqoid'
+          example: image.png
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/external_object_payload'
+      responses:
+        '204':
+          description: Empty response - everything is OK
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1165,44 +1357,49 @@ components:
           precision: false
           max_length: false
           total_length: false
+    data_payload:
+      title: DATA Payload
+      description: |
+        How data is sent to the client.
+      type: object
+      properties:
+        payload:
+          oneOf:
+            - type: string
+              format: uri
+              description: The URL of the data payload
+            - type: string
+              contentEncoding: base64
+              contentMediaType: application/octet-stream
+              description: The base64-encoded binary payload
+              pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
+        payload_encoding:
+          type: string
+          enum:
+            - UNCOMPRESSED
+            - GZIP
+            - DEFLATE
+          default: UNCOMPRESSED
+        digest:
+          type: string
+          contentMediaType: application/octet-stream
+          contentEncoding: base64
+          description: The SHA-256 digest of the payload
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: key/value pairs about the payload, e.g. mime-type, etc.
+      required:
+        - payload
+      additionalProperties: false
     data_value:
       title: DATA Value
       description: Defines DATA either a URL or a binary payload
       type: object
       properties:
         data_payload:
-          type: object
-          properties:
-            payload:
-              oneOf:
-                - type: string
-                  format: uri
-                  description: The URL of the data payload
-                - type: string
-                  contentEncoding: base64
-                  contentMediaType: application/octet-stream
-                  description: The base64-encoded binary payload
-                  pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
-            payload_encoding:
-              type: string
-              enum:
-                - UNCOMPRESSED
-                - GZIP
-                - DEFLATE
-              default: UNCOMPRESSED
-            digest:
-              type: string
-              contentMediaType: application/octet-stream
-              contentEncoding: base64
-              description: The SHA-256 digest of the payload
-            metadata:
-              type: object
-              additionalProperties:
-                type: string
-              description: key/value pairs about the payload, e.g. mime-type, etc.
-          required:
-            - payload
-          additionalProperties: false
+          $ref: '#/components/schemas/data_payload'
       required:
         - data_payload
     apply_data:
@@ -1643,6 +1840,20 @@ components:
           required:
             - exception
           additionalProperties: false
+    external_object_payload:
+      title: External Object Payload
+      description: |
+        How assets/external objects are sent to the client.
+      type: object
+      properties:
+        cachable:
+          type: boolean
+          default: false
+        payload:
+          $ref: '#/components/schemas/data_payload'
+      required:
+        - payload
+      additionalProperties: false
     help:
       title: Help
       description: |
@@ -1663,3 +1874,17 @@ components:
         - $ref: '#/components/schemas/component_menu'
         - $ref: '#/components/schemas/component_constraint'
         - $ref: '#/components/schemas/component_language_pack'
+    external_object_request_payload:
+      title: External Object Request Payload
+      description: |
+        Information needed to identify the requested asset/external object.
+      type: object
+      properties:
+        slot:
+          $ref: '#/components/schemas/slot'
+        oid:
+          $ref: '#/components/schemas/fqoid'
+      required:
+        - slot
+        - oid
+      additionalProperties: false

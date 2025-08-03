@@ -56,7 +56,6 @@ post:
       description: The fully qualified object ID of the command to execute
       schema:
         $ref: "../../schemata/device.json#/$defs/fqoid"
-      default: "pause"
     
     - name: respond
       in: query
