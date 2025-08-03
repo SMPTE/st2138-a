@@ -93,6 +93,15 @@ paths:
   /{slot}/values:
     $ref: './paths/Values.yaml'  
 
+  /{slot}/subscriptions:
+    $ref: './paths/Subscriptions.yaml'
+
+  /{slot}/subscriptions/stream:
+    $ref: './paths/SubscriptionsStream.yaml'
+  
+  /{slot}/param/{fqoid}:
+    $ref: './paths/Param.yaml'
+    
 components:
 
   responses:

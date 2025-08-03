@@ -921,6 +921,201 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/subscriptions:
+    get:
+      summary: Get the current subscriptions
+      operationId: GetSubscriptions
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model containing the subscriptions to get
+          schema:
+            $ref: '#/components/schemas/slot'
+      tags:
+        - Subscriptions
+        - Parameters
+      responses:
+        '200':
+          description: A component param for each parameter the speicfied device is subscribed to
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/component_param'
+              example:
+                - fqoid: text_box
+                  param:
+                    fqoid_aliases: []
+                    client_hints: {}
+                    commands: {}
+                    params: {}
+                    name:
+                      display_strings:
+                        fr: Boîte de Texte
+                        en: Text Box
+                        es: Caja de Texto
+                    type: STRING
+                    read_only: false
+                    widget: ''
+                    precision: 0
+                    value:
+                      string_value: Hello, World!
+                    constraint: null
+                    max_length: 0
+                    total_length: 0
+                    access_scope: ''
+                    response: false
+                    help: null
+                    import: null
+                    minimal_set: false
+                    stateless: false
+                    template_oid: ''
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      summary: Set the current subscriptions
+      operationId: SetSubscriptions
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model containing the subscriptions to update
+          schema:
+            $ref: '#/components/schemas/slot'
+      tags:
+        - Parameters
+        - Subscriptions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                added_oids:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/fqoid'
+                removed_oids:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/fqoid'
+              additionalProperties: false
+            example:
+              added_oids:
+                - ipv4
+              removed_oids:
+                - gateway
+      responses:
+        '204':
+          description: Empty response - everything is OK
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/subscriptions/stream:
+    get:
+      summary: Get a stream of the current subscriptions
+      operationId: GetSubscriptionsStream
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model containing the parameters to get info for
+          schema:
+            $ref: '#/components/schemas/slot'
+      tags:
+        - Subscriptions
+        - Parameters
+      responses:
+        '200':
+          description: A stream of component params which the speicfied device is subscribed to. These updates are sent as server-sent events and have stringified JSON in their data field.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                data: <stringified ComponentParam>
+                data: <stringified ComponentParam>
+                data: <stringified ComponentParam>
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/param/{fqoid}:
+    get:
+      summary: Retrieves a parameter descriptor from the device model.
+      operationId: Param
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model containing the parameter to retrieve.
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: fqoid
+          in: path
+          required: true
+          description: The fully qualified path to the parameter within the device model.
+          schema:
+            $ref: '#/components/schemas/fqoid'
+          example: text_box
+      tags:
+        - Parameters
+      responses:
+        '200':
+          description: The parameter descriptor specified by `fqoid` within the device model.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/component_param'
+              example:
+                oid: text_box
+                param:
+                  name:
+                    display_strings:
+                      en: Text Box
+                      es: Caja de Texto
+                      fr: Boîte de Texte
+                  type: STRING
+                  value:
+                    string_value: Hello, World!
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 components:
   responses:
     NotFound:
