@@ -211,10 +211,10 @@ $defs:
         default: 0
         description: |
           The display order of the menu group.
-      required:
-        - name
-        - menus
-        - order
+    required:
+      - name
+      - menus
+      - order
     additionalProperties: false
 
   menus:
@@ -428,7 +428,7 @@ $defs:
         title: Constraint Type
         description: The type of constraint applied
         type: string
-        enum: [UNDEFINED, INT_CHOICE, INT_RANGE, ALARM_TABLE, FLOAT_RANGE, STRING_CHOICE, STRING_STRING_CHOICE, ALARM_TABLE]
+        enum: [UNDEFINED, INT_CHOICE, INT_RANGE, ALARM_TABLE, FLOAT_RANGE, STRING_CHOICE, STRING_STRING_CHOICE]
         default: UNDEFINED
     required:
       - type
@@ -1305,10 +1305,10 @@ $defs:
         $ref: "#/$defs/simple_oid"
       param:
         $ref: "#/$defs/param"
-      required:
-        - oid
-        - param
-      additionalProperties: false
+    required:
+      - oid
+      - param
+    additionalProperties: false
 
   component_command:
     title: Component Command
@@ -1320,10 +1320,10 @@ $defs:
         $ref: "#/$defs/simple_oid"
       command:
         $ref: "#/$defs/param"
-      required:
-        - oid
-        - command
-      additionalProperties: false
+    required:
+      - oid
+      - command
+    additionalProperties: false
 
   component_menu:
     title: Component Menu
@@ -1335,10 +1335,10 @@ $defs:
         $ref: "#/$defs/fqoid"
       menu:
         $ref: "#/$defs/menu"
-      required:
-        - oid
-        - menu
-      additionalProperties: false
+    required:
+      - oid
+      - menu
+    additionalProperties: false
 
   component_constraint:
     title: Component Constraint
@@ -1350,10 +1350,10 @@ $defs:
         $ref: "#/$defs/simple_oid"
       constraint:
         $ref: "#/$defs/constraint"
-      required:
-        - oid
-        - constraint
-      additionalProperties: false 
+    required:
+      - oid
+      - constraint
+    additionalProperties: false 
 
   component_language_pack:
     title: Component Language Pack
@@ -1366,10 +1366,10 @@ $defs:
         maxLength: 32
       language_pack:
         $ref: "#/$defs/language_pack"
-      required:
-        - language
-        - language_pack
-      additionalProperties: false
+    required:
+      - language
+      - language_pack
+    additionalProperties: false
 
   exception:
     title: Exception

@@ -173,13 +173,13 @@
           "type": "integer",
           "default": 0,
           "description": "The display order of the menu group.\n"
-        },
-        "required": [
-          "name",
-          "menus",
-          "order"
-        ]
+        }
       },
+      "required": [
+        "name",
+        "menus",
+        "order"
+      ],
       "additionalProperties": false
     },
     "menus": {
@@ -463,8 +463,7 @@
             "ALARM_TABLE",
             "FLOAT_RANGE",
             "STRING_CHOICE",
-            "STRING_STRING_CHOICE",
-            "ALARM_TABLE"
+            "STRING_STRING_CHOICE"
           ],
           "default": "UNDEFINED"
         }
@@ -1628,13 +1627,13 @@
         },
         "param": {
           "$ref": "#/$defs/param"
-        },
-        "required": [
-          "oid",
-          "param"
-        ],
-        "additionalProperties": false
-      }
+        }
+      },
+      "required": [
+        "oid",
+        "param"
+      ],
+      "additionalProperties": false
     },
     "component_command": {
       "title": "Component Command",
@@ -1646,13 +1645,13 @@
         },
         "command": {
           "$ref": "#/$defs/param"
-        },
-        "required": [
-          "oid",
-          "command"
-        ],
-        "additionalProperties": false
-      }
+        }
+      },
+      "required": [
+        "oid",
+        "command"
+      ],
+      "additionalProperties": false
     },
     "component_menu": {
       "title": "Component Menu",
@@ -1664,13 +1663,13 @@
         },
         "menu": {
           "$ref": "#/$defs/menu"
-        },
-        "required": [
-          "oid",
-          "menu"
-        ],
-        "additionalProperties": false
-      }
+        }
+      },
+      "required": [
+        "oid",
+        "menu"
+      ],
+      "additionalProperties": false
     },
     "component_constraint": {
       "title": "Component Constraint",
@@ -1682,13 +1681,13 @@
         },
         "constraint": {
           "$ref": "#/$defs/constraint"
-        },
-        "required": [
-          "oid",
-          "constraint"
-        ],
-        "additionalProperties": false
-      }
+        }
+      },
+      "required": [
+        "oid",
+        "constraint"
+      ],
+      "additionalProperties": false
     },
     "component_language_pack": {
       "title": "Component Language Pack",
@@ -1701,13 +1700,13 @@
         },
         "language_pack": {
           "$ref": "#/$defs/language_pack"
-        },
-        "required": [
-          "language",
-          "language_pack"
-        ],
-        "additionalProperties": false
-      }
+        }
+      },
+      "required": [
+        "language",
+        "language_pack"
+      ],
+      "additionalProperties": false
     },
     "exception": {
       "title": "Exception",

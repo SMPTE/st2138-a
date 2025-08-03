@@ -1642,7 +1642,6 @@ components:
             - FLOAT_RANGE
             - STRING_CHOICE
             - STRING_STRING_CHOICE
-            - ALARM_TABLE
           default: UNDEFINED
       required:
         - type
@@ -1740,10 +1739,10 @@ components:
           default: 0
           description: |
             The display order of the menu group.
-        required:
-          - name
-          - menus
-          - order
+      required:
+        - name
+        - menus
+        - order
       additionalProperties: false
     int32_value:
       title: INT32 Value
@@ -2540,10 +2539,10 @@ components:
           $ref: '#/components/schemas/simple_oid'
         param:
           $ref: '#/components/schemas/param'
-        required:
-          - oid
-          - param
-        additionalProperties: false
+      required:
+        - oid
+        - param
+      additionalProperties: false
     component_command:
       title: Component Command
       description: |
@@ -2554,10 +2553,10 @@ components:
           $ref: '#/components/schemas/simple_oid'
         command:
           $ref: '#/components/schemas/param'
-        required:
-          - oid
-          - command
-        additionalProperties: false
+      required:
+        - oid
+        - command
+      additionalProperties: false
     fqoid:
       title: Fully Qualified OID
       description: |
@@ -2577,10 +2576,10 @@ components:
           $ref: '#/components/schemas/fqoid'
         menu:
           $ref: '#/components/schemas/menu'
-        required:
-          - oid
-          - menu
-        additionalProperties: false
+      required:
+        - oid
+        - menu
+      additionalProperties: false
     component_constraint:
       title: Component Constraint
       description: |
@@ -2591,10 +2590,10 @@ components:
           $ref: '#/components/schemas/simple_oid'
         constraint:
           $ref: '#/components/schemas/constraint'
-        required:
-          - oid
-          - constraint
-        additionalProperties: false
+      required:
+        - oid
+        - constraint
+      additionalProperties: false
     component_language_pack:
       title: Component Language Pack
       description: |
@@ -2606,10 +2605,10 @@ components:
           maxLength: 32
         language_pack:
           $ref: '#/components/schemas/language_pack'
-        required:
-          - language
-          - language_pack
-        additionalProperties: false
+      required:
+        - language
+        - language_pack
+      additionalProperties: false
     empty:
       title: Empty
       description: |

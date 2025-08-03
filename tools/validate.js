@@ -17,255 +17,131 @@
  * Supports both JSON and YAML input formats.
  */
 
-const fs = require("fs");
-const path = require("path");
-const yaml = require("yaml");
-const Ajv2020 = require("ajv/dist/2020");
+const Ajv = require('ajv/dist/2020');
+const addFormats = require('ajv-formats').default;
 
-// 1. Set up AJV for 2020-12 + unevaluatedProperties
-const ajv = new Ajv2020({
-  strict: true,
-  strictSchema: true,
-  strictRequired: true,
-  unevaluated: true
-});
-
-const addFormats = require("ajv-formats").default;
+const ajv = new Ajv({
+    strict: true,
+    strictSchema: true,
+    strictRequired: true,
+    unevaluated: true
+});  
 addFormats(ajv);
 
-function loadSchemaFromFile(filename) {
-    const fullPath = path.resolve(__dirname, "../interface/schemata", filename);
-    const raw = fs.readFileSync(fullPath, "utf8");
-    return yaml.parse(raw);
-  }
-  
-  // Register both schemas using their $id
-  const paramSchema = loadSchemaFromFile("param.yaml");
-  const deviceSchema = loadSchemaFromFile("device.yaml");
-  
-  ajv.addSchema(paramSchema); // must have $id
-  ajv.addSchema(deviceSchema); // must have $id
 
-// Load example file to validate
-const dataPath = path.resolve(__dirname, "../examples/param.audio_meter.yaml");
-const data = yaml.parse(fs.readFileSync(dataPath, "utf8"));
-
-// Run validation
-const valid = ajv.getSchema(paramSchema.$id)(data);
-if (!valid) {
-  console.error("❌ Invalid:", validate.errors);
-  process.exit(1);
-} else {
-  console.log("✅ Valid!");
-}
+const jsonMap = require('json-source-map');
 
 'use strict';
+const path = require('node:path');
+const fs = require('fs');
+const yaml = require('yaml');
 
-class Validator {
-    constructor(schemaDir = 'interface/schemata') {
- 
-        this.paramValidator = ajv.getSchema(paramSchema.$id);
-        this.deviceValidator = ajv.getSchema(deviceSchema.$id);
-    }
+// get the file to validate from the command line
+const testfile = process.argv[2];
 
-    /**
-     * Parses input data from either JSON or YAML format
-     * @param {string} inputData - The input data as a string
-     * @param {string} format - The format ('json' or 'yaml'), if not provided it will be auto-detected
-     * @returns {Object} - The parsed data object
-     */
-    parseInput(inputData, format = null) {
-        if (!format) {
-            // Auto-detect format based on content
-            format = this.detectFormat(inputData);
-        }
+// validate command line
+if (testfile === undefined) {
+    console.log('Usage: node validate.js path/to/test/schema-name.object-name.json or .yaml');
+    console.log('Example: nodejs validate.js ./tests/device.my-device.json\nWill apply the device schema to a device coded in JSON.');
+    console.log('Example: nodejs validate.js ./tests/device.param.yaml\nWill apply the param schema to a param coded in YAML.');
+    process.exit(1);
+}
 
-        try {
-            if (format === 'yaml') {
-                return yaml.parse(inputData);
-            } else {
-                return JSON.parse(inputData);
-            }
-        } catch (error) {
-            throw new Error(`Failed to parse ${format.toUpperCase()} input: ${error.message}`);
-        }
-    }
+// verify input file exists
+if (!fs.existsSync(testfile)) {
+    console.log(`Cannot open file at ${testfile}`);
+    process.exit(1);
+}
 
-    /**
-     * Auto-detects the format of the input data
-     * @param {string} inputData - The input data as a string
-     * @returns {string} - 'json' or 'yaml'
-     */
-    detectFormat(inputData) {
-        const trimmed = inputData.trim();
-        
-        // Check for JSON format (starts with { or [)
-        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-            return 'json';
-        }
-        
-        // Check for YAML format (contains YAML-specific patterns)
-        if (trimmed.includes('---') || /^\s*\w+:\s*/.test(trimmed) || /^\s*-\s+/.test(trimmed)) {
-            return 'yaml';
-        }
-        
-        // Default to JSON if uncertain
-        return 'json';
-    }
+// extract schema name from input filename
+const schemaName = path.parse(testfile).name.split('.')[0];
 
-    /**
-     * Validates input file against the schema indicated by the filename
-     * @param {string} filePath - Path to the input file
-     * @returns {boolean} - true if the data is valid, false otherwise
-     */
-    validateDeviceFile(filePath) {
-        if (!fs.existsSync(filePath)) {
-            throw new Error(`Cannot open input file at: ${filePath}`);
-        }
+// read the schema definition file
+const schemaFilename = '../interface/schemata/device.json';
+if (!fs.existsSync(schemaFilename)) {
+    console.log(`Cannot open schema file at: ${schemaFilename}`);
+    process.exit(1);
+}
 
-        const inputData = fs.readFileSync(filePath, 'utf8');
-        const fileExtension = path.extname(filePath).toLowerCase();
-        
-        // Determine format based on file extension
-        let format = 'json';
-        if (fileExtension === '.yaml' || fileExtension === '.yml') {
-            format = 'yaml';
-        }
+// read the schema definition file into the schema variable
+let schema = JSON.parse(fs.readFileSync(schemaFilename));
 
-        const data = this.parseInput(inputData, format);
-        return this.validateDevice(data);
-    }
+// let the user know what we're doing
+console.log(`applying: ${schemaName} schema to input file ${testfile}`);
 
-    /**
-     * Validates input file against parameter schema
-     * @param {string} filePath - Path to the input file
-     * @returns {boolean} - true if the data is valid, false otherwise
-     */
-    validateParamFile(filePath) {
-        if (!fs.existsSync(filePath)) {
-            throw new Error(`Cannot open input file at: ${filePath}`);
-        }
+// adds schemas to the avj engine
+function addSchemas(genus) {
+    let schemaMap = jsonMap.stringify(schema, null, 2)
 
-        const inputData = fs.readFileSync(filePath, 'utf8');
-        const fileExtension = path.extname(filePath).toLowerCase();
-        
-        // Determine format based on file extension
-        let format = 'json';
-        if (fileExtension === '.yaml' || fileExtension === '.yml') {
-            format = 'yaml';
-        }
-
-        const data = this.parseInput(inputData, format);
-        return this.validateParam(data);
-    }
-
-    /**
-     * validateDevice
-     * @param {*} data - The data object to validate
-     * @returns {boolean} - true if the data is valid, false otherwise
-     */
-    validateDevice(data) {
-        let valid = false;
-        if (this.deviceValidator(data)) {
-            console.log(`Input was valid against the device schema.`);
-            valid = true;
+    for (species in schema[genus]) {
+        if (species.indexOf('$comment') === 0) {
+            // ignore comments
         } else {
-            this.showErrors(this.deviceValidator.errors);
-        }
-        return valid;    
-    }
+            // treat as a schema
+            try {
+                ajv.addSchema(schema[genus][species], `#/${genus}/${species}`);
+            } catch (why) {
+                let errorPointer = schemaMap.pointers[`/${genus}/${species}`];
 
-    /**
-     * validateParam
-     * @param {*} data - The data object to validate
-     * @returns {boolean} - true if the data is valid, false otherwise
-     */
-    validateParam(data) {
-        let valid = false;
-        if (this.paramValidator(data)) {
-            console.log(`Input was valid against the parameter schema.`);
-            valid = true;
-        } else {
-            this.showErrors(this.paramValidator.errors);
-        }
-        return valid;
-    }
-
-    /**
-     * showErrors
-     * Displays the validation errors
-     */
-    showErrors(errors = null) {
-        const errorsToShow = errors || ajv.errors;
-        if (!errorsToShow) {
-            console.log('No errors found.');
-            return;
-        }
-        for (const err of errorsToShow) {
-            switch (err.keyword) {
-                case "maximum":
-                    console.log(err.limit);
-                    break;
-                default:
-                    console.log(`${err.message} at ${err.instancePath}`);
-                    break;
+                throw Error(`${why} at #/${genus}/${species} on lines ${errorPointer.value.line}-${
+                  errorPointer.valueEnd.line}`)
             }
         }
     }
 }
 
-// Main program execution
-function main() {
-    const args = process.argv.slice(2);
-    
-    if (args.length === 0) {
-        console.log('Usage: node app.js path-to-file');
-        console.log('  path-to-file: Path to the file to validate');
-        console.log('  schema is inferred from the start of the filename');
-        console.log('');
-        console.log('Examples:');
-        console.log('  node app.js examples/param.on_off.yaml');
-        console.log('  node app.js examples/device.my_device.yaml');
-        console.log('  node app.js examples/constraint.int_range.yaml');
-        process.exit(1);
-    }
-    
-    const filePath = args[0];
-    const filename = path.basename(filePath);
-    const schemaType = filename.split('.')[0]; // Get first part before dot
-    
-    try {
-        const validator = new Validator();
-        let isValid = false;
-        
-        console.log(`Detected schema type: ${schemaType}`);
-        
-        if (schemaType === 'param') {
-            isValid = validator.validateParamFile(filePath);
-        } else if (schemaType === 'device') {
-            isValid = validator.validateDeviceFile(filePath);
-        } else {
-            console.error(`Unknown schema type: ${schemaType}. Expected 'param' or 'device'.`);
-            process.exit(1);
+// show errors
+function showErrors(errors, sourceMap) {
+    for (const err of errors) {
+        switch (err.keyword) {
+            case "maximum":
+                console.log(err.limit);
+                break;
+            default:
+                let errorPointer = sourceMap.pointers[err.instancePath];
+                console.log(`${err.message} at ${err.instancePath} on lines ${errorPointer.value.line}-${
+                  errorPointer.valueEnd.line}`);
+                break;
         }
-        
-        if (isValid) {
-            console.log('✅ Validation successful!');
-            process.exit(0);
-        } else {
-            console.log('❌ Validation failed!');
-            process.exit(1);
-        }
-    } catch (error) {
-        console.error(`Error: ${error.message}`);
-        process.exit(1);
     }
 }
 
-// Run main program if this file is executed directly
-if (require.main === module) {
-    main();
-}
+const kDeviceSchema = schemaName.indexOf('device') === 0;
 
-// Export for use as a module
-module.exports = Validator;
+try {
+    // the sub-schemas are under $defs, so add them
+    addSchemas('$defs');
+    if (!kDeviceSchema && !(schemaName in schema.$defs)) {
+        throw {error: 2, message: `Could not find ${schemaName} in schema definition file.`};
+    }
+
+    // read the file to validate
+    // if the file is a YAML file, parse it as YAML
+    // otherwise, parse it as JSON
+    let data;
+    if (testfile.endsWith('.yaml')) {
+        data = yaml.parse(fs.readFileSync(testfile, 'utf8'));
+    } else {
+        data = JSON.parse(fs.readFileSync(testfile));
+    }
+    const map = jsonMap.stringify(data, null, 2);
+
+    if (kDeviceSchema) {
+        const validate = ajv.compile(schema);
+        if (validate(data)) {
+            console.log('Device model is valid.');
+        } else {
+            showErrors(validate.errors, map);
+        }
+    } else {
+        if (ajv.validate(schema.$defs[schemaName], data)) {
+            console.log('data was valid.');
+        } else {
+            showErrors(ajv.errors, map);
+        }
+    }
+
+} catch (why) {
+    console.log(why.message);
+    process.exit(why.error);
+}

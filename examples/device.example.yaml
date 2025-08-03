@@ -120,6 +120,7 @@ menu_groups:
     name: 
       display_strings:
         $key: status
+    order: 0
     menus:
       product:
         name:
@@ -129,5 +130,6 @@ menu_groups:
           - /product
         hidden: false
         disabled: false
+        order: 0
 
 
