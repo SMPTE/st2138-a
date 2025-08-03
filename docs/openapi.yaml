@@ -247,6 +247,107 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/command/{fqoid}/stream:
+    post:
+      summary: Execute a command on a device model
+      operationId: ExecuteCommandStream
+      security:
+        - oauth2:
+            - st2138:op:w
+        - oauth2:
+            - st2138:cfg:w
+        - oauth2:
+            - st2138:adm:w
+        - oauth2:
+            - st2138:mon:w
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model to get the value from
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: fqoid
+          in: path
+          required: true
+          description: The fully qualified object ID of the command to execute
+          schema:
+            $ref: '#/components/schemas/fqoid'
+          default: pause
+        - name: respond
+          in: query
+          required: false
+          description: flag to suppress the server's response unless set to true
+          schema:
+            type: string
+            enum:
+              - 'true'
+            default: 'true'
+      tags:
+        - Commands
+      requestBody:
+        required: false
+        description: Optional value to pass to the command if required
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/value'
+            example:
+              float32_value: 0.5
+      responses:
+        '200':
+          description: |
+            If 'respond' is true, the server's response will be a stream of command
+            responses. If 'respond' is false, the server will not respond with
+            content, just the status code.
+            The response is a sequence of stringified JSON objects, each containing
+            a single command response.
+            Each object in the stream has the following structure:
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                data: <stringified {"no_response":{}}>
+                data: <stringified {"response":{"string_value":"Command executed successfully"}}>
+                data: <stringified {"exception":{"type":"Invalid Command","error_message":"Error message","details":"Something went wrong"}}>
+              x-sse-event-schema:
+                title: Command Response
+                description: |
+                  Possible responses to a command.
+                type: object
+                oneOf:
+                  - type: object
+                    properties:
+                      no_response:
+                        $ref: '#/components/schemas/empty'
+                    required:
+                      - no_response
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      response:
+                        $ref: '#/components/schemas/value'
+                    required:
+                      - response
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      exception:
+                        $ref: '#/components/schemas/exception'
+                    required:
+                      - exception
+                    additionalProperties: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 components:
   responses:
     NotFound:
