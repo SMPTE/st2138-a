@@ -104,7 +104,13 @@ paths:
     
   /connect:
     $ref: './paths/Connect.yaml'  
-    
+
+  /{slot}/language-pack/{language-code}:
+    $ref: './paths/LanguagePack.yaml'
+
+  /{slot}/languages:
+    $ref: './paths/Languages.yaml'
+
 components:
 
   responses:
