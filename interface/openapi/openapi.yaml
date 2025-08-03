@@ -81,6 +81,8 @@ paths:
   /{slot}/param-info/{fqoid}:
     $ref: './paths/ParamInfo.yaml'
 
+  /{slot}/param-info/{fqoid}/stream:
+    $ref: './paths/ParamInfoStream.yaml'
 
 
 components:
