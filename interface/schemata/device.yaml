@@ -393,7 +393,6 @@ $defs:
         type: string
     additionalProperties: false
 
-
   language_pack_reference:
     title: Language Pack Reference
     description: |
