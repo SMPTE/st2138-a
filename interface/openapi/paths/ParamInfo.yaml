@@ -63,7 +63,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json#/$defs/param_info"
+            $ref: "../../schemata/device.json#/$defs/param_info_response"
           
           example:
             {
@@ -76,8 +76,7 @@ get:
                     "es": "Caja de Texto"
                   }
                 },
-                "type": "STRING",
-                "value": {"string_value": "Hello, World!"}
+                "type": "STRING"
               }
             }
 

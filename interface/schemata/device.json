@@ -74,12 +74,18 @@
     },
     "slot_list": {
       "title": "Slot List",
-      "description": "A list of slot numbers.\n",
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/slot"
+      "description": "The list of slots occupied by device models within the connection.\n",
+      "type": "object",
+      "properties": {
+        "slots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slot"
+          },
+          "uniqueItems": true
+        }
       },
-      "uniqueItems": true
+      "additionalProperties": false
     },
     "detail_level": {
       "title": "Detail Level",
@@ -1824,6 +1830,44 @@
       "required": [
         "oid",
         "param"
+      ],
+      "additionalProperties": false
+    },
+    "param_info_request": {
+      "title": "Param Info Request",
+      "description": "Information needed to identify the requested parameter.\n",
+      "type": "object",
+      "properties": {
+        "slot": {
+          "$ref": "#/$defs/slot"
+        },
+        "oid_prefix": {
+          "$ref": "#/$defs/fqoid"
+        },
+        "recursive": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "slot"
+      ],
+      "additionalProperties": false
+    },
+    "param_info_response": {
+      "title": "Param Info Response",
+      "description": "Information about a parameter - it's id and descriptor.\n",
+      "type": "object",
+      "properties": {
+        "info": {
+          "$ref": "#/$defs/param_info"
+        },
+        "array_length": {
+          "$ref": "#/$defs/total_length"
+        }
+      },
+      "required": [
+        "info"
       ],
       "additionalProperties": false
     }

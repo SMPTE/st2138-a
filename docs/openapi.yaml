@@ -610,7 +610,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/param_info'
+                $ref: '#/components/schemas/param_info_response'
               example:
                 info:
                   oid: text_box
@@ -620,8 +620,6 @@ paths:
                       fr: Boîte de Texte
                       es: Caja de Texto
                   type: STRING
-                  value:
-                    string_value: Hello, World!
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1445,11 +1443,15 @@ components:
     slot_list:
       title: Slot List
       description: |
-        A list of slot numbers.
-      type: array
-      items:
-        $ref: '#/components/schemas/slot'
-      uniqueItems: true
+        The list of slots occupied by device models within the connection.
+      type: object
+      properties:
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/slot'
+          uniqueItems: true
+      additionalProperties: false
     detail_level:
       title: Detail Level
       description: "The level of detail in device messages and parameter updates.\n'full' indicates that all parameters are reported, \n'minimal' that only the minimal set is, \n'subscriptions' reports the minimal set plus identified subscribed\nparameters, \n'commands' reports only descriptors for commands and not for parameters,\nand 'none' indicates that no parameters or commands should be\nautomatically reported by the device (parameter descriptors, command\ndescriptors, and values can still be pulled).\n"
@@ -2627,6 +2629,20 @@ components:
           $ref: '#/components/schemas/polyglot_text'
         details:
           type: string
+    param_info:
+      title: Param Info
+      description: |
+        Information about a parameter - it's id and descriptor.
+      type: object
+      properties:
+        oid:
+          $ref: '#/components/schemas/fqoid'
+        param:
+          $ref: '#/components/schemas/param'
+      required:
+        - oid
+        - param
+      additionalProperties: false
     access_scopes:
       title: Access Scopes
       description: |
@@ -2731,19 +2747,18 @@ components:
       required:
         - payload
       additionalProperties: false
-    param_info:
-      title: Param Info
+    param_info_response:
+      title: Param Info Response
       description: |
         Information about a parameter - it's id and descriptor.
       type: object
       properties:
-        oid:
-          $ref: '#/components/schemas/fqoid'
-        param:
-          $ref: '#/components/schemas/param'
+        info:
+          $ref: '#/components/schemas/param_info'
+        array_length:
+          $ref: '#/components/schemas/total_length'
       required:
-        - oid
-        - param
+        - info
       additionalProperties: false
     help:
       title: Help
@@ -2778,4 +2793,20 @@ components:
       required:
         - slot
         - oid
+      additionalProperties: false
+    param_info_request:
+      title: Param Info Request
+      description: |
+        Information needed to identify the requested parameter.
+      type: object
+      properties:
+        slot:
+          $ref: '#/components/schemas/slot'
+        oid_prefix:
+          $ref: '#/components/schemas/fqoid'
+        recursive:
+          type: boolean
+          default: false
+      required:
+        - slot
       additionalProperties: false

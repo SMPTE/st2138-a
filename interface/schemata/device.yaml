@@ -99,11 +99,15 @@ $defs:
   slot_list:
     title: Slot List
     description: |
-      A list of slot numbers.
-    type: array
-    items:
-      $ref: "#/$defs/slot"
-    uniqueItems: true
+      The list of slots occupied by device models within the connection.
+    type: object
+    properties:
+      slots:
+        type: array
+        items:
+          $ref: "#/$defs/slot"
+        uniqueItems: true
+    additionalProperties: false
 
   detail_level:
     title: Detail Level
@@ -1464,3 +1468,33 @@ $defs:
       - param
     additionalProperties: false
 
+  param_info_request:
+    title: Param Info Request
+    description: |
+      Information needed to identify the requested parameter.
+    type: object
+    properties:
+      slot:
+        $ref: "#/$defs/slot"
+      oid_prefix:
+        $ref: "#/$defs/fqoid"
+      recursive:
+        type: boolean
+        default: false
+    required:
+      - slot
+    additionalProperties: false
+
+  param_info_response:
+    title: Param Info Response
+    description: |
+      Information about a parameter - it's id and descriptor.
+    type: object
+    properties:
+      info:
+        $ref: "#/$defs/param_info"
+      array_length:
+        $ref: "#/$defs/total_length"
+    required:
+      - info
+    additionalProperties: false
