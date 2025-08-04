@@ -69,14 +69,10 @@ get:
             {
               "info": {
                 "oid": "text_box",
-                "name": {
-                  "display_strings": {
-                    "en": "Text Box",
-                    "fr": "Boîte de Texte",
-                    "es": "Caja de Texto"
-                  }
-                },
-                "type": "STRING"
+                "param": {
+                  "name": { "display_strings": { "en": "Text Box" } },
+                  "type": "STRING"
+                }
               }
             }
 

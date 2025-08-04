@@ -69,19 +69,19 @@ get:
         application/json:
           schema:
             $ref: "../../schemata/device.json#/$defs/external_object_payload"
-            example: {
-              "cachable": true,
-              "payload": {
-                "metadata": {
-                  "size": "13",
-                  "last-modified": "Fri Apr 8 12:00:00 2025",
-                  "filename": "asset.png"
-                },
-                "digest": "sha256:h654h654y564yh543",
-                "payloadEncoding": "GZIP",
-                "payload": "payloadString"
-              }
-            }
+            # example: {
+            #   "cachable": true,
+            #   "payload": {
+            #     "metadata": {
+            #       "size": "13",
+            #       "last-modified": "Fri Apr 8 12:00:00 2025",
+            #       "filename": "asset.png"
+            #     },
+            #     "digest": "sha256:h654h654y564yh543",
+            #     "payloadEncoding": "GZIP",
+            #     "payload": "payloadString"
+            #   }
+            # }
           
     "401":
       $ref: '../openapi.yaml#/components/responses/Unauthorized'
@@ -195,7 +195,6 @@ put:
       application/json:
         schema:
           $ref: "../../schemata/device.json#/$defs/external_object_payload"
-          # external_object_payload schema definition
 
   responses:
     "204":
@@ -252,8 +251,7 @@ delete:
     content:
       application/json:
         schema:
-          $ref: "../../schemata/device.json#/$defs/external_object_payload"
-          # external_object_payload schema definition  
+          $ref: "../../schemata/device.json#/$defs/external_object_payload" 
 
   responses:
     "204":

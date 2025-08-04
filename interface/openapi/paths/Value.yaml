@@ -48,7 +48,7 @@ get:
       description: Fully qualified OID of the parameter to get info for
       schema:
         $ref: "../../schemata/device.json#/$defs/fqoid"
-      default: ""
+
 
   tags:
     - Parameters
@@ -115,7 +115,7 @@ put:
       description: Fully qualified OID of the parameter to get info for
       schema:
         $ref: "../../schemata/device.json#/$defs/fqoid"
-      default: ""
+
 
   tags:
     - Parameters

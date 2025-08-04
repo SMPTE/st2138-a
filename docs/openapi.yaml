@@ -51,11 +51,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/slot_list'
               example:
-                - 2
-                - 3
-                - 5
-                - 7
-                - 11
+                slots:
+                  - 2
+                  - 3
+                  - 5
+                  - 7
+                  - 11
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -85,7 +86,6 @@ paths:
           description: The level of detail to request the device in
           schema:
             $ref: '#/components/schemas/detail_level'
-            default: full
       tags:
         - Discovery
       responses:
@@ -386,16 +386,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/external_object_payload'
-                example:
-                  cachable: true
-                  payload:
-                    metadata:
-                      size: '13'
-                      last-modified: Fri Apr 8 12:00:00 2025
-                      filename: asset.png
-                    digest: sha256:h654h654y564yh543
-                    payloadEncoding: GZIP
-                    payload: payloadString
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -614,12 +604,11 @@ paths:
               example:
                 info:
                   oid: text_box
-                  name:
-                    display_strings:
-                      en: Text Box
-                      fr: Boîte de Texte
-                      es: Caja de Texto
-                  type: STRING
+                  param:
+                    name:
+                      display_strings:
+                        en: Text Box
+                    type: STRING
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -655,7 +644,6 @@ paths:
           description: The prefix of the OID to get info for
           schema:
             $ref: '#/components/schemas/fqoid'
-          default: ''
       tags:
         - Parameters
         - Subscriptions
@@ -774,7 +762,6 @@ paths:
           description: Fully qualified OID of the parameter to get info for
           schema:
             $ref: '#/components/schemas/fqoid'
-          default: ''
       tags:
         - Parameters
       responses:
@@ -823,7 +810,6 @@ paths:
           description: Fully qualified OID of the parameter to get info for
           schema:
             $ref: '#/components/schemas/fqoid'
-          default: ''
       tags:
         - Parameters
       requestBody:
@@ -1146,17 +1132,25 @@ paths:
             text/event-stream:
               schema:
                 type: string
-                example: |
-                  data: <stringified Value object>
-                  data: <stringified Exception object>
-                  data: <stringified DeviceComponent object>
-                  data: <stringified invalidated_external_object_id object>
-                  data: <stringified TrapMessage object>
-                  data: <boolean>
-                  data: <stringified RemoveComponents object>
-                  data: <stringified SlotList object>
-                  data: <stringified SlotList object>
-                  done
+              example: |
+                <stringified {"value": {string_value: "Hello, world!"}}>
+              x-sse-event-schema:
+                title: Push Updates
+                description: |
+                  Asynchronous updates of various types to the client.
+                allOf:
+                  - $ref: '#/components/schemas/with_slot'
+                  - oneOf:
+                      - $ref: '#/components/schemas/push_value'
+                      - $ref: '#/components/schemas/push_device_component'
+                      - $ref: '#/components/schemas/push_exception'
+                      - $ref: '#/components/schemas/push_invalidated_external_object_id'
+                      - $ref: '#/components/schemas/push_trap_message'
+                      - $ref: '#/components/schemas/push_invalidate_device_model'
+                      - $ref: '#/components/schemas/push_external_object'
+                      - $ref: '#/components/schemas/push_remove_device_components'
+                      - $ref: '#/components/schemas/push_slots_added'
+                      - $ref: '#/components/schemas/push_slots_removed'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1186,7 +1180,7 @@ paths:
           description: standard language code
           schema:
             type: string
-          default: en
+            default: en
           example: es
       tags:
         - Languages
@@ -1233,7 +1227,7 @@ paths:
           description: standard language code
           schema:
             type: string
-          default: ''
+            default: ''
           example: fr
       requestBody:
         required: true
@@ -1469,24 +1463,13 @@ components:
       type: integer
       minimum: -2147483648
       maximum: 2147483647
-    language_code:
-      title: Language Codes Table
+    language_map:
+      title: Language Map
       description: |
-        A table of standard language identifying codes.
-      $comment: "There may be a published reference we can use instead of inlining this here.\nNote that this is not (yet) a complete list of all possible language codes.\nFor readability and maintenance considerations, the codes are grouped by \nmajor language.\n"
+        A map of language codes to language packs.
       type: object
       patternProperties:
-        ^(en|en-AU|en-CA|en-HK|en-IE|en-MY)$:
-          title: English Language group
-          type: string
-        ^(es|es-ES|es-AR|es-BO|es-CL|es-CO)$:
-          title: Spanish Language group
-          type: string
-        ^(fr|fr-FR|fr-BE|fr-CA|fr-CH)$:
-          title: French Language group
-          type: string
-        ^(de|de-DE|de-AT|de-CH)$:
-          title: German Language group
+        ^[a-z]{2}(-[A-Z]{2})?$:
           type: string
       additionalProperties: false
     language_pack_reference:
@@ -1509,7 +1492,7 @@ components:
         display_strings:
           type: object
           anyOf:
-            - $ref: '#/components/schemas/language_code'
+            - $ref: '#/components/schemas/language_map'
             - $ref: '#/components/schemas/language_pack_reference'
           minProperties: 1
       additionalProperties: false
@@ -2643,6 +2626,234 @@ components:
         - oid
         - param
       additionalProperties: false
+    with_slot:
+      title: With Slot
+      description: |
+        A slot is required for all updates.
+      type: object
+      properties:
+        slot:
+          $ref: '#/components/schemas/slot'
+      required:
+        - slot
+      additionalProperties: false
+    push_value:
+      title: Push Value
+      description: |
+        A value to be pushed to the client.
+      type: object
+      properties:
+        oid:
+          $ref: '#/components/schemas/fqoid'
+        value:
+          $ref: '#/components/schemas/value'
+      required:
+        - oid
+        - value
+      additionalProperties: false
+    device_component:
+      title: Device Component
+      description: |
+        The device model can be broken into smaller components: parameters,
+        commands, menus, etc. The entire device model can be sent as a single
+        component.
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/device'
+        - $ref: '#/components/schemas/component_param'
+        - $ref: '#/components/schemas/component_command'
+        - $ref: '#/components/schemas/component_menu'
+        - $ref: '#/components/schemas/component_constraint'
+        - $ref: '#/components/schemas/component_language_pack'
+    push_device_component:
+      title: Push Device Component
+      description: |
+        A device component to be pushed to the client.
+      type: object
+      properties:
+        oid:
+          $ref: '#/components/schemas/fqoid'
+        device_component:
+          $ref: '#/components/schemas/device_component'
+      required:
+        - oid
+        - device_component
+      additionalProperties: false
+    push_exception:
+      title: Push Exception
+      description: |
+        An exception to be pushed to the client.
+      type: object
+      properties:
+        refused:
+          $ref: '#/components/schemas/exception'
+      required:
+        - refused
+      additionalProperties: false
+    push_invalidated_external_object_id:
+      title: Push Invalidated External Object ID
+      description: |
+        An external object id that has been invalidated.
+      type: object
+      properties:
+        invalidated_external_object_id:
+          type: string
+      required:
+        - invalidated_external_object_id
+      additionalProperties: false
+    trap_message_type:
+      title: Trap Message Type
+      description: |
+        The type of trap message.
+      type: integer
+      enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+    push_trap_message:
+      title: Push Trap Message
+      description: |
+        A trap message to be pushed to the client.
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/trap_message_type'
+      required:
+        - trap_message
+      additionalProperties: false
+    push_invalidate_device_model:
+      title: Push Invalidate Device Model
+      description: |
+        Inform the client that the device model has been invalidated.
+      type: object
+      properties:
+        invalidate_device_model:
+          type: boolean
+          default: false
+      required:
+        - invalidate_device_model
+      additionalProperties: false
+    external_object_payload:
+      title: External Object Payload
+      description: |
+        How assets/external objects are sent to the client.
+      type: object
+      properties:
+        cachable:
+          type: boolean
+          default: false
+        payload:
+          $ref: '#/components/schemas/data_payload'
+      required:
+        - payload
+      additionalProperties: false
+    push_external_object:
+      title: Push External Object
+      description: |
+        A external object to be pushed to the client.
+      type: object
+      properties:
+        oid:
+          $ref: '#/components/schemas/fqoid'
+        external_object:
+          $ref: '#/components/schemas/external_object_payload'
+      required:
+        - oid
+        - external_object
+      additionalProperties: false
+    id_list:
+      title: ID List
+      description: |
+        A list of object ids (OIDs)
+      type: array
+      items:
+        $ref: '#/components/schemas/fqoid'
+    language_code:
+      title: ISO 639-1 Language Code (well, almost)
+      description: |
+        A (likely) valid ISO 639-1 language code.
+      $comment: |
+        There may be a published reference we can use instead of inlining this here.
+        The regex forces the language code to be in the format of a ISO 639-1
+        language code, but it will also allow invalid codes such as "zz-ZZ" to
+        be used.
+      type: string
+      pattern: ^[a-z]{2}(-[A-Z]{2})?$
+      default: ''
+    push_remove_device_components:
+      title: Push Remove Device Components
+      description: |
+        A list of device components to be removed from the client.
+      type: object
+      oneOf:
+        - type: object
+          properties:
+            params:
+              $ref: '#/components/schemas/id_list'
+          required:
+            - params
+          additionalProperties: false
+        - type: object
+          properties:
+            shared_constraints:
+              $ref: '#/components/schemas/id_list'
+          required:
+            - shared_constraints
+          additionalProperties: false
+        - type: object
+          properties:
+            menus:
+              $ref: '#/components/schemas/id_list'
+          required:
+            - menus
+          additionalProperties: false
+        - type: object
+          properties:
+            commands:
+              $ref: '#/components/schemas/id_list'
+          required:
+            - commands
+          additionalProperties: false
+        - type: object
+          properties:
+            language_packs:
+              type: array
+              items:
+                $ref: '#/components/schemas/language_code'
+          required:
+            - language_packs
+          additionalProperties: false
+    push_slots_added:
+      title: Push Slots Added
+      description: |
+        A list of slots that now contain a new device model.
+      type: object
+      properties:
+        slots_added:
+          type: array
+          items:
+            $ref: '#/components/schemas/slot'
+      required:
+        - slots_added
+      additionalProperties: false
+    push_slots_removed:
+      title: Push Slots Removed
+      description: |
+        A list of slots that have been removed from the client.
+      type: object
+      properties:
+        slots_removed:
+          type: array
+          items:
+            $ref: '#/components/schemas/slot'
+      required:
+        - slots_removed
+      additionalProperties: false
     access_scopes:
       title: Access Scopes
       description: |
@@ -2733,20 +2944,6 @@ components:
           required:
             - exception
           additionalProperties: false
-    external_object_payload:
-      title: External Object Payload
-      description: |
-        How assets/external objects are sent to the client.
-      type: object
-      properties:
-        cachable:
-          type: boolean
-          default: false
-        payload:
-          $ref: '#/components/schemas/data_payload'
-      required:
-        - payload
-      additionalProperties: false
     param_info_response:
       title: Param Info Response
       description: |
@@ -2760,26 +2957,6 @@ components:
       required:
         - info
       additionalProperties: false
-    help:
-      title: Help
-      description: |
-        Help text or tool tip for the parameter.
-      $ref: '#/components/schemas/polyglot_text'
-      default: ''
-    device_component:
-      title: Device Component
-      description: |
-        The device model can be broken into smaller components: parameters,
-        commands, menus, etc. The entire device model can be sent as a single
-        component.
-      type: object
-      oneOf:
-        - $ref: '#/components/schemas/device'
-        - $ref: '#/components/schemas/component_param'
-        - $ref: '#/components/schemas/component_command'
-        - $ref: '#/components/schemas/component_menu'
-        - $ref: '#/components/schemas/component_constraint'
-        - $ref: '#/components/schemas/component_language_pack'
     external_object_request_payload:
       title: External Object Request Payload
       description: |
@@ -2809,4 +2986,59 @@ components:
           default: false
       required:
         - slot
+      additionalProperties: false
+    push_updates:
+      title: Push Updates
+      description: |
+        Asynchronous updates of various types to the client.
+      allOf:
+        - $ref: '#/components/schemas/with_slot'
+        - oneOf:
+            - $ref: '#/components/schemas/push_value'
+            - $ref: '#/components/schemas/push_device_component'
+            - $ref: '#/components/schemas/push_exception'
+            - $ref: '#/components/schemas/push_invalidated_external_object_id'
+            - $ref: '#/components/schemas/push_trap_message'
+            - $ref: '#/components/schemas/push_invalidate_device_model'
+            - $ref: '#/components/schemas/push_external_object'
+            - $ref: '#/components/schemas/push_remove_device_components'
+            - $ref: '#/components/schemas/push_slots_added'
+            - $ref: '#/components/schemas/push_slots_removed'
+    language_list:
+      title: Language List
+      description: |
+        A list of language codes identifying the languages that the device
+        supports.
+      type: array
+      items:
+        $ref: '#/components/schemas/language_code'
+    language_pack_request_payload:
+      title: Language Pack Request Payload
+      description: |
+        Information needed to identify the requested language pack.
+      type: object
+      properties:
+        slot:
+          $ref: '#/components/schemas/slot'
+        language:
+          $ref: '#/components/schemas/language_code'
+      required:
+        - slot
+        - language
+      additionalProperties: false
+    add_language_payload:
+      title: Add Language Payload
+      description: |
+        Information needed to add a language to the device.
+      type: object
+      properties:
+        slot:
+          $ref: '#/components/schemas/slot'
+        language_pack:
+          $ref: '#/components/schemas/language_pack'
+        language:
+          $ref: '#/components/schemas/language_code'
+      required:
+        - slot
+        - language
       additionalProperties: false

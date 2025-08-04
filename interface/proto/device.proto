@@ -203,7 +203,17 @@ message ConnectPayload {
 }
 
 message TrapMessage {
-	string trap_type = 1;
+	enum TrapMessageType {
+		RESTART = 1;
+		PARAM_CHANGED = 2;
+		MENU_CHANGED = 3;
+		EXTERNAL_OBJECT_CHANGED = 4;
+		REVEAL_ELEMENT = 5;
+    HIDE_ELEMENT = 6;
+    RELOAD_UI_ELEMENT = 7;
+    STRING_OID_CHANGED = 8;
+	}
+	TrapMessageType type = 1;
 	repeated string trap_data = 2;
 }
 

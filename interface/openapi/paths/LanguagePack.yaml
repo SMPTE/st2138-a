@@ -48,7 +48,7 @@ get:
       description: standard language code
       schema:
         type: string
-      default: "en"
+        default: "en"
       example: "es"
 
   tags:
@@ -116,7 +116,7 @@ post:
       description: standard language code
       schema:
         type: string
-      default: "" 
+        default: "" 
       example: "fr"
 
   requestBody:

@@ -67,17 +67,10 @@ get:
         text/event-stream:
           schema:
             type: string
-            example: |
-              data: <stringified Value object>
-              data: <stringified Exception object>
-              data: <stringified DeviceComponent object>
-              data: <stringified invalidated_external_object_id object>
-              data: <stringified TrapMessage object>
-              data: <boolean>
-              data: <stringified RemoveComponents object>
-              data: <stringified SlotList object>
-              data: <stringified SlotList object>
-              done
+          example: |
+            <stringified {"value": {string_value: "Hello, world!"}}>
+          x-sse-event-schema:
+            $ref: "../../schemata/device.json#/$defs/push_updates"
     "400":
       $ref: '../openapi.yaml#/components/responses/BadRequest'
     "401":

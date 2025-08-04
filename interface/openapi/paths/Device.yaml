@@ -50,7 +50,6 @@ get:
       description: The level of detail to request the device in
       schema:
         $ref: "../../schemata/device.json#/$defs/detail_level"
-        default: "full"
 
   tags:
     - Discovery
