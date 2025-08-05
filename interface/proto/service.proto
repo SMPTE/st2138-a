@@ -65,7 +65,10 @@ service CatenaService {
   rpc GetParam(GetParamPayload) returns (DeviceComponent.ComponentParam);
 
   /* The stream of PushUpdates is open-ended, terminating only when the
-   * logical connection with the client is terminated. */
+   * logical connection with the client is terminated. 
+   * Connected clients should use the RefreshToken RPC to prevent the
+   * connection from being terminated on token expiry.
+   */
   rpc Connect(ConnectPayload) returns (stream PushUpdates);
 
   /* Multi-language support */
@@ -74,4 +77,9 @@ service CatenaService {
   rpc LanguagePackRequest(LanguagePackRequestPayload) returns (DeviceComponent.ComponentLanguagePack);
 
   rpc ListLanguages(Slot) returns (LanguageList);
+
+  /* Token management RPCs*/
+  rpc RefreshToken(RefreshTokenPayload) returns (ConnectionStatus);
+
+  rpc RevokeAccess(RevokeAccessPayload) returns (RevocationResponse);
 }

@@ -1574,12 +1574,11 @@ $defs:
       - invalidated_external_object_id
     additionalProperties: false
 
-  trap_message_type: # see the proto file for the enum values
+  trap_message_type: # see the proto file enum meanings
     title: Trap Message Type
-    description: |
-      The type of trap message.
+    description: The type of trap message.
     type: integer
-    enum: [1, 2, 3, 4, 5, 6, 7, 8]
+    enum: [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
   push_trap_message:
     title: Push Trap Message
@@ -1745,4 +1744,73 @@ $defs:
       - slot
       - language
     additionalProperties: false
+
+  refresh_token_payload:
+    title: Refresh Token Payload
+    description: |
+      Request to refresh the access token with the one in the request metadata
+      and extend the expiry time of all active connections to the exp 
+      claim in the new token.
+    type: object
+    properties:
+      reason:
+        type: string
+        description: e.g. avoid timeout, key rotation, etc.
+    additionalProperties: false
+
+  revoke_access_payload:
+    title: Revoke Access Payload
+    description: |
+      Request to revoke access for a subject.
+    type: object
+    properties:
+      subject:
+        type: string
+        description: e.g. user id, device id, etc.
+      reason:
+        type: string
+        description: e.g. avoid timeout, key rotation, etc.
+      revoke_all:
+        type: boolean
+        description: True to revoke access for all subjects
+    required:
+      - subject
+      - revoke_all
+    additionalProperties: false
+
+  connection_status:
+    title: Connection Status
+    description: |
+      Response to the RefreshToken request.
+    type: object
+    properties:
+      connected:
+        type: boolean
+        description: True if client has any active streaming connections
+      exp:
+        type: integer
+        description: Time that new token will expire
+    required:
+      - connected
+      - exp
+    additionalProperties: false
+
+  revocation_response:
+    title: Revocation Response
+    description: |
+      Response to the RevokeAccess request.
+    type: object
+    properties:
+      remaining_subjects:
+        type: array
+        items:
+          type: string
+      revoked_subjects:
+        type: array
+        items:
+          type: string
+    required:
+      - remaining_subjects
+      - revoked_subjects
+    additionalProperties: false 
 

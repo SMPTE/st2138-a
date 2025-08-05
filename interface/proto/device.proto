@@ -202,16 +202,19 @@ message ConnectPayload {
   /* authn / authz should be handled by gRPC metadata */
 }
 
+/* Provides backward compatibility with binary OGP */
 message TrapMessage {
 	enum TrapMessageType {
-		RESTART = 1;
-		PARAM_CHANGED = 2;
-		MENU_CHANGED = 3;
-		EXTERNAL_OBJECT_CHANGED = 4;
-		REVEAL_ELEMENT = 5;
-    HIDE_ELEMENT = 6;
-    RELOAD_UI_ELEMENT = 7;
-    STRING_OID_CHANGED = 8;
+    UNUSED = 0;                   // protobuf requires enums start at 0
+		RESTART = 1;                  // Indicates device has just restarted.No trap data
+		PARAM_CHANGED = 2;            // trap data is oid of the parameter that changed
+		MENU_CHANGED = 3;             // trap data is oid of the menu that changed
+		EXTERNAL_OBJECT_CHANGED = 4;  // trap data is oid of the external object that changed
+		REVEAL_ELEMENT = 5;           // trap data is the id of the element to reveal
+    HIDE_ELEMENT = 6;             // trap data is the id of the element to hide
+    RELOAD_UI_ELEMENT = 7;        // trap data is the id of the element to reload
+    STRING_OID_CHANGED = 8;       // trap data is the oid of the string that changed
+    REBUILD_UI = 9;               // No trap data
 	}
 	TrapMessageType type = 1;
 	repeated string trap_data = 2;
@@ -246,4 +249,43 @@ message PushUpdates {
     SlotList slots_added = 10;
     SlotList slots_removed = 11;
   }
+}
+
+
+/* 
+ * Request to refresh the access token with the one in the RPC metadata
+ * and extend the expiry time of all active connections to the exp 
+ * claim in the new token.
+ */
+message RefreshTokenPayload {
+  string reason = 1; // e.g. avoid timeout, key rotation, etc.
+}
+
+/* 
+ * Response to the RefreshToken request.
+ * If the client has any active streaming connections, the connected field
+ * will be true and the exp field will be the time that the new token will expire.
+ */
+message ConnectionStatus {
+  bool connected = 1; // True if client has any active streaming connections
+  uint64 exp = 2;     // Time that new token will expire
+}
+
+/* 
+ * Request to revoke access for a subject.
+ * If revoke_all is true, all active connections for the subject will be revoked.
+ */
+message RevokeAccessPayload {
+  string subject = 1;  // e.g. user id, device id, etc.
+  string reason = 2;   // e.g. avoid timeout, key rotation, etc.
+  bool revoke_all = 3; // True to revoke access for all subjects
+}
+
+/* 
+ * Response to the RevokeAccess request.
+ * Lists sub fields of remaining and revoked subjects.
+ */
+message RevocationResponse {
+  repeated string remaining_subjects = 1; // user / system ids still connected
+  repeated string revoked_subjects = 2;   // user / system ids that were revoked
 }

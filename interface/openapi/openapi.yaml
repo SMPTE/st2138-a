@@ -111,6 +111,9 @@ paths:
   /{slot}/languages:
     $ref: './paths/Languages.yaml'
 
+  /access:
+    $ref: './paths/Access.yaml'
+
 components:
 
   responses:
