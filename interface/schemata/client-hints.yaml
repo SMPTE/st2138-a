@@ -1,0 +1,316 @@
+#
+# Copyright (c) by the Society of Motion Picture and Television Engineers
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation and/or
+# other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors
+# may be used to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+$id: https://smpte.github.io/st2138-a/interface/schemata/client-hints.yaml
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Schema for Client Hints
+description: |
+  A collection of client hints that can be used to enable a client to provide
+  a consistent experience across different client implementations.
+  The top-level object is empty, each hint is defined in the $defs section.
+
+type: object
+oneOf:
+  - type: object
+    $ref: "#/$defs/level_meter"
+
+$defs:
+  level_meter:
+    title: Level Meter
+    description: |
+      A hint to the client to enable a level meter.
+    type: object
+    properties:
+      red_count:
+        title: Red Count
+        description: |
+          The number of red segments to display in the level meter.
+        $ref: "#/$defs/segment_count"
+      yellow_count:
+        title: Yellow Count
+        description: |
+          The number of yellow segments to display in the level meter.
+        $ref: "#/$defs/segment_count"
+      green_count:
+        title: Green Count
+        description: |
+          The number of green segments to display in the level meter.
+        $ref: "#/$defs/segment_count"
+      red_color:
+        title: Red Color
+        description: |
+          The color of the red segments in the level meter.
+        $ref: "#/$defs/css_color"
+      yellow_color:
+        title: Yellow Color
+        description: |
+          The color of the yellow segments in the level meter.
+        $ref: "#/$defs/css_color"
+      green_color:
+        title: Green Color
+        description: |
+          The color of the green segments in the level meter.
+        $ref: "#/$defs/css_color"
+      orientation:
+        title: Orientation
+        description: |
+          The orientation of the level meter.
+        type: string
+        enum:
+          - "horizontal"
+          - "vertical"
+      reverse:
+        title: Reverse
+        description: |
+          When true, the lowest value is at the top of the level meter.
+        type: boolean
+        default: false
+    additionalProperties: false
+      
+  segment_count:
+    title: Segment Count
+    description: |
+      A count of the number of segments of a given color in the level meter.
+    type: integer
+    minimum: 0
+    maximum: 100
+    default: 0
+  
+  css_color:
+    title: CSS Color
+    description: |
+      A CSS color string.
+    oneOf:
+      - type: string
+        pattern: "^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$"
+        default: "#000000"
+      - type: string
+        pattern: "^rgb\\((\\d{1,3}),(\\d{1,3}),(\\d{1,3})\\)$"
+        default: "rgb(0,0,0)"
+      - type: string
+        pattern: "^rgba\\((\\d{1,3}),(\\d{1,3}),(\\d{1,3}),(\\d{1,3})\\)$"
+        default: "rgba(0,0,0,1)"
+
+  line_graph:
+    title: Line Graph
+    description: |
+      A graph showing the history of a parameter's value over time.
+    type: object
+    properties:
+      time:
+        title: Time
+        description: The number of seconds shown on the x-axis
+        type: integer
+        minimum: 1
+        default: 1
+      grid:
+        title: Grid Color
+        description: The color of the grid lines
+        $ref: "#/$defs/css_color"
+      plotfg:
+        title: Line Color
+        description: The color of the line / foreground
+        $ref: "#/$defs/css_color"
+      plotbg:
+        title: Plot Background Color
+        description: The color of the plot background
+        $ref: "#/$defs/css_color"
+      hide_legend:
+        title: Legend Visibility
+        description: Whether the legend is hidden
+        type: boolean
+        default: false
+      hide_x_axis:
+        title: X-Axis Visibility
+        description: Whether the x-axis is hidden
+        type: boolean
+        default: false
+      hide_y_axis:
+        title: Y-Axis Visibility
+        description: Whether the y-axis is hidden
+        type: boolean
+        default: false
+      auto_advance:
+        title: Auto Advance
+        description: |
+          When true, the graph will advance automatically, once per second.
+          When false, the graph will advance when the parameter changes
+          value.
+        type: boolean
+        default: false
+    additionalProperties: false
+
+  eq_graph:
+    title: EQ Graph
+    description: |
+      Visualizes a parameteric EQ response.
+    type: object
+    properties:
+      linecolors:
+        title: Line Colors
+        description: The colors of each band
+        type: array
+        items:
+          $ref: "#/$defs/css_color"
+        maxItems: 4
+      responses:
+        title: Responses
+        description: The responses for each band
+        type: array
+        items:
+          type: string
+          enum:
+            - low_shelf
+            - high_shelf
+            - bell
+            - notch
+            - all_pass
+        maxItems: 4
+      point_names:
+        title: Point Names
+        description: The names of the points, e.g 1, 2, 3, 4
+        type: array
+        items:
+          type: string
+        maxItems: 4
+      color_selected:
+        title: Color Values
+        description: |
+          The colors of the points when selected.
+          If only one color is provided, it will be used for all points.
+        type: array
+        items:
+          $ref: "#/$defs/css_color"
+        maxItems: 4
+      color_unselected:
+        title: Color Values
+        description: |
+          The colors of the points when unselected.
+          If only one color is provided, it will be used for all points.
+        type: array
+        items:
+          $ref: "#/$defs/css_color"
+        maxItems: 4
+      line_width:
+        title: Line Width
+        description: The width of the lines
+        type: integer
+        minimum: 1
+        default: 1
+      graph_font_size:
+        title: Graph Font Size
+        description: The font size for the graph's title, labels, and legend
+        type: integer
+        minimum: 4
+        default: 12
+      point_font_size:
+        title: Point Font Size
+        description: Size of the point labels
+        type: integer
+        minimum: 4
+        default: 12
+      point_width:
+        title: Point Width
+        description: Width of the points
+        type: integer
+        minimum: 1
+        default: 1
+      point_height:
+        title: Point Height
+        description: Height of the points
+        type: integer
+        minimum: 1
+        default: 1
+      point_color:
+        title: Point Color
+        description: Color of the points
+        $ref: "#/$defs/css_color"
+      x_axis_label:
+        title: X-Axis Label
+        description: Label for the x-axis
+        type: string
+        default: "Frequency"
+      y_axis_label:
+        title: Y-Axis Label
+        description: Label for the y-axis
+        type: string
+        default: "Gain"
+      x_axis_entries:
+        title: X-Axis Entries
+        description: |
+          The entries for the x-axis.
+          E.g. 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000
+        type: array
+        items:
+          type: string
+        maxItems: 10
+      y_axis_entries:
+        title: Y-Axis Entries
+        description: |
+          The entries for the y-axis.
+          E.g. -24, -12, 0, 12, 24
+        type: array
+        items:
+          type: string
+        maxItems: 10
+      point_amount:
+        title: Point Amount
+        description: The number of points to display
+        type: integer
+        minimum: 1
+        default: 4
+        maximum: 4
+      frequency_shift:
+        title: Frequency Shift
+        description: The lowest frequency to display
+        type: integer
+        minimum: 20
+        default: 0
+        maximum: 10000
+      title:
+        title: Title
+        description: The title of the graph
+        type: string
+        default: "EQ Response"
+      axis_color:
+        title: Axis Color
+        description: The color of the axes
+        $ref: "#/$defs/css_color"
+      font_color:
+        title: Font Color
+        description: The color of the font
+        $ref: "#/$defs/css_color"
+      grid_color:
+        title: Grid Color
+        description: The color of the grid
+        $ref: "#/$defs/css_color"
+    additionalProperties: false
+
+    
+
