@@ -70,13 +70,9 @@ $defs:
       type: string
       enum:
         - st2138:mon
-        - st2138:mon:w
         - st2138:op
-        - st2138:op:w
         - st2138:cfg
-        - st2138:cfg:w
         - st2138:adm
-        - st2138:adm:w
   
   default_scope:
     title: Default Scope
@@ -352,7 +348,7 @@ $defs:
     type: object
     patternProperties:
       ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
-        # the regex on the line above shoul be identical to the one in #$defs/simple_oid
+        # the regex on the line above should be identical to the one in #$defs/simple_oid
         $ref: "#/$defs/param"
     minProperties: 1
     additionalProperties: false
