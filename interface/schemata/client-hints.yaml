@@ -37,8 +37,9 @@ description: |
 
 type: object
 oneOf:
-  - type: object
-    $ref: "#/$defs/level_meter"
+  - $ref: "#/$defs/level_meter"
+  - $ref: "#/$defs/line_graph"
+  - $ref: "#/$defs/eq_graph"
 
 $defs:
   level_meter:
@@ -312,5 +313,5 @@ $defs:
         $ref: "#/$defs/css_color"
     additionalProperties: false
 
-    
+
 
