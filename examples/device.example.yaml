@@ -59,13 +59,9 @@ params:
 # this one supports all scopes.
 access_scopes:
   - st2138:mon
-  - st2138:mon:w
   - st2138:op
-  - st2138:op:w
   - st2138:cfg
-  - st2138:cfg:w
   - st2138:adm
-  - st2138:adm:w
 
 # The default scope is the one used when no scope is specified.
 default_scope: st2138:mon

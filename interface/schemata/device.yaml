@@ -1382,6 +1382,29 @@ $defs:
     type: object
     additionalProperties: false
 
+  execute_command_payload:
+    title: Execute Command Payload
+    description: |
+      A command to be executed by the device.
+    type: object
+    properties:
+      slot:
+        $ref: "#/$defs/slot"
+      oid:
+        $ref: "#/$defs/fqoid"
+      value:
+        $ref: "#/$defs/value"
+      respond:
+        type: boolean
+        default: false
+        description: |
+          When true, the device will respond to the command.
+          When false, the device will not respond to the command.
+    required:
+      - slot
+      - oid
+    additionalProperties: false
+    
   command_response:
     title: Command Response
     description: |
