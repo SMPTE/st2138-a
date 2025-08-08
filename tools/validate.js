@@ -41,8 +41,11 @@ const schemaFile = path.join(__dirname, '../interface/schemata/device.json');
 try {
     const validator = new Validator(schemaFile);
     console.log(`Applying schema '${schemaName}' to file '${testfile}'`);
-    const isValid = validator.validate(schemaName, testfile);
+    const {isValid, data} = validator.validate(schemaName, testfile);
     console.log(isValid ? '✅ Validation succeeded.' : '❌ Validation failed.');
+    if (data) {
+        console.log(JSON.stringify(data, null, 2));
+    }
     process.exit(isValid ? 0 : 2);
 } catch (err) {
     console.error(`Error: ${err.message}`);

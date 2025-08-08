@@ -77,9 +77,10 @@ class Validator {
 
         if (!valid) {
             Validator.showErrors(errors, sourceMap);
+            return {valid: false}
         }
 
-        return valid;
+        return {valid: true, data: data};
     }
 
     static showErrors(errors, sourceMap) {
