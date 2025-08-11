@@ -405,9 +405,40 @@ $defs:
   param_type:
     title: Parameter's data type
     description: The parameter's data type
-    type: string
-    enum: [UNDEFINED, EMPTY, INT32, FLOAT32, STRING, STRUCT, STRUCT_VARIANT, INT32_ARRAY, FLOAT32_ARRAY, STRING_ARRAY, BINARY, STRUCT_ARRAY, STRUCT_VARIANT_ARRAY, DATA]
-    default: UNDEFINED
+    type: integer
+    enum: [0, 1, 4, 6, 7, 10, 11, 14, 16, 17, 18, 32, 33, 50]
+    default: 0
+    examples: [0, 1, 4, 6, 7, 10, 11, 14, 16, 17, 18, 32, 33, 50]
+    oneOf:
+      - const: 0
+        title: UNDEFINED
+      - const: 1
+        title: EMPTY
+      - const: 4
+        title: INT32
+      - const: 6
+        title: FLOAT32
+      - const: 7
+        title: STRING
+      - const: 10
+        title: STRUCT
+      - const: 11
+        title: STRUCT_VARIANT
+      - const: 14
+        title: INT32_ARRAY
+      - const: 16
+        title: FLOAT32_ARRAY
+      - const: 17
+        title: STRING_ARRAY
+      - const: 18
+        title: BINARY
+      - const: 32
+        title: STRUCT_ARRAY
+      - const: 33
+        title: STRUCT_VARIANT_ARRAY
+      - const: 50
+        title: DATA
+
 
   value:
     # parameter values are polymorphic dependent on type
