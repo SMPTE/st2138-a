@@ -4,6 +4,7 @@
     "ajv-formats": "^2.1.1",
     "json-source-map": "^0.6.1",
     "node": "^20.7.0",
+    "protobufjs": "^7.5.3",
     "yaml": "^2.3.0"
   },
   "scripts": {},
