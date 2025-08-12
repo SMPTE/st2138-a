@@ -117,14 +117,37 @@ $defs:
       and 'none' indicates that no parameters or commands should be
       automatically reported by the device (parameter descriptors, command
       descriptors, and values can still be pulled).
-    type: string
-    enum:
-      - FULL
-      - MINIMAL
-      - SUBSCRIPTIONS
-      - COMMANDS
-      - NONE
-    default: FULL
+
+      This is another place where human readability/writeability is important.
+      Protobuf uses a numeric value for the detail level so we use a oneOf
+      to enable both numeric and string values.
+    oneOf:
+      - type: string
+        enum:
+          - FULL
+          - MINIMAL
+          - SUBSCRIPTIONS
+          - COMMANDS
+          - NONE
+          - UNSET
+        default: FULL
+      - type: integer
+        enum: [0, 1, 2, 3, 4, 5]
+        default: 0
+        examples: [0, 1, 2, 3, 4, 5]
+        oneOf:
+          - const: 0
+            title: FULL
+          - const: 1
+            title: MINIMAL
+          - const: 2
+            title: SUBSCRIPTIONS
+          - const: 3
+            title: COMMANDS
+          - const: 4
+            title: NONE
+          - const: 5
+            title: UNSET
 
   multi_set_enabled:
     title: Multi Set Enabled Flag
@@ -404,42 +427,49 @@ $defs:
 
   param_type:
     title: Parameter's data type
-    description: The parameter's data type
-    type: integer
-    enum: [0, 1, 4, 6, 7, 10, 11, 14, 16, 17, 18, 32, 33, 50]
-    default: 0
-    examples: [0, 1, 4, 6, 7, 10, 11, 14, 16, 17, 18, 32, 33, 50]
+    description: |
+      The parameter's data type.
+      Note that the protobuf definition is an enumerated integer,
+      but using strings is more convenient for humans. So we support
+      both via the oneOf composition.
     oneOf:
-      - const: 0
-        title: UNDEFINED
-      - const: 1
-        title: EMPTY
-      - const: 4
-        title: INT32
-      - const: 6
-        title: FLOAT32
-      - const: 7
-        title: STRING
-      - const: 10
-        title: STRUCT
-      - const: 11
-        title: STRUCT_VARIANT
-      - const: 14
-        title: INT32_ARRAY
-      - const: 16
-        title: FLOAT32_ARRAY
-      - const: 17
-        title: STRING_ARRAY
-      - const: 18
-        title: BINARY
-      - const: 32
-        title: STRUCT_ARRAY
-      - const: 33
-        title: STRUCT_VARIANT_ARRAY
-      - const: 50
-        title: DATA
-
-
+      - type: integer
+        enum: [0, 1, 4, 6, 7, 10, 11, 14, 16, 17, 18, 32, 33, 50]
+        default: 0
+        examples: [0, 1, 4, 6, 7, 10, 11, 14, 16, 17, 18, 32, 33, 50]
+        oneOf:
+          - const: 0
+            title: UNDEFINED
+          - const: 1
+            title: EMPTY
+          - const: 4
+            title: INT32
+          - const: 6
+            title: FLOAT32
+          - const: 7
+            title: STRING
+          - const: 10
+            title: STRUCT
+          - const: 11
+            title: STRUCT_VARIANT
+          - const: 14
+            title: INT32_ARRAY
+          - const: 16
+            title: FLOAT32_ARRAY
+          - const: 17
+            title: STRING_ARRAY
+          - const: 18
+            title: BINARY
+          - const: 32
+            title: STRUCT_ARRAY
+          - const: 33
+            title: STRUCT_VARIANT_ARRAY
+          - const: 50
+            title: DATA
+      - type: string
+        enum: [UNDEFINED, EMPTY, INT32, FLOAT32, STRING, STRUCT, STRUCT_VARIANT, INT32_ARRAY, FLOAT32_ARRAY, STRING_ARRAY, BINARY, STRUCT_ARRAY, STRUCT_VARIANT_ARRAY, DATA]
+        default: UNDEFINED
+ 
   value:
     # parameter values are polymorphic dependent on type
     # there are a collection of apply_value_to_param_type schemas that specialize the value schema
@@ -455,10 +485,34 @@ $defs:
     properties:
       type:
         title: Constraint Type
-        description: The type of constraint applied
-        type: string
-        enum: [UNDEFINED, INT_CHOICE, INT_RANGE, ALARM_TABLE, FLOAT_RANGE, STRING_CHOICE, STRING_STRING_CHOICE]
-        default: UNDEFINED
+        description: |
+          The type of constraint applied
+          This is another place where human readability/writeability is important.
+          Protobuf uses a numeric value for the constraint type so we use a oneOf
+          to enable both numeric and string values.
+        oneOf:
+          - type: string
+            enum: [UNDEFINED, INT_CHOICE, INT_RANGE, ALARM_TABLE, FLOAT_RANGE, STRING_CHOICE, STRING_STRING_CHOICE]
+            default: UNDEFINED
+          - type: integer
+            enum: [0, 2, 4, 5, 6, 7, 8]
+            default: 0
+            examples: [0, 2, 4, 5, 6, 7, 8]
+            oneOf:
+              - const: 0
+                title: UNDEFINED
+              - const: 2
+                title: INT_CHOICE
+              - const: 4
+                title: INT_RANGE
+              - const: 5
+                title: ALARM_TABLE
+              - const: 6
+                title: FLOAT_RANGE
+              - const: 7
+                title: STRING_CHOICE
+              - const: 8
+                title: STRING_STRING_CHOICE
     required:
       - type
     oneOf:
@@ -1152,9 +1206,28 @@ $defs:
             description: The base64-encoded binary payload
             pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
       payload_encoding:
-        type: string
-        enum: [UNCOMPRESSED, GZIP, DEFLATE]
-        default: UNCOMPRESSED
+        description: |
+          The encoding of the payload.
+          This is another place where human readability/writeability is important.
+          Protobuf uses a numeric value for the payload encoding so we use a oneOf
+          to enable both numeric and string values.
+        oneOf:
+          - type: string
+            enum: [UNCOMPRESSED, GZIP, DEFLATE]
+            default: UNCOMPRESSED
+          - type: integer
+            enum: [0, 1, 2]
+            default: 0
+            examples: [0, 1, 2]
+            oneOf:
+              - const: 0
+                title: UNCOMPRESSED
+              - const: 1
+                title: GZIP
+              - const: 2
+                title: DEFLATE
+
+
       digest:
         type: string
         contentMediaType: application/octet-stream
@@ -1626,9 +1699,50 @@ $defs:
 
   trap_message_type: # see the proto file enum meanings
     title: Trap Message Type
-    description: The type of trap message.
-    type: integer
-    enum: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    description: |
+      The type of trap message.
+      This is another place where human readability/writeability is important.
+      Protobuf uses a numeric value for the trap message type so we use a oneOf
+      to enable both numeric and string values.
+    oneOf:
+      - type: integer
+        enum: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        default: 0
+        examples: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        oneOf:
+          - const: 0
+            title: UNUSED
+          - const: 1
+            title: RESTART
+          - const: 2
+            title: PARAM_CHANGED
+          - const: 3
+            title: MENU_CHANGED
+          - const: 4
+            title: EXTERNAL_OBJECT_CHANGED
+          - const: 5
+            title: REVEAL_ELEMENT
+          - const: 6
+            title: HIDE_ELEMENT
+          - const: 7
+            title: RELOAD_UI_ELEMENT
+          - const: 8
+            title: STRING_OID_CHANGED
+          - const: 9
+            title: REBUILD_UI
+      - type: string
+        enum:
+          - UNUSED
+          - RESTART
+          - PARAM_CHANGED
+          - MENU_CHANGED
+          - EXTERNAL_OBJECT_CHANGED
+          - REVEAL_ELEMENT
+          - HIDE_ELEMENT
+          - RELOAD_UI_ELEMENT
+          - STRING_OID_CHANGED
+          - REBUILD_UI
+        default: UNUSED
 
   push_trap_message:
     title: Push Trap Message
