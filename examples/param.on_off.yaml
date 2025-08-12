@@ -11,7 +11,7 @@ name:
     en: On/Off
     fr: Marche/Arrêt
     es: Encendido/Apagado
-type: INT32
+type: STRING
 value:
   int32_value: 0
 constraint:
