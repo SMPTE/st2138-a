@@ -15,7 +15,7 @@ constraint:
     min_value: -100
     max_value: 10
     step: 1
-    display_min_value: -100
-    display_max_value: 20
+    display_min: -100
+    display_max: 20
 
 

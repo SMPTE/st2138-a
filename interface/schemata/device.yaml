@@ -67,12 +67,7 @@ $defs:
       The access scopes recognized by this the device.
     type: array
     items:
-      type: string
-      enum:
-        - st2138:mon
-        - st2138:op
-        - st2138:cfg
-        - st2138:adm
+      $ref: "#/$defs/access_scope"
   
   default_scope:
     title: Default Scope
@@ -640,9 +635,9 @@ $defs:
                   $ref: "#/$defs/int32"
                 step:
                   $ref: "#/$defs/int32"
-                display_min_value:
+                display_min:
                   $ref: "#/$defs/int32"
-                display_max_value:
+                display_max:
                   $ref: "#/$defs/int32"
               required:
                 - min_value
@@ -770,9 +765,9 @@ $defs:
                   $ref: "#/$defs/float32"
                 step:
                   $ref: "#/$defs/float32"
-                display_min_value:
+                display_min:
                   $ref: "#/$defs/float32"
-                display_max_value:
+                display_max:
                   $ref: "#/$defs/float32"
               required:
                 - min_value
@@ -1157,15 +1152,12 @@ $defs:
     description: Defines STRUCT_VARIANT_ARRAY as an array of STRUCT_VARIANT values
     type: object
     properties:
-      struct_variant_array_values:
-        type: object
-        properties:
-          struct_variant_values:
-            type: array
-            items:
-              $ref: "#/$defs/struct_variant_value"
+      struct_variants:
+        type: array
+          items:
+            $ref: "#/$defs/struct_variant_value"
         required:
-          - struct_variant_values
+          - struct_variants
         additionalProperties: false
     required:
       - struct_variant_array_values
