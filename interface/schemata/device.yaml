@@ -1154,8 +1154,8 @@ $defs:
     properties:
       struct_variants:
         type: array
-          items:
-            $ref: "#/$defs/struct_variant_value"
+        items:
+          $ref: "#/$defs/struct_variant_value"
         required:
           - struct_variants
         additionalProperties: false
