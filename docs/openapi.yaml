@@ -1518,15 +1518,58 @@ components:
       additionalProperties: false
     detail_level:
       title: Detail Level
-      description: "The level of detail in device messages and parameter updates.\n'full' indicates that all parameters are reported, \n'minimal' that only the minimal set is, \n'subscriptions' reports the minimal set plus identified subscribed\nparameters, \n'commands' reports only descriptors for commands and not for parameters,\nand 'none' indicates that no parameters or commands should be\nautomatically reported by the device (parameter descriptors, command\ndescriptors, and values can still be pulled).\n"
+      description: "The level of detail in device messages and parameter updates.\n'full' indicates that all parameters are reported, \n'minimal' that only the minimal set is, \n'subscriptions' reports the minimal set plus identified subscribed\nparameters, \n'commands' reports only descriptors for commands and not for parameters,\nand 'none' indicates that no parameters or commands should be\nautomatically reported by the device (parameter descriptors, command\ndescriptors, and values can still be pulled).\n\nThis is another place where human readability/writeability is important.\nProtobuf uses a numeric value for the detail level so we use a oneOf\nto enable both numeric and string values.\n"
+      oneOf:
+        - type: string
+          enum:
+            - FULL
+            - MINIMAL
+            - SUBSCRIPTIONS
+            - COMMANDS
+            - NONE
+            - UNSET
+          default: FULL
+        - type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+          default: 0
+          examples:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+          oneOf:
+            - const: 0
+              title: FULL
+            - const: 1
+              title: MINIMAL
+            - const: 2
+              title: SUBSCRIPTIONS
+            - const: 3
+              title: COMMANDS
+            - const: 4
+              title: NONE
+            - const: 5
+              title: UNSET
+    access_scope:
+      title: Access Scope
+      description: |
+        The parameter's access scope. If not present, the parameter's parent's
+        access scope is used unless the parameter is a top-level one, in which
+        case the device's default access scope is used.
       type: string
       enum:
-        - FULL
-        - MINIMAL
-        - SUBSCRIPTIONS
-        - COMMANDS
-        - NONE
-      default: FULL
+        - st2138:mon
+        - st2138:op
+        - st2138:cfg
+        - st2138:adm
     int32:
       title: INT32
       description: Defines INT32 as a primitive number type
@@ -1649,9 +1692,9 @@ components:
                     $ref: '#/components/schemas/int32'
                   step:
                     $ref: '#/components/schemas/int32'
-                  display_min_value:
+                  display_min:
                     $ref: '#/components/schemas/int32'
-                  display_max_value:
+                  display_max:
                     $ref: '#/components/schemas/int32'
                 required:
                   - min_value
@@ -1687,17 +1730,55 @@ components:
       properties:
         type:
           title: Constraint Type
-          description: The type of constraint applied
-          type: string
-          enum:
-            - UNDEFINED
-            - INT_CHOICE
-            - INT_RANGE
-            - ALARM_TABLE
-            - FLOAT_RANGE
-            - STRING_CHOICE
-            - STRING_STRING_CHOICE
-          default: UNDEFINED
+          description: |
+            The type of constraint applied
+            This is another place where human readability/writeability is important.
+            Protobuf uses a numeric value for the constraint type so we use a oneOf
+            to enable both numeric and string values.
+          oneOf:
+            - type: string
+              enum:
+                - UNDEFINED
+                - INT_CHOICE
+                - INT_RANGE
+                - ALARM_TABLE
+                - FLOAT_RANGE
+                - STRING_CHOICE
+                - STRING_STRING_CHOICE
+              default: UNDEFINED
+            - type: integer
+              enum:
+                - 0
+                - 2
+                - 4
+                - 5
+                - 6
+                - 7
+                - 8
+              default: 0
+              examples:
+                - 0
+                - 2
+                - 4
+                - 5
+                - 6
+                - 7
+                - 8
+              oneOf:
+                - const: 0
+                  title: UNDEFINED
+                - const: 2
+                  title: INT_CHOICE
+                - const: 4
+                  title: INT_RANGE
+                - const: 5
+                  title: ALARM_TABLE
+                - const: 6
+                  title: FLOAT_RANGE
+                - const: 7
+                  title: STRING_CHOICE
+                - const: 8
+                  title: STRING_STRING_CHOICE
       required:
         - type
       oneOf:
@@ -1891,9 +1972,9 @@ components:
                     $ref: '#/components/schemas/float32'
                   step:
                     $ref: '#/components/schemas/float32'
-                  display_min_value:
+                  display_min:
                     $ref: '#/components/schemas/float32'
-                  display_max_value:
+                  display_max:
                     $ref: '#/components/schemas/float32'
                 required:
                   - min_value
@@ -2259,18 +2340,12 @@ components:
       description: Defines STRUCT_VARIANT_ARRAY as an array of STRUCT_VARIANT values
       type: object
       properties:
-        struct_variant_array_values:
-          type: object
-          properties:
-            struct_variant_values:
-              type: array
-              items:
-                $ref: '#/components/schemas/struct_variant_value'
-          required:
-            - struct_variant_values
-          additionalProperties: false
+        struct_variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/struct_variant_value'
       required:
-        - struct_variant_array_values
+        - struct_variants
       additionalProperties: false
     apply_struct_variant_array:
       title: STRUCT_VARIANT_ARRAY specialism
@@ -2284,7 +2359,13 @@ components:
         type: object
         properties:
           value:
-            $ref: '#/components/schemas/struct_variant_array_values'
+            type: object
+            properties:
+              struct_variant_array_values:
+                $ref: '#/components/schemas/struct_variant_array_values'
+            required:
+              - struct_variant_array_values
+            additionalProperties: false
           constraint: false
           precision: false
           max_length: false
@@ -2306,12 +2387,35 @@ components:
               description: The base64-encoded binary payload
               pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
         payload_encoding:
-          type: string
-          enum:
-            - UNCOMPRESSED
-            - GZIP
-            - DEFLATE
-          default: UNCOMPRESSED
+          description: |
+            The encoding of the payload.
+            This is another place where human readability/writeability is important.
+            Protobuf uses a numeric value for the payload encoding so we use a oneOf
+            to enable both numeric and string values.
+          oneOf:
+            - type: string
+              enum:
+                - UNCOMPRESSED
+                - GZIP
+                - DEFLATE
+              default: UNCOMPRESSED
+            - type: integer
+              enum:
+                - 0
+                - 1
+                - 2
+              default: 0
+              examples:
+                - 0
+                - 1
+                - 2
+              oneOf:
+                - const: 0
+                  title: UNCOMPRESSED
+                - const: 1
+                  title: GZIP
+                - const: 2
+                  title: DEFLATE
         digest:
           type: string
           contentMediaType: application/octet-stream
@@ -2353,24 +2457,90 @@ components:
           total_length: false
     param_type:
       title: Parameter's data type
-      description: The parameter's data type
-      type: string
-      enum:
-        - UNDEFINED
-        - EMPTY
-        - INT32
-        - FLOAT32
-        - STRING
-        - STRUCT
-        - STRUCT_VARIANT
-        - INT32_ARRAY
-        - FLOAT32_ARRAY
-        - STRING_ARRAY
-        - BINARY
-        - STRUCT_ARRAY
-        - STRUCT_VARIANT_ARRAY
-        - DATA
-      default: UNDEFINED
+      description: |
+        The parameter's data type.
+        Note that the protobuf definition is an enumerated integer,
+        but using strings is more convenient for humans. So we support
+        both via the oneOf composition.
+      oneOf:
+        - type: integer
+          enum:
+            - 0
+            - 1
+            - 4
+            - 6
+            - 7
+            - 10
+            - 11
+            - 14
+            - 16
+            - 17
+            - 18
+            - 32
+            - 33
+            - 50
+          default: 0
+          examples:
+            - 0
+            - 1
+            - 4
+            - 6
+            - 7
+            - 10
+            - 11
+            - 14
+            - 16
+            - 17
+            - 18
+            - 32
+            - 33
+            - 50
+          oneOf:
+            - const: 0
+              title: UNDEFINED
+            - const: 1
+              title: EMPTY
+            - const: 4
+              title: INT32
+            - const: 6
+              title: FLOAT32
+            - const: 7
+              title: STRING
+            - const: 10
+              title: STRUCT
+            - const: 11
+              title: STRUCT_VARIANT
+            - const: 14
+              title: INT32_ARRAY
+            - const: 16
+              title: FLOAT32_ARRAY
+            - const: 17
+              title: STRING_ARRAY
+            - const: 18
+              title: BINARY
+            - const: 32
+              title: STRUCT_ARRAY
+            - const: 33
+              title: STRUCT_VARIANT_ARRAY
+            - const: 50
+              title: DATA
+        - type: string
+          enum:
+            - UNDEFINED
+            - EMPTY
+            - INT32
+            - FLOAT32
+            - STRING
+            - STRUCT
+            - STRUCT_VARIANT
+            - INT32_ARRAY
+            - FLOAT32_ARRAY
+            - STRING_ARRAY
+            - BINARY
+            - STRUCT_ARRAY
+            - STRUCT_VARIANT_ARRAY
+            - DATA
+          default: UNDEFINED
     param:
       title: Schema for Catena's Param object
       description: |
@@ -2478,18 +2648,6 @@ components:
       title: UI Widget
       description: Recommended UI widget to use for the parameter
       type: string
-    access_scope:
-      title: Access Scope
-      description: |
-        The parameter's access scope. If not present, the parameter's parent's
-        access scope is used unless the parameter is a top-level one, in which
-        case the device's default access scope is used.
-      type: string
-      enum:
-        - st2138:mon
-        - st2138:op
-        - st2138:cfg
-        - st2138:adm
     response:
       title: Response
       description: |
@@ -2773,18 +2931,70 @@ components:
       additionalProperties: false
     trap_message_type:
       title: Trap Message Type
-      description: The type of trap message.
-      type: integer
-      enum:
-        - 1
-        - 2
-        - 3
-        - 4
-        - 5
-        - 6
-        - 7
-        - 8
-        - 9
+      description: |
+        The type of trap message.
+        This is another place where human readability/writeability is important.
+        Protobuf uses a numeric value for the trap message type so we use a oneOf
+        to enable both numeric and string values.
+      oneOf:
+        - type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 8
+            - 9
+          default: 0
+          examples:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 8
+            - 9
+          oneOf:
+            - const: 0
+              title: UNUSED
+            - const: 1
+              title: RESTART
+            - const: 2
+              title: PARAM_CHANGED
+            - const: 3
+              title: MENU_CHANGED
+            - const: 4
+              title: EXTERNAL_OBJECT_CHANGED
+            - const: 5
+              title: REVEAL_ELEMENT
+            - const: 6
+              title: HIDE_ELEMENT
+            - const: 7
+              title: RELOAD_UI_ELEMENT
+            - const: 8
+              title: STRING_OID_CHANGED
+            - const: 9
+              title: REBUILD_UI
+        - type: string
+          enum:
+            - UNUSED
+            - RESTART
+            - PARAM_CHANGED
+            - MENU_CHANGED
+            - EXTERNAL_OBJECT_CHANGED
+            - REVEAL_ELEMENT
+            - HIDE_ELEMENT
+            - RELOAD_UI_ELEMENT
+            - STRING_OID_CHANGED
+            - REBUILD_UI
+          default: UNUSED
     push_trap_message:
       title: Push Trap Message
       description: |
@@ -2930,16 +3140,7 @@ components:
         The access scopes recognized by this the device.
       type: array
       items:
-        type: string
-        enum:
-          - st2138:mon
-          - st2138:mon:w
-          - st2138:op
-          - st2138:op:w
-          - st2138:cfg
-          - st2138:cfg:w
-          - st2138:adm
-          - st2138:adm:w
+        $ref: '#/components/schemas/access_scope'
     default_scope:
       title: Default Scope
       description: |
@@ -3079,6 +3280,28 @@ components:
       required:
         - remaining_subjects
         - revoked_subjects
+      additionalProperties: false
+    execute_command_payload:
+      title: Execute Command Payload
+      description: |
+        A command to be executed by the device.
+      type: object
+      properties:
+        slot:
+          $ref: '#/components/schemas/slot'
+        oid:
+          $ref: '#/components/schemas/fqoid'
+        value:
+          $ref: '#/components/schemas/value'
+        respond:
+          type: boolean
+          default: false
+          description: |
+            When true, the device will respond to the command.
+            When false, the device will not respond to the command.
+      required:
+        - slot
+        - oid
       additionalProperties: false
     external_object_request_payload:
       title: External Object Request Payload

@@ -45,17 +45,7 @@
       "description": "The access scopes recognized by this the device.\n",
       "type": "array",
       "items": {
-        "type": "string",
-        "enum": [
-          "st2138:mon",
-          "st2138:mon:w",
-          "st2138:op",
-          "st2138:op:w",
-          "st2138:cfg",
-          "st2138:cfg:w",
-          "st2138:adm",
-          "st2138:adm:w"
-        ]
+        "$ref": "#/$defs/access_scope"
       }
     },
     "default_scope": {
@@ -89,16 +79,67 @@
     },
     "detail_level": {
       "title": "Detail Level",
-      "description": "The level of detail in device messages and parameter updates.\n'full' indicates that all parameters are reported, \n'minimal' that only the minimal set is, \n'subscriptions' reports the minimal set plus identified subscribed\nparameters, \n'commands' reports only descriptors for commands and not for parameters,\nand 'none' indicates that no parameters or commands should be\nautomatically reported by the device (parameter descriptors, command\ndescriptors, and values can still be pulled).\n",
-      "type": "string",
-      "enum": [
-        "FULL",
-        "MINIMAL",
-        "SUBSCRIPTIONS",
-        "COMMANDS",
-        "NONE"
-      ],
-      "default": "FULL"
+      "description": "The level of detail in device messages and parameter updates.\n'full' indicates that all parameters are reported, \n'minimal' that only the minimal set is, \n'subscriptions' reports the minimal set plus identified subscribed\nparameters, \n'commands' reports only descriptors for commands and not for parameters,\nand 'none' indicates that no parameters or commands should be\nautomatically reported by the device (parameter descriptors, command\ndescriptors, and values can still be pulled).\n\nThis is another place where human readability/writeability is important.\nProtobuf uses a numeric value for the detail level so we use a oneOf\nto enable both numeric and string values.\n",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "FULL",
+            "MINIMAL",
+            "SUBSCRIPTIONS",
+            "COMMANDS",
+            "NONE",
+            "UNSET"
+          ],
+          "default": "FULL"
+        },
+        {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "default": 0,
+          "examples": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "oneOf": [
+            {
+              "const": 0,
+              "title": "FULL"
+            },
+            {
+              "const": 1,
+              "title": "MINIMAL"
+            },
+            {
+              "const": 2,
+              "title": "SUBSCRIPTIONS"
+            },
+            {
+              "const": 3,
+              "title": "COMMANDS"
+            },
+            {
+              "const": 4,
+              "title": "NONE"
+            },
+            {
+              "const": 5,
+              "title": "UNSET"
+            }
+          ]
+        }
+      ]
     },
     "multi_set_enabled": {
       "title": "Multi Set Enabled Flag",
@@ -423,25 +464,123 @@
     },
     "param_type": {
       "title": "Parameter's data type",
-      "description": "The parameter's data type",
-      "type": "string",
-      "enum": [
-        "UNDEFINED",
-        "EMPTY",
-        "INT32",
-        "FLOAT32",
-        "STRING",
-        "STRUCT",
-        "STRUCT_VARIANT",
-        "INT32_ARRAY",
-        "FLOAT32_ARRAY",
-        "STRING_ARRAY",
-        "BINARY",
-        "STRUCT_ARRAY",
-        "STRUCT_VARIANT_ARRAY",
-        "DATA"
-      ],
-      "default": "UNDEFINED"
+      "description": "The parameter's data type.\nNote that the protobuf definition is an enumerated integer,\nbut using strings is more convenient for humans. So we support\nboth via the oneOf composition.\n",
+      "oneOf": [
+        {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            4,
+            6,
+            7,
+            10,
+            11,
+            14,
+            16,
+            17,
+            18,
+            32,
+            33,
+            50
+          ],
+          "default": 0,
+          "examples": [
+            0,
+            1,
+            4,
+            6,
+            7,
+            10,
+            11,
+            14,
+            16,
+            17,
+            18,
+            32,
+            33,
+            50
+          ],
+          "oneOf": [
+            {
+              "const": 0,
+              "title": "UNDEFINED"
+            },
+            {
+              "const": 1,
+              "title": "EMPTY"
+            },
+            {
+              "const": 4,
+              "title": "INT32"
+            },
+            {
+              "const": 6,
+              "title": "FLOAT32"
+            },
+            {
+              "const": 7,
+              "title": "STRING"
+            },
+            {
+              "const": 10,
+              "title": "STRUCT"
+            },
+            {
+              "const": 11,
+              "title": "STRUCT_VARIANT"
+            },
+            {
+              "const": 14,
+              "title": "INT32_ARRAY"
+            },
+            {
+              "const": 16,
+              "title": "FLOAT32_ARRAY"
+            },
+            {
+              "const": 17,
+              "title": "STRING_ARRAY"
+            },
+            {
+              "const": 18,
+              "title": "BINARY"
+            },
+            {
+              "const": 32,
+              "title": "STRUCT_ARRAY"
+            },
+            {
+              "const": 33,
+              "title": "STRUCT_VARIANT_ARRAY"
+            },
+            {
+              "const": 50,
+              "title": "DATA"
+            }
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "UNDEFINED",
+            "EMPTY",
+            "INT32",
+            "FLOAT32",
+            "STRING",
+            "STRUCT",
+            "STRUCT_VARIANT",
+            "INT32_ARRAY",
+            "FLOAT32_ARRAY",
+            "STRING_ARRAY",
+            "BINARY",
+            "STRUCT_ARRAY",
+            "STRUCT_VARIANT_ARRAY",
+            "DATA"
+          ],
+          "default": "UNDEFINED"
+        }
+      ]
     },
     "value": {
       "title": "Parameter Value",
@@ -454,18 +593,74 @@
       "properties": {
         "type": {
           "title": "Constraint Type",
-          "description": "The type of constraint applied",
-          "type": "string",
-          "enum": [
-            "UNDEFINED",
-            "INT_CHOICE",
-            "INT_RANGE",
-            "ALARM_TABLE",
-            "FLOAT_RANGE",
-            "STRING_CHOICE",
-            "STRING_STRING_CHOICE"
-          ],
-          "default": "UNDEFINED"
+          "description": "The type of constraint applied\nThis is another place where human readability/writeability is important.\nProtobuf uses a numeric value for the constraint type so we use a oneOf\nto enable both numeric and string values.\n",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "UNDEFINED",
+                "INT_CHOICE",
+                "INT_RANGE",
+                "ALARM_TABLE",
+                "FLOAT_RANGE",
+                "STRING_CHOICE",
+                "STRING_STRING_CHOICE"
+              ],
+              "default": "UNDEFINED"
+            },
+            {
+              "type": "integer",
+              "enum": [
+                0,
+                2,
+                4,
+                5,
+                6,
+                7,
+                8
+              ],
+              "default": 0,
+              "examples": [
+                0,
+                2,
+                4,
+                5,
+                6,
+                7,
+                8
+              ],
+              "oneOf": [
+                {
+                  "const": 0,
+                  "title": "UNDEFINED"
+                },
+                {
+                  "const": 2,
+                  "title": "INT_CHOICE"
+                },
+                {
+                  "const": 4,
+                  "title": "INT_RANGE"
+                },
+                {
+                  "const": 5,
+                  "title": "ALARM_TABLE"
+                },
+                {
+                  "const": 6,
+                  "title": "FLOAT_RANGE"
+                },
+                {
+                  "const": 7,
+                  "title": "STRING_CHOICE"
+                },
+                {
+                  "const": 8,
+                  "title": "STRING_STRING_CHOICE"
+                }
+              ]
+            }
+          ]
         }
       },
       "required": [
@@ -632,10 +827,10 @@
                   "step": {
                     "$ref": "#/$defs/int32"
                   },
-                  "display_min_value": {
+                  "display_min": {
                     "$ref": "#/$defs/int32"
                   },
-                  "display_max_value": {
+                  "display_max": {
                     "$ref": "#/$defs/int32"
                   }
                 },
@@ -820,10 +1015,10 @@
                   "step": {
                     "$ref": "#/$defs/float32"
                   },
-                  "display_min_value": {
+                  "display_min": {
                     "$ref": "#/$defs/float32"
                   },
-                  "display_max_value": {
+                  "display_max": {
                     "$ref": "#/$defs/float32"
                   }
                 },
@@ -1340,7 +1535,16 @@
         "type": "object",
         "properties": {
           "value": {
-            "$ref": "#/$defs/struct_variant_array_values"
+            "type": "object",
+            "properties": {
+              "struct_variant_array_values": {
+                "$ref": "#/$defs/struct_variant_array_values"
+              }
+            },
+            "required": [
+              "struct_variant_array_values"
+            ],
+            "additionalProperties": false
           },
           "constraint": false,
           "precision": false,
@@ -1354,24 +1558,15 @@
       "description": "Defines STRUCT_VARIANT_ARRAY as an array of STRUCT_VARIANT values",
       "type": "object",
       "properties": {
-        "struct_variant_array_values": {
-          "type": "object",
-          "properties": {
-            "struct_variant_values": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/struct_variant_value"
-              }
-            }
-          },
-          "required": [
-            "struct_variant_values"
-          ],
-          "additionalProperties": false
+        "struct_variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/struct_variant_value"
+          }
         }
       },
       "required": [
-        "struct_variant_array_values"
+        "struct_variants"
       ],
       "additionalProperties": false
     },
@@ -1421,13 +1616,46 @@
           ]
         },
         "payload_encoding": {
-          "type": "string",
-          "enum": [
-            "UNCOMPRESSED",
-            "GZIP",
-            "DEFLATE"
-          ],
-          "default": "UNCOMPRESSED"
+          "description": "The encoding of the payload.\nThis is another place where human readability/writeability is important.\nProtobuf uses a numeric value for the payload encoding so we use a oneOf\nto enable both numeric and string values.\n",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "UNCOMPRESSED",
+                "GZIP",
+                "DEFLATE"
+              ],
+              "default": "UNCOMPRESSED"
+            },
+            {
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "default": 0,
+              "examples": [
+                0,
+                1,
+                2
+              ],
+              "oneOf": [
+                {
+                  "const": 0,
+                  "title": "UNCOMPRESSED"
+                },
+                {
+                  "const": 1,
+                  "title": "GZIP"
+                },
+                {
+                  "const": 2,
+                  "title": "DEFLATE"
+                }
+              ]
+            }
+          ]
         },
         "digest": {
           "type": "string",
@@ -1724,6 +1952,32 @@
       "type": "object",
       "additionalProperties": false
     },
+    "execute_command_payload": {
+      "title": "Execute Command Payload",
+      "description": "A command to be executed by the device.\n",
+      "type": "object",
+      "properties": {
+        "slot": {
+          "$ref": "#/$defs/slot"
+        },
+        "oid": {
+          "$ref": "#/$defs/fqoid"
+        },
+        "value": {
+          "$ref": "#/$defs/value"
+        },
+        "respond": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, the device will respond to the command.\nWhen false, the device will not respond to the command.\n"
+        }
+      },
+      "required": [
+        "slot",
+        "oid"
+      ],
+      "additionalProperties": false
+    },
     "command_response": {
       "title": "Command Response",
       "description": "Possible responses to a command.\n",
@@ -1982,18 +2236,94 @@
     },
     "trap_message_type": {
       "title": "Trap Message Type",
-      "description": "The type of trap message.",
-      "type": "integer",
-      "enum": [
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9
+      "description": "The type of trap message.\nThis is another place where human readability/writeability is important.\nProtobuf uses a numeric value for the trap message type so we use a oneOf\nto enable both numeric and string values.\n",
+      "oneOf": [
+        {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "default": 0,
+          "examples": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "oneOf": [
+            {
+              "const": 0,
+              "title": "UNUSED"
+            },
+            {
+              "const": 1,
+              "title": "RESTART"
+            },
+            {
+              "const": 2,
+              "title": "PARAM_CHANGED"
+            },
+            {
+              "const": 3,
+              "title": "MENU_CHANGED"
+            },
+            {
+              "const": 4,
+              "title": "EXTERNAL_OBJECT_CHANGED"
+            },
+            {
+              "const": 5,
+              "title": "REVEAL_ELEMENT"
+            },
+            {
+              "const": 6,
+              "title": "HIDE_ELEMENT"
+            },
+            {
+              "const": 7,
+              "title": "RELOAD_UI_ELEMENT"
+            },
+            {
+              "const": 8,
+              "title": "STRING_OID_CHANGED"
+            },
+            {
+              "const": 9,
+              "title": "REBUILD_UI"
+            }
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "UNUSED",
+            "RESTART",
+            "PARAM_CHANGED",
+            "MENU_CHANGED",
+            "EXTERNAL_OBJECT_CHANGED",
+            "REVEAL_ELEMENT",
+            "HIDE_ELEMENT",
+            "RELOAD_UI_ELEMENT",
+            "STRING_OID_CHANGED",
+            "REBUILD_UI"
+          ],
+          "default": "UNUSED"
+        }
       ]
     },
     "push_trap_message": {

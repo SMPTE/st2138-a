@@ -1162,9 +1162,9 @@ $defs:
         type: array
         items:
           $ref: "#/$defs/struct_variant_value"
-      required:
-        - struct_variants
-      additionalProperties: false
+    required:
+      - struct_variants
+    additionalProperties: false
 
   apply_data:
     title: DATA specialism
