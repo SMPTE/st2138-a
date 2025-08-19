@@ -541,8 +541,7 @@ $defs:
       because the REST API uses this after the fqoid in the path as a Parameter
       to indicate that the response is a stream of SSEs.
     type: string
-    pattern: ^(?!.*\.)(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}(?:/(?:(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\d{0,14}|[1-8]\d{15}))){0,29}(?:/(?:(?!stream$)[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\d{0,14}|[1-8]\d{15})|-))?$
-    
+    pattern: ^(?!.*\.)(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}(?:/(?:(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\d{0,14}|[1-8]\d{15}))){0,29}(?:/(?:(?!stream$)[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\d{0,14}|[1-8]\d{15})|-))?$ 
 
   template_oid:
     title: Template OID
