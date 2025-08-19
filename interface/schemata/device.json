@@ -674,17 +674,16 @@
     },
     "simple_oid": {
       "title": "Simple OID",
-      "description": "A simple OID is used as a key in a map of string keys to values.\nBecause it is also potentially used by code generators, its length and\ncharacter set are restricted.\n",
+      "description": "A simple OID is used as a key in a map of string keys to values.\nBecause it is also potentially used by code generators, its length and\ncharacter set are restricted.\nNote that the regex does not prevent the use of programming language\nkeywords as simple OIDs. (class, for, etc.) which should be tested for\nand flagged as errors by code generators.\n",
       "type": "string",
-      "pattern": "^[a-zA-Z]\\w{0,30}$",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,30}$",
       "default": ""
     },
     "fqoid": {
       "title": "Fully Qualified OID",
-      "description": "A fully qualified OID is used as a key in a map of string keys to values.\nIt is a simple OID with a leading slash. It's a \"headless\" json-pointer\nwith simple OIDs as the segments.\n",
+      "description": "A fully qualified OID is used to uniquely locate a specific item in the\ndevice model, elements of array type objects.\nIt is a \"headless\" json-pointer with the leading solidus implied.\nIt is composed of segments of two types, separated by a solidus.\n- simple OIDs\n- array indices\n- the one-past-the-end index indicated by '-', only valid at the end of\nthe fqoid\nAn additional restriction is that the last segment cannot be 'stream'\nbecause the REST API uses this after the fqoid in the path as a Parameter\nto indicate that the response is a stream of SSEs.\n",
       "type": "string",
-      "pattern": "^([a-zA-Z]\\w{0,30})(/([a-zA-Z]\\w{0,30})){0,30}$",
-      "default": ""
+      "pattern": "^(?!.*\\.)(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}(?:/(?:(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\\d{0,14}|[1-8]\\d{15}))){0,29}(?:/(?:(?!stream$)[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\\d{0,14}|[1-8]\\d{15})|-))?$"
     },
     "template_oid": {
       "title": "Template OID",

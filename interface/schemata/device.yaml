@@ -519,19 +519,30 @@ $defs:
       A simple OID is used as a key in a map of string keys to values.
       Because it is also potentially used by code generators, its length and
       character set are restricted.
+      Note that the regex does not prevent the use of programming language
+      keywords as simple OIDs. (class, for, etc.) which should be tested for
+      and flagged as errors by code generators.
     type: string
-    pattern: ^[a-zA-Z]\w{0,30}$
+    pattern: ^[A-Za-z][A-Za-z0-9_]{0,30}$
     default: ""
   
   fqoid:
     title: Fully Qualified OID
     description: |
-      A fully qualified OID is used as a key in a map of string keys to values.
-      It is a simple OID with a leading slash. It's a "headless" json-pointer
-      with simple OIDs as the segments.
+      A fully qualified OID is used to uniquely locate a specific item in the
+      device model, elements of array type objects.
+      It is a "headless" json-pointer with the leading solidus implied.
+      It is composed of segments of two types, separated by a solidus.
+      - simple OIDs
+      - array indices
+      - the one-past-the-end index indicated by '-', only valid at the end of
+      the fqoid
+      An additional restriction is that the last segment cannot be 'stream'
+      because the REST API uses this after the fqoid in the path as a Parameter
+      to indicate that the response is a stream of SSEs.
     type: string
-    pattern: ^([a-zA-Z]\w{0,30})(/([a-zA-Z]\w{0,30})){0,30}$
-    default: ""
+    pattern: ^(?!.*\.)(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}(?:/(?:(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\d{0,14}|[1-8]\d{15}))){0,29}(?:/(?:(?!stream$)[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\d{0,14}|[1-8]\d{15})|-))?$
+    
 
   template_oid:
     title: Template OID
