@@ -1141,7 +1141,13 @@ $defs:
       type: object
       properties:
         value:
-          $ref: "#/$defs/struct_variant_array_values"
+          type: object
+          properties:
+            struct_variant_array_values:
+              $ref: "#/$defs/struct_variant_array_values"
+          required:
+            - struct_variant_array_values
+          additionalProperties: false
         constraint: false
         precision: false
         max_length: false
@@ -1156,12 +1162,9 @@ $defs:
         type: array
         items:
           $ref: "#/$defs/struct_variant_value"
-        required:
-          - struct_variants
-        additionalProperties: false
-    required:
-      - struct_variant_array_values
-    additionalProperties: false
+      required:
+        - struct_variants
+      additionalProperties: false
 
   apply_data:
     title: DATA specialism
