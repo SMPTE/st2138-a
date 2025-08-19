@@ -25,19 +25,21 @@ params:
 value:
   struct_variant_array_values:
     struct_variants:
-      - struct_variant_type: email
-        value:
-          string_value: john.doe@example.com
-      - struct_variant_type: phone
-        value:
-          int32_value: 1234567890
-
-      - struct_variant_type: address
-        value:
-          struct_value:
-            street: 
-              string_value: 123 Main St
-            city: 
-              string_value: Anytown
-            postcode:
-              string_value: 12345
+      - struct_variant_value:
+          struct_variant_type: email
+          value:
+            string_value: john.doe@example.com
+      - struct_variant_value:
+          struct_variant_type: phone
+          value:
+            int32_value: 1234567890
+      - struct_variant_value:
+          struct_variant_type: address
+          value:
+            struct_value:
+              street:
+                string_value: 123 Main St
+              city:
+                string_value: Anytown
+              postcode:
+                string_value: 12345
