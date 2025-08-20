@@ -343,6 +343,7 @@ $defs:
       # The tools/validate.js script works with the 2022-12 draft of the spec.
       # unevaluatedProperties: false
       additionalProperties: false
+      required: [type]
 
       # specialize the value schema for each param_type
       allOf:
@@ -530,7 +531,7 @@ $defs:
     title: Fully Qualified OID
     description: |
       A fully qualified OID is used to uniquely locate a specific item in the
-      device model, elements of array type objects.
+      device model, and elements of array type objects.
       It is a "headless" json-pointer with the leading solidus implied.
       It is composed of segments of two types, separated by a solidus.
       - simple OIDs
