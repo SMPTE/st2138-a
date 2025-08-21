@@ -343,7 +343,6 @@ $defs:
       # The tools/validate.js script works with the 2022-12 draft of the spec.
       # unevaluatedProperties: false
       additionalProperties: false
-      required: [type]
 
       # specialize the value schema for each param_type
       allOf:
