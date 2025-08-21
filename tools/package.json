@@ -8,10 +8,10 @@
     "yaml": "^2.3.0"
   },
   "scripts": {},
-  "name": "validate",
+  "name": "smpte-st2138-a-validator",
   "version": "1.0.0",
   "description": "Validates JSON and YAML files against Catena schemata",
-  "main": "validate.js",
+  "main": "validator.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SMPTE/st2138-a.git"
@@ -20,7 +20,7 @@
     "json-schema",
     "st2138",
     "catena",
-    "validate"
+    "smpte-st2138-a-validator"
   ],
   "author": "John R. Naylor",
   "license": "BSD-3-Clause",
