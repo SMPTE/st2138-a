@@ -360,9 +360,6 @@
         }
       },
       "additionalProperties": false,
-      "required": [
-        "type"
-      ],
       "allOf": [
         {
           "$ref": "#/$defs/apply_int32"
