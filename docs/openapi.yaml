@@ -2594,8 +2594,6 @@ components:
         stateless:
           $ref: '#/components/schemas/stateless'
       additionalProperties: false
-      required:
-        - type
       allOf:
         - $ref: '#/components/schemas/apply_int32'
         - $ref: '#/components/schemas/apply_float32'
