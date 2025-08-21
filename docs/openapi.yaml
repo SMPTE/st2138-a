@@ -2594,6 +2594,8 @@ components:
         stateless:
           $ref: '#/components/schemas/stateless'
       additionalProperties: false
+      required:
+        - type
       allOf:
         - $ref: '#/components/schemas/apply_int32'
         - $ref: '#/components/schemas/apply_float32'
@@ -2777,7 +2779,7 @@ components:
       title: Fully Qualified OID
       description: |
         A fully qualified OID is used to uniquely locate a specific item in the
-        device model, elements of array type objects.
+        device model, and elements of array type objects.
         It is a "headless" json-pointer with the leading solidus implied.
         It is composed of segments of two types, separated by a solidus.
         - simple OIDs

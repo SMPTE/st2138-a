@@ -360,6 +360,9 @@
         }
       },
       "additionalProperties": false,
+      "required": [
+        "type"
+      ],
       "allOf": [
         {
           "$ref": "#/$defs/apply_int32"
@@ -681,7 +684,7 @@
     },
     "fqoid": {
       "title": "Fully Qualified OID",
-      "description": "A fully qualified OID is used to uniquely locate a specific item in the\ndevice model, elements of array type objects.\nIt is a \"headless\" json-pointer with the leading solidus implied.\nIt is composed of segments of two types, separated by a solidus.\n- simple OIDs\n- array indices\n- the one-past-the-end index indicated by '-', only valid at the end of\nthe fqoid\nAn additional restriction is that the last segment cannot be 'stream'\nbecause the REST API uses this after the fqoid in the path as a Parameter\nto indicate that the response is a stream of SSEs.\n",
+      "description": "A fully qualified OID is used to uniquely locate a specific item in the\ndevice model, and elements of array type objects.\nIt is a \"headless\" json-pointer with the leading solidus implied.\nIt is composed of segments of two types, separated by a solidus.\n- simple OIDs\n- array indices\n- the one-past-the-end index indicated by '-', only valid at the end of\nthe fqoid\nAn additional restriction is that the last segment cannot be 'stream'\nbecause the REST API uses this after the fqoid in the path as a Parameter\nto indicate that the response is a stream of SSEs.\n",
       "type": "string",
       "pattern": "^(?!.*\\.)(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}(?:/(?:(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\\d{0,14}|[1-8]\\d{15}))){0,29}(?:/(?:(?!stream$)[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\\d{0,14}|[1-8]\\d{15})|-))?$"
     },
