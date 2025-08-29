@@ -31,6 +31,6 @@ st2138-a-validate ./data/device.good.yaml
 Or ust npx to run without installation
 
 ```bash
-npx smpte-st2138-a-validator ./data/device.example.yaml
+npx smpte-st2138-a-validator ./data/device.good.yaml
 ```
 
