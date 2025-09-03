@@ -71,8 +71,8 @@ post:
 
   # Admin, Operator or Configure scope with write access is required.
   security:
-      - oauth2:
-        - st2138:adm:w
+    - oauth2:
+      - st2138:adm:w
   tags:
     - Access Management
 
