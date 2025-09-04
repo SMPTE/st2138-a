@@ -8,6 +8,7 @@ yq 'del(.. | select(has("$id")) | .["$id"])' interface/schemata/device.yaml -o=j
 echo "✅ Wrote interface/schemata/device.json"
 
 # 2. Copy device.json to tools/data/device.json
+mkdir -p tools/data
 cp interface/schemata/device.json tools/data/device.json
 
 echo "📦 Bundling OpenAPI spec with Redocly CLI..."
