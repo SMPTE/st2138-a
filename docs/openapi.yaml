@@ -1111,14 +1111,6 @@ paths:
           description: The level of detail to connect in
           schema:
             $ref: '#/components/schemas/detail_level'
-        - name: force_connection
-          in: query
-          required: false
-          description: Optional flag to force a connection. The presence of this parameter forces the connection, regardless of its value. (The value is ignored; any value assigned such as "true" will have the same effect.) Only actioned if st2138:adm:w is present in the security header.
-          schema:
-            type: string
-            enum:
-              - 'true'
       tags:
         - Updates
       responses:
