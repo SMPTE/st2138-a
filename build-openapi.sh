@@ -9,7 +9,7 @@ echo "✅ Wrote interface/schemata/device.json"
 
 echo "📦 Bundling OpenAPI spec with Redocly CLI..."
 # 2. Bundle OpenAPI spec to /docs/openapi.yaml
-npx @redocly/cli bundle interface/openapi/openapi.yaml -o docs/openapi.yaml
+npx -y @redocly/cli bundle interface/openapi/openapi.yaml -o docs/openapi.yaml
 echo "✅ Bundled OpenAPI to docs/openapi.yaml"
 
 echo "📤 Promoting #/components/schemas/device/\$defs to top-level #/components/schemas..."
