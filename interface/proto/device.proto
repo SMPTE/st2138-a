@@ -198,8 +198,6 @@ message ConnectPayload {
   string language = 1;
   Device.DetailLevel detail_level = 2;
   string user_agent = 3;               // Description of the client type and version
-  bool force_connection = 4;           // True to request access if connection had been previously refused
-  /* authn / authz should be handled by gRPC metadata */
 }
 
 /* Provides backward compatibility with binary OGP */

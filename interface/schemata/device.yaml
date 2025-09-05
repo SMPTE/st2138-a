@@ -1,5 +1,5 @@
 #
-# Copyright (c) by the Society of Motion Picture and Television Engineers
+# Copyright © MMXXV by the Society of Motion Picture and Television Engineers
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -530,7 +530,7 @@ $defs:
     title: Fully Qualified OID
     description: |
       A fully qualified OID is used to uniquely locate a specific item in the
-      device model, elements of array type objects.
+      device model, and elements of array type objects.
       It is a "headless" json-pointer with the leading solidus implied.
       It is composed of segments of two types, separated by a solidus.
       - simple OIDs

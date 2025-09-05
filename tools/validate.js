@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /*
  * Copyright (c) by the Society of Motion Picture and Television Engineers
  *
@@ -36,16 +38,12 @@ if (!testfile) {
 
 // extract schema name from input filename
 const schemaName = path.parse(testfile).name.split('.')[0];
-const schemaFile = path.join(__dirname, '../interface/schemata/device.json');
 
 try {
-    const validator = new Validator(schemaFile);
+    const validator = new Validator();
     console.log(`Applying schema '${schemaName}' to file '${testfile}'`);
     const ans = validator.validate(schemaName, testfile);
     console.log(ans.valid ? '✅ Validation succeeded.' : '❌ Validation failed.');
-    if (ans.data) {
-        console.log(JSON.stringify(ans.data, null, 2));
-    }
     process.exit(ans.valid ? 0 : 2);
 } catch (err) {
     console.error(`Error: ${err.message}`);

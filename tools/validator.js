@@ -5,17 +5,13 @@ const jsonMap = require('json-source-map');
 const fs = require('fs');
 const path = require('node:path');
 const yaml = require('yaml');
+const schema = require('./data/device.json');
 
 'use strict'; // <-- now applied after AJV is safely loaded
 
 class Validator {
-    constructor(schemaFile) {
-        if (!fs.existsSync(schemaFile)) {
-            throw new Error(`Cannot open schema file at: ${schemaFile}`);
-        }
+    constructor() {
 
-        this.schemaFile = schemaFile;
-        this.schema = JSON.parse(fs.readFileSync(schemaFile));
         this.ajv = new Ajv({
             strict: true,
             strictSchema: true,
@@ -28,13 +24,13 @@ class Validator {
     }
 
     addSchemas(genus) {
-        const schemaMap = jsonMap.stringify(this.schema, null, 2);
-        for (const species in this.schema[genus]) {
-            if (!Object.prototype.hasOwnProperty.call(this.schema[genus], species)) continue;
+        const schemaMap = jsonMap.stringify(schema, null, 2);
+        for (const species in schema[genus]) {
+            if (!Object.prototype.hasOwnProperty.call(schema[genus], species)) continue;
             if (species.startsWith('$comment')) continue;
 
             try {
-                this.ajv.addSchema(this.schema[genus][species], `#/${genus}/${species}`);
+                this.ajv.addSchema(schema[genus][species], `#/${genus}/${species}`);
             } catch (err) {
                 const errorPointer = schemaMap.pointers[`/${genus}/${species}`];
                 throw new Error(`${err.message} at #/${genus}/${species} on lines ${errorPointer.value.line}-${errorPointer.valueEnd.line}`);
@@ -61,17 +57,17 @@ class Validator {
         const { data, sourceMap } = Validator.loadTestData(filePath);
 
         const isDeviceSchema = schemaName.startsWith('device');
-        if (!isDeviceSchema && !(schemaName in this.schema.$defs)) {
+        if (!isDeviceSchema && !(schemaName in schema.$defs)) {
             throw { error: 2, message: `Could not find ${schemaName} in schema definition file.` };
         }
 
         let valid, errors;
         if (isDeviceSchema) {
-            const validate = this.ajv.compile(this.schema);
+            const validate = this.ajv.compile(schema);
             valid = validate(data);
             errors = validate.errors;
         } else {
-            valid = this.ajv.validate(this.schema.$defs[schemaName], data);
+            valid = this.ajv.validate(schema.$defs[schemaName], data);
             errors = this.ajv.errors;
         }
 
