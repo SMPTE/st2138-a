@@ -18,28 +18,28 @@ constraint:
   alarm_table:
     alarms:
       - bit_value: 0
-        severity: SEVERE
+        severity: 0
         description:
           display_strings:
             en: Evacuate the studio!
             fr: Evacuer le studio!
             es: Evacuar el estudio!
       - bit_value: 1
-        severity: WARNING
+        severity: 4
         description:
           display_strings:
             en: Don't touch that dial!
             fr: Ne touchez pas à ce bouton!
             es: No toques ese botón!
       - bit_value: 2
-        severity: INFO
+        severity: 6
         description:
           display_strings:
             en: The studio is now safe.
             fr: Le studio est maintenant sûr.
             es: El estudio está ahora seguro.
       - bit_value: 3
-        severity: UNKNOWN
+        severity: 5
         description:
           display_strings:
             en: Something happened but I don't know what.

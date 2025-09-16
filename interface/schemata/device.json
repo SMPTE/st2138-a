@@ -882,7 +882,7 @@
     },
     "alarm": {
       "title": "Alarm",
-      "description": "Defines an alarm in terms of its severity and a description of the problem causing it.\nAlarms occupy one bit in the alarm table allowing up to 32 different alarms to be reported.\n",
+      "description": "Defines an alarm in terms of its severity and a description of the problem causing it.\nAlarms occupy one bit in the alarm table allowing up to 32 different alarms to be reported.\nThe Syslog severity levels are used.\n",
       "type": "object",
       "properties": {
         "bit_value": {
@@ -891,12 +891,69 @@
           "maximum": 31
         },
         "severity": {
-          "type": "string",
+          "type": "integer",
           "enum": [
-            "INFO",
-            "WARNING",
-            "SEVERE",
-            "UNKNOWN"
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "default": 0,
+          "examples": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "oneOf": [
+            {
+              "const": 0,
+              "title": "Emergency",
+              "description": "System is unusable"
+            },
+            {
+              "const": 1,
+              "title": "Alert",
+              "description": "Immediate action required"
+            },
+            {
+              "const": 2,
+              "title": "Critical",
+              "description": "Critical conditions"
+            },
+            {
+              "const": 3,
+              "title": "Error",
+              "description": "Error conditions"
+            },
+            {
+              "const": 4,
+              "title": "Warning",
+              "description": "Warning conditions"
+            },
+            {
+              "const": 5,
+              "title": "Notice",
+              "description": "Normal but significant condition"
+            },
+            {
+              "const": 6,
+              "title": "Informational",
+              "description": "Informational messages"
+            },
+            {
+              "const": 7,
+              "title": "Debug",
+              "description": "Debug-level messages"
+            }
           ]
         },
         "description": {
