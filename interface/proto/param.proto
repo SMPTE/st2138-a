@@ -129,9 +129,6 @@ message Param {
   /* Additional properties to assist client */
   map<string, string> client_hints = 11;
 
-  /* If this is an imported sub-device, it can have a set of commands too. */
-  map<string, Param> commands = 12;
-
   /* If this is a STRUCT or STRUCT_ARRAY Param its sub-params are defined here. */
   map<string, Param> params = 13;
 

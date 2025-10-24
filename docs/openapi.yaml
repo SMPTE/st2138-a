@@ -2547,16 +2547,14 @@ components:
           $ref: '#/components/schemas/polyglot_text'
         type:
           $ref: '#/components/schemas/param_type'
+        params:
+          $ref: '#/components/schemas/param_map'
         value:
           $ref: '#/components/schemas/value'
         constraint:
           oneOf:
             - $ref: '#/components/schemas/constraint_ref'
             - $ref: '#/components/schemas/constraint'
-        params:
-          $ref: '#/components/schemas/param_map'
-        commands:
-          $ref: '#/components/schemas/param_map'
         template_oid:
           $ref: '#/components/schemas/template_oid'
         read_only:
@@ -2573,8 +2571,6 @@ components:
           $ref: '#/components/schemas/access_scope'
         client_hints:
           $ref: '#/components/schemas/client_hints'
-        response:
-          $ref: '#/components/schemas/response'
         minimal_set:
           $ref: '#/components/schemas/minimal_set'
         help:
@@ -2643,12 +2639,6 @@ components:
       title: UI Widget
       description: Recommended UI widget to use for the parameter
       type: string
-    response:
-      title: Response
-      description: |
-        Flag to indicate whether the parent command object produces a response.
-      type: boolean
-      default: false
     minimal_set:
       title: Minimal Set Flag
       description: |
@@ -2706,6 +2696,75 @@ components:
         persisted. Examples: time of day, audio meter, etc.
       type: boolean
       default: false
+    response:
+      title: Response
+      description: |
+        Flag to indicate whether the parent command object produces a response.
+      type: boolean
+      default: false
+    command:
+      title: Schema for Catena's Command object
+      description: |
+        Defines the command's type, constraints on its value, UI hints, access control
+        and other properties.
+        Commands inherit all parameter capabilities but must declare whether they provide responses.
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/polyglot_text'
+        type:
+          $ref: '#/components/schemas/param_type'
+        params:
+          $ref: '#/components/schemas/param_map'
+        value:
+          $ref: '#/components/schemas/value'
+        constraint:
+          oneOf:
+            - $ref: '#/components/schemas/constraint_ref'
+            - $ref: '#/components/schemas/constraint'
+        template_oid:
+          $ref: '#/components/schemas/template_oid'
+        read_only:
+          $ref: '#/components/schemas/read_only'
+        precision:
+          $ref: '#/components/schemas/precision'
+        max_length:
+          $ref: '#/components/schemas/max_length'
+        total_length:
+          $ref: '#/components/schemas/total_length'
+        widget:
+          $ref: '#/components/schemas/widget'
+        access_scope:
+          $ref: '#/components/schemas/access_scope'
+        client_hints:
+          $ref: '#/components/schemas/client_hints'
+        minimal_set:
+          $ref: '#/components/schemas/minimal_set'
+        help:
+          $ref: '#/components/schemas/polyglot_text'
+        import:
+          $ref: '#/components/schemas/import'
+        oid_aliases:
+          $ref: '#/components/schemas/oid_aliases'
+        stateless:
+          $ref: '#/components/schemas/stateless'
+        response:
+          $ref: '#/components/schemas/response'
+      required:
+        - response
+      additionalProperties: false
+      allOf:
+        - $ref: '#/components/schemas/apply_int32'
+        - $ref: '#/components/schemas/apply_float32'
+        - $ref: '#/components/schemas/apply_string'
+        - $ref: '#/components/schemas/apply_struct'
+        - $ref: '#/components/schemas/apply_struct_variant'
+        - $ref: '#/components/schemas/apply_int32_array'
+        - $ref: '#/components/schemas/apply_float32_array'
+        - $ref: '#/components/schemas/apply_string_array'
+        - $ref: '#/components/schemas/apply_struct_array'
+        - $ref: '#/components/schemas/apply_struct_variant_array'
+        - $ref: '#/components/schemas/apply_data'
     device:
       $schema: https://json-schema.org/draft/2020-12/schema
       title: Schema for Catena's Device Model
@@ -2717,7 +2776,7 @@ components:
         params:
           $ref: '#/components/schemas/param_map'
         commands:
-          $ref: '#/components/schemas/param_map'
+          $ref: '#/components/schemas/command_map'
         access_scopes:
           $ref: '#/components/schemas/access_scopes'
         default_scope:
@@ -3135,6 +3194,17 @@ components:
             $ref: '#/components/schemas/slot'
       required:
         - slots_removed
+      additionalProperties: false
+    command_map:
+      title: Command Map
+      description: |
+        A map of simple_oids to command descriptors.
+        The keys are the names of the commands.
+      type: object
+      patternProperties:
+        ^[a-zA-Z][a-zA-Z0-9_]{0,31}$:
+          $ref: '#/components/schemas/command'
+      minProperties: 1
       additionalProperties: false
     access_scopes:
       title: Access Scopes
