@@ -3,9 +3,11 @@ set -euo pipefail
 
 echo "🔄 Converting YAML schema to JSON with \$id stripped..."
 
-# 1. Convert YAML to JSON and remove $id
-yq 'del(.. | select(has("$id")) | .["$id"])' interface/schemata/device.yaml -o=json > interface/schemata/device.json
-echo "✅ Wrote interface/schemata/device.json"
+# 1. Convert YAML to JSON and remove $id and x-anchors
+yq '
+  del(.. | select(has("$id"))["$id"]) |
+  del(.["x-anchors"])
+' interface/schemata/device.yaml -o=json > interface/schemata/device.json
 
 # 2. Copy device.json to tools/data/device.json
 mkdir -p tools/data
