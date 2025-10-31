@@ -3,15 +3,21 @@
     "ajv": "^8.12.1",
     "ajv-formats": "^2.1.1",
     "json-source-map": "^0.6.1",
-    "node": "^20.7.0",
     "protobufjs": "^7.5.3",
     "yaml": "^2.3.0"
   },
-  "scripts": {},
-  "name": "validate",
+  "engines": {
+    "node": ">=20.7.0"
+  },
+  "scripts": {
+    "test_good": "node validate.js ./data/device.good.yaml || true",
+    "test_bad": "node validate.js ./data/device.bad.yaml || true",
+    "test": "npm run validate.js ./data/device.good.yaml"
+  },
+  "name": "smpte-st2138-a-validator",
   "version": "1.0.0",
   "description": "Validates JSON and YAML files against Catena schemata",
-  "main": "validate.js",
+  "main": "validator.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SMPTE/st2138-a.git"
@@ -20,12 +26,20 @@
     "json-schema",
     "st2138",
     "catena",
-    "validate"
+    "smpte-st2138-a-validator"
   ],
   "author": "John R. Naylor",
   "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/SMPTE/st2138-a/issues"
   },
-  "homepage": "https://github.com/SMPTE/st2138-a#readme"
+  "homepage": "https://github.com/SMPTE/st2138-a#readme",
+  "files": [
+    "validator.js",
+    "validate.js",
+    "data/"
+  ],
+  "bin": {
+    "st2138-a-validate": "./validate.js"
+  }
 }

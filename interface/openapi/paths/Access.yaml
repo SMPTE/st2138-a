@@ -1,5 +1,5 @@
 #
-# Copyright (c) by the Society of Motion Picture and Television Engineers
+# Copyright © MMXXV by the Society of Motion Picture and Television Engineers
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -71,8 +71,8 @@ post:
 
   # Admin, Operator or Configure scope with write access is required.
   security:
-      - oauth2:
-        - st2138:adm:w
+    - oauth2:
+      - st2138:adm:w
   tags:
     - Access Management
 

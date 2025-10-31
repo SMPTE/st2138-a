@@ -1,5 +1,7 @@
 node_modules/
-package-lock.json
-schemata/device.json
+interface/schemata/device.json
+tools/data/*
 .redocly.yaml
 build/
+*.tgz
+

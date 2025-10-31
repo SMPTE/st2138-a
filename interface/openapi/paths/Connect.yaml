@@ -1,5 +1,5 @@
 #
-# Copyright (c) by the Society of Motion Picture and Television Engineers
+# Copyright © MMXXV by the Society of Motion Picture and Television Engineers
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -40,18 +40,6 @@ get:
       description: The level of detail to connect in
       schema:
         $ref: "../../schemata/device.json#/$defs/detail_level"
-
-    - name: force_connection
-      in: query
-      required: false
-      description: Optional flag to force a connection. The presence of this 
-        parameter forces the connection, regardless of its value. (The value 
-        is ignored; any value assigned such as "true" will have the same 
-        effect.)
-        Only actioned if st2138:adm:w is present in the security header.
-      schema:
-        type: string
-        enum: ["true"]
 
   tags:
     - Updates  
