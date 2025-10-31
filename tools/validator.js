@@ -2,7 +2,7 @@ const Ajv = require('ajv/dist/2020');
 const addFormats = require('ajv-formats').default;
 
 const jsonMap = require('json-source-map');
-const fs = require('fs');
+const fs = require('fs/promises');
 const path = require('node:path');
 const yaml = require('yaml');
 const schema = require('./data/device.json');
@@ -38,13 +38,38 @@ class Validator {
         }
     }
 
-    static loadTestData(filePath) {
-        if (!fs.existsSync(filePath)) {
-            throw new Error(`Cannot open file at ${filePath}`);
+    /**
+     * @param {URL} url to load data from
+     * @param {string} digest if provided, verify data integrity against this sha256 digest
+     * @returns {Promise<{data: object, sourceMap: object}>} loaded data and source map
+     * @throws {Error} if file cannot be opened, fetched, or digest does not match
+     */
+    static async loadTestData(url, digest = null) {
+        const ext = path.extname(url.pathname).toLowerCase();
+        let raw = '';
+        if (url.protocol === 'file:') {
+            try {
+                raw = await fs.readFile(url, 'utf8');
+            } catch {
+                throw new Error(`Cannot open file at ${url.pathname}`);
+            }
+        } else {
+            // assume it's a URL we can fetch
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+            }
+            raw = await response.text();
         }
 
-        const ext = path.extname(filePath).toLowerCase();
-        const raw = fs.readFileSync(filePath, 'utf8');
+        if (digest) {
+            const crypto = require('node:crypto');
+            const hash = crypto.createHash('sha256').update(raw).digest('hex');
+            if (hash !== digest) {
+                throw new Error(`Digest mismatch for ${filePath}: expected ${digest}, got ${hash}`);
+            }
+        }
+
         const data = ext === '.yaml' || ext === '.yml' ? yaml.parse(raw) : JSON.parse(raw);
 
         return {
@@ -53,8 +78,8 @@ class Validator {
         };
     }
 
-    validate(schemaName, filePath) {
-        const { data, sourceMap } = Validator.loadTestData(filePath);
+    async validate(schemaName, url, digest = null) {
+        const { data, sourceMap } = await Validator.loadTestData(url, digest);
 
         const isDeviceSchema = schemaName.startsWith('device');
         if (!isDeviceSchema && !(schemaName in schema.$defs)) {
