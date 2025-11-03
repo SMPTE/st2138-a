@@ -1389,33 +1389,19 @@ $defs:
       Provides the ability to build device models from multiple files.
       If a URL is provided, the import will be attempted from there.
       Otherwise a local file path can be provided.
-    oneOf:
-      - type: object
-        properties:
-          url:
-            type: string
-            format: uri
-            description: The URL of the import file.
-          digest:
-            type: string
-            contentMediaType: application/octet-stream
-            contentEncoding: base64
-            description: The SHA-256 digest of the import file.
-        required: [url]
-        additionalProperties: false
-      
-      - type: object
-        properties:
-          file:
-            type: string
-            description: Local path to the import file.
-          digest:
-            type: string
-            contentMediaType: application/octet-stream
-            contentEncoding: base64
-            description: The SHA-256 digest of the import file.
-        required: [file]
-        additionalProperties: false
+    type: object
+    properties:
+      url:
+        type: string
+        format: uri-reference
+        description: The URL of the import file.
+      digest:
+        type: string
+        contentMediaType: application/octet-stream
+        contentEncoding: base64
+        description: The SHA-256 digest of the import file.
+    required: [url]
+    additionalProperties: false
 
   oid_aliases:
     title: OID Aliases
