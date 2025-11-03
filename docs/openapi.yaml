@@ -2346,7 +2346,7 @@ components:
             struct_values:
               type: array
               items:
-                $ref: '#/components/schemas/struct_fields'
+                $ref: '#/components/schemas/struct_value'
           required:
             - struct_values
           additionalProperties: false

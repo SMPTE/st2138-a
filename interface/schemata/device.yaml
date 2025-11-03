@@ -1186,7 +1186,7 @@ $defs:
           struct_values:
             type: array
             items:
-              $ref: "#/$defs/struct_fields"
+              $ref: "#/$defs/struct_value"
         required:
           - struct_values
         additionalProperties: false
