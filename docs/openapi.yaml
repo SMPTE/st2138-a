@@ -2161,16 +2161,10 @@ components:
       description: Defines STRUCT as a map of string keys to values
       type: object
       properties:
-        struct_value:
-          type: object
-          properties:
-            fields:
-              $ref: '#/components/schemas/struct_fields'
-          required:
-            - fields
-          additionalProperties: false
+        fields:
+          $ref: '#/components/schemas/struct_fields'
       required:
-        - struct_value
+        - fields
       additionalProperties: false
     apply_struct:
       title: STRUCT specialism
@@ -2184,7 +2178,13 @@ components:
         type: object
         properties:
           value:
-            $ref: '#/components/schemas/struct_value'
+            type: object
+            properties:
+              struct_value:
+                $ref: '#/components/schemas/struct_value'
+            required:
+              - struct_value
+            additionalProperties: false
           constraint: false
           precision: false
           max_length: false
