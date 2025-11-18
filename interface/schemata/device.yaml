@@ -967,7 +967,13 @@ $defs:
       type: object
       properties:
         value:
-          $ref: "#/$defs/struct_value"
+          type: object
+          properties:
+            struct_value:
+              $ref: "#/$defs/struct_value"
+          required:
+            - struct_value
+          additionalProperties: false
         
         # structs have no constraints, their children may
         constraint: false
@@ -980,16 +986,10 @@ $defs:
     description: Defines STRUCT as a map of string keys to values
     type: object
     properties:
-      struct_value:
-        type: object
-        properties:
-          fields:
-            $ref: "#/$defs/struct_fields"
-        required:
-          - fields
-        additionalProperties: false
+      fields:
+        $ref: "#/$defs/struct_fields"
     required:
-      - struct_value
+      - fields
     additionalProperties: false
 
   struct_fields:
