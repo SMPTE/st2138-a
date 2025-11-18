@@ -27,25 +27,33 @@ const Validator = require('./validator');
 'use strict'; // <-- now applied after AJV is safely loaded (via validator.js)
 
 // get file from command line
-const testfile = process.argv[2];
+let testfile = process.argv[2];
 
 if (!testfile) {
-    console.log('Usage: node validate.js path/to/test/schema-name.object-name.json or .yaml');
+    console.log('Usage: node validate.js path/to/test/schema-name.object-name.json or .yaml [digest]');
     console.log('Example: node validate.js ./tests/device.my-device.json');
-    console.log('Example: node validate.js ./tests/device.param.yaml');
+    console.log('Example: node validate.js ./tests/device.param.yaml sha256digest');
     process.exit(1);
 }
 
-// extract schema name from input filename
-const schemaName = path.parse(testfile).name.split('.')[0];
+// convert to URL
+if (testfile.indexOf('://') === -1) {
+    testfile = 'file://' + path.resolve(testfile);
+}
+const url = new URL(testfile);
 
-try {
+// extract schema name from input filename
+const schemaName = path.parse(url.pathname).name.split('.')[0];
+
+const digest = process.argv[3] || null;
+
+(async () => {
     const validator = new Validator();
-    console.log(`Applying schema '${schemaName}' to file '${testfile}'`);
-    const ans = validator.validate(schemaName, testfile);
+    console.log(`Applying schema '${schemaName}' to '${url}'`);
+    const ans = await validator.validate(schemaName, url, digest);
     console.log(ans.valid ? '✅ Validation succeeded.' : '❌ Validation failed.');
     process.exit(ans.valid ? 0 : 2);
-} catch (err) {
+})().catch((err) => {
     console.error(`Error: ${err.message}`);
     process.exit(err.error || 1);
-}
+});
