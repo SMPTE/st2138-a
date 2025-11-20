@@ -1,0 +1,17 @@
+# Example of an INT32_ARRAY parameter
+
+name:
+  display_strings:
+    en: Prime Numbers
+    fr: Nombres premiers
+
+type: INT32_ARRAY
+
+value:
+  int32_array_values:
+    ints: # warning: not all prime numbers are here ;-)
+      - 2
+      - 3
+      - 5
+      - 7
+

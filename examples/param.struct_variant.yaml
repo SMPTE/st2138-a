@@ -1,0 +1,38 @@
+# example of a struct variant parameter
+# This shows that a credential can be a password or a PIN
+# The PIN is a 4 digit integer, and the password is a string - different data types
+
+
+name:
+  display_strings:
+    en: Credential
+
+type: STRUCT_VARIANT
+
+params:
+  password:
+    type: STRING
+    name:
+      display_strings:
+        en: Password
+    value: 
+      string_value: Change Me!
+  PIN:
+    type: INT32
+    name:
+      display_strings:
+        en: PIN
+    value:
+      int32_value: 1234
+    constraint:
+      type: INT_RANGE
+      int32_range:
+        min_value: 0000
+        max_value: 9999
+
+value:
+  struct_variant_value:
+    struct_variant_type: PIN
+    value:
+      int32_value: 5678
+

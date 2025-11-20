@@ -1,0 +1,19 @@
+# Example of a DATA parameter
+
+name:
+  display_strings:
+    en: Image
+
+type: DATA
+
+read_only: true
+
+value:
+  data_payload:
+    payload: https://example.com/image.png
+    payload_encoding: UNCOMPRESSED
+    metadata:
+      mime-type: image/png
+      width: "1024"
+      height: "768"
+    digest: sha256:...

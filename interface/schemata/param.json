@@ -1,0 +1,4 @@
+{
+    "$comment": "Convienience schema for parameter definitions",
+    "$ref": "./device.json#/$defs/param"
+}

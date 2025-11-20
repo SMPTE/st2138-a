@@ -1,0 +1,13 @@
+# Example usage of the stateless flag
+# When true, clients should not persist the value because it is almost
+# instantly out of date.
+
+name:
+  display_strings:
+    en: Audio Meter
+
+type: FLOAT32
+
+widget: audio_meter
+
+stateless: true

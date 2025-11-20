@@ -1,0 +1,131 @@
+# Example of a device model
+# While valid, it's purpose is to show the different elements of a device
+# rather than do any media processing.
+
+# Slot must be unique within the context of an API connection
+slot: 1
+
+# How much information the device will provide to the client.
+detail_level: FULL
+
+# Whether the device supports multi-set.
+multi_set_enabled: true
+
+# Whether the device supports subscriptions.
+subscriptions: false
+
+# Constraints can be shared between parameters if they're defined here.
+constraints:
+  # Example of a shared constraint. Parameters can use via ref_oid.
+  on_off:
+    type: INT_CHOICE
+    int32_choice:
+      choices:
+        - value: 0
+          name:
+            display_strings:
+              en: Off
+              fr: Arrêt
+              es: Apagado
+        - value: 1
+          name:
+            display_strings:
+              en: On
+              fr: Marche
+              es: Encendido
+
+# Our device's parameters - the minimum required by the Catena Model standard.
+params:
+  product:
+    type: STRUCT
+    name:
+      display_strings:
+        en: Product Information
+    params:
+      name:
+        type: STRING
+        value: 
+          string_value: Minimal Device
+      version:
+        type: STRING
+        value:
+          string_value: 1.0.0
+      vendor:
+        type: STRING
+        value:
+          string_value: SMPTE
+    
+# list the access scopes supported by the device.
+# this one supports all scopes.
+access_scopes:
+  - st2138:mon
+  - st2138:op
+  - st2138:cfg
+  - st2138:adm
+
+# The default scope is the one used when no scope is specified.
+default_scope: st2138:mon
+
+# Commands are the actions that the device can perform.
+# Unlike parameters, commands are alwaysstateless.
+commands:
+  play: # an example command
+    name:
+      display_strings:
+        en: ▶︎
+    widget: button
+    type: FLOAT32
+    value:
+      float32_value: 1.0
+    response: false
+
+# Language packs can be used to simplify and future proof strings that appear
+# in the UI such as parameter names. Instead of defining the display strings
+# inline in the various object definitions, we can define them here and reference
+# them by name.
+# The API also supports field installations of language packs.
+language_packs:
+  packs:
+    en:
+      name:
+        English
+      words:
+        status: Status
+        product: Product
+    fr:
+      name:
+        French
+      words:
+        status: Statut
+        product: Produit
+    es:
+      name:
+        Spanish
+      words:
+        status: Status
+        product: Producto
+
+# Minimal example of a menu group "Status" that gets its name from a 
+# language pack.
+# It contains just one collection of menus, "Product" That also gets
+# its name from a language pack.
+# The menu contains just the product parameter and no commands.
+# The menu group is neither hidden nor disabled.
+menu_groups:
+  status:
+    name: 
+      display_strings:
+        $key: status
+    order: 0
+    menus:
+      product:
+        name:
+          display_strings:
+            $key: product
+        param_oids:
+          - /product
+        hidden: false
+        disabled: false
+        order: 0
+
+

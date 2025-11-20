@@ -1,0 +1,16 @@
+# This example shows how to reference a constraint that is shared by multiple parameters.
+
+name: 
+  display_strings:
+    en: Referenced Constraint Example
+    fr: Exemple de contrainte référencée
+    es: Ejemplo de restricción referenciada
+
+type: INT32
+
+value:
+  int32_value: 1
+
+# the value of ref_oid is used to key into the top-level map of shared constraints at the device level.
+constraint:
+  ref_oid: my_referenced_constraint
