@@ -4,11 +4,12 @@ set -euo pipefail
 echo "🔄 Converting YAML schema to JSON with \$id stripped..."
 
 # 1. Convert YAML to JSON and remove $id and x-anchors
-yq '
-  del(.. | select(has("$id"))["$id"]) |
-  del(.["x-anchors"])
-' interface/schemata/device.yaml -o=json > interface/schemata/device.json
-
+# first resolve any anchors
+mkdir -p build
+# TODO: Remove --yaml-fix-merge-anchor-to-spec flag after yq defaults to true (late 2025)
+yq --yaml-fix-merge-anchor-to-spec 'explode(.) | del(.["x-anchors"])' interface/schemata/device.yaml -o=yaml > build/device.yaml
+# then remove $id fields and convert to JSON
+yq 'del(.. | select(has("$id"))["$id"])' build/device.yaml -o=json > interface/schemata/device.json
 # 2. Copy device.json to tools/data/device.json
 mkdir -p tools/data
 cp interface/schemata/device.json tools/data/device.json
