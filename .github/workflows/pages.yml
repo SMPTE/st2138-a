@@ -26,6 +26,9 @@ jobs:
           cp -r examples/ public/
           cp -r interface/ public/
           cp build/device.yaml public/interface/schemata/device.yaml
+          cp README.md public/
+          cp LICENSE.md public/
+          cp _config.yml public/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
