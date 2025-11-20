@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - 26-schema-validate-cant-follow-yaml-anchors
 
 jobs:
   build-and-deploy:
@@ -20,17 +21,11 @@ jobs:
       - name: Build
         run: |
           ./build-openapi.sh
-          mkdir -p public
-          cp -r docs/ public/
-          cp -r examples/ public/
-          cp -r interface/ public/
-          cp build/device.yaml public/interface/schemata/device.yaml
-          cp README.md public/
-          cp LICENSE.md public/
-          cp _config.yml public/
+          echo "Copying built schema to interface/schemata"
+          cp build/device.yaml interface/schemata/device.yaml
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
+          publish_dir: .
