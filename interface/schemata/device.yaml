@@ -709,6 +709,7 @@ $defs:
     description: | 
       Defines an alarm in terms of its severity and a description of the problem causing it.
       Alarms occupy one bit in the alarm table allowing up to 32 different alarms to be reported.
+      The Syslog severity levels are used.
     type: object
     properties:
       bit_value:
@@ -716,8 +717,35 @@ $defs:
         minimum: 0
         maximum: 31
       severity:
-        type: string
-        enum: [INFO, WARNING, SEVERE, UNKNOWN]
+        type: integer
+        enum: [0, 1, 2, 3, 4, 5, 6, 7]
+        default: 0
+        examples: [0, 1, 2, 3, 4, 5, 6, 7]
+        oneOf:
+          - const: 0
+            title: Emergency
+            description: "System is unusable"
+          - const: 1
+            title: Alert
+            description: "Immediate action required"
+          - const: 2
+            title: Critical
+            description: "Critical conditions"
+          - const: 3
+            title: Error
+            description: "Error conditions"
+          - const: 4
+            title: Warning
+            description: "Warning conditions"
+          - const: 5
+            title: Notice
+            description: "Normal but significant condition"
+          - const: 6
+            title: Informational
+            description: "Informational messages"
+          - const: 7
+            title: Debug
+            description: "Debug-level messages"
       description:
         $ref: "#/$defs/polyglot_text"
     required: [bit_value, severity, description]
@@ -939,7 +967,13 @@ $defs:
       type: object
       properties:
         value:
-          $ref: "#/$defs/struct_value"
+          type: object
+          properties:
+            struct_value:
+              $ref: "#/$defs/struct_value"
+          required:
+            - struct_value
+          additionalProperties: false
         
         # structs have no constraints, their children may
         constraint: false
@@ -952,16 +986,10 @@ $defs:
     description: Defines STRUCT as a map of string keys to values
     type: object
     properties:
-      struct_value:
-        type: object
-        properties:
-          fields:
-            $ref: "#/$defs/struct_fields"
-        required:
-          - fields
-        additionalProperties: false
+      fields:
+        $ref: "#/$defs/struct_fields"
     required:
-      - struct_value
+      - fields
     additionalProperties: false
 
   struct_fields:
@@ -1361,33 +1389,19 @@ $defs:
       Provides the ability to build device models from multiple files.
       If a URL is provided, the import will be attempted from there.
       Otherwise a local file path can be provided.
-    oneOf:
-      - type: object
-        properties:
-          url:
-            type: string
-            format: uri
-            description: The URL of the import file.
-          digest:
-            type: string
-            contentMediaType: application/octet-stream
-            contentEncoding: base64
-            description: The SHA-256 digest of the import file.
-        required: [url]
-        additionalProperties: false
-      
-      - type: object
-        properties:
-          file:
-            type: string
-            description: Local path to the import file.
-          digest:
-            type: string
-            contentMediaType: application/octet-stream
-            contentEncoding: base64
-            description: The SHA-256 digest of the import file.
-        required: [file]
-        additionalProperties: false
+    type: object
+    properties:
+      url:
+        type: string
+        format: uri-reference
+        description: The URL of the import file.
+      digest:
+        type: string
+        contentMediaType: application/octet-stream
+        contentEncoding: base64
+        description: The SHA-256 digest of the import file.
+    required: [url]
+    additionalProperties: false
 
   oid_aliases:
     title: OID Aliases
