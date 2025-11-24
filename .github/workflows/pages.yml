@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - publish-fix
 
 jobs:
   build-and-deploy:
@@ -28,7 +27,6 @@ jobs:
           cp build/device.yaml publish/interface/schemata/device.yaml
           mkdir -p publish/docs
           cp -r docs/openapi.yaml publish/docs/openapi.yaml
-
 
       - name: Publish
         run: |
