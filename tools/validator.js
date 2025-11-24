@@ -66,7 +66,7 @@ class Validator {
             const crypto = require('node:crypto');
             const hash = crypto.createHash('sha256').update(raw).digest('hex');
             if (hash !== digest) {
-                throw new Error(`Digest mismatch for ${filePath}: expected ${digest}, got ${hash}`);
+                throw new Error(`Digest mismatch for ${url}: expected ${digest}, got ${hash}`);
             }
         }
 
