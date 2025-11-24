@@ -1,8 +1,0 @@
-# _config.yml
-
-exclude:
-  - /interface/proto
-  - /tools
-  - /examples
-
-  
