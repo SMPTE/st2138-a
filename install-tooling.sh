@@ -3,9 +3,25 @@
 
 # This script installs the tools used by build-openapi.sh
 # and /tools/validator.js
+# do not run as root
 
 
 set -euo pipefail
+
+
+# ensure script is not run as root or with sudo
+if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+  if [[ -n "${SUDO_USER:-}" ]]; then
+    echo "❌ This script was run with sudo."
+    echo "   Re-run it without sudo:"
+    echo
+    echo "     $0"
+  else
+    echo "❌ This script is running as root."
+    echo "   Please run it as a normal user."
+  fi
+  exit 1
+fi
 
 # --- helpers ------------------------------------------------------------
 
