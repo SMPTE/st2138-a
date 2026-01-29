@@ -47,6 +47,12 @@ detect_os() {
   esac
 }
 
+# compare two semantic version strings
+# returns 0 if $1 >= $2
+version_ge() {
+  [ "$(printf '%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]
+}
+
 # --- main ----------------------------------------------------------------
 
 echo "🔧 Starting toolchain setup..."
@@ -77,22 +83,46 @@ else
   # Optional: fail fast if something went wrong
   type nvm >/dev/null 2>&1 || { echo "❌ nvm install succeeded but nvm failed to load"; exit 1; }
 fi
-exit 0
+
 # --- NODE 20.19.0 INSTALL ---
 NODE_VERSION="20.19.0"
 
-echo "⬇️ Installing Node.js $NODE_VERSION..."
-nvm install "$NODE_VERSION"
-nvm use "$NODE_VERSION"
+# ensure nvm is loaded (you already do above)
+# . "$NVM_DIR/nvm.sh"
+
+if command -v node >/dev/null 2>&1; then
+  CURRENT_NODE_VERSION="$(node -v | sed 's/^v//')"
+else
+  CURRENT_NODE_VERSION=""
+fi
+
+if [ -z "$CURRENT_NODE_VERSION" ] || ! version_ge "$CURRENT_NODE_VERSION" "$NODE_VERSION"; then
+  echo "⬇️ Installing Node.js $NODE_VERSION..."
+  nvm install "$NODE_VERSION"
+else
+  echo "✅ Node.js $CURRENT_NODE_VERSION already satisfies >= $NODE_VERSION"
+fi
+
+# activate this version and ensure node is on PATH for the rest of the script
+nvm use "$NODE_VERSION" >/dev/null
+NODE_INST_DIR="$NVM_DIR/versions/node/v$NODE_VERSION"
+if [ -d "$NODE_INST_DIR/bin" ]; then
+  export PATH="$NODE_INST_DIR/bin:$PATH"
+  hash -r
+fi
+
+# final sanity check
+command -v node >/dev/null 2>&1 || { echo "❌ node not found after nvm use + PATH patch"; exit 1; }
 
 echo "📦 Node.js version set to $(node -v)"
 
+
 # --- REDOCLY CLI INSTALL ---
-if ! command -v redocly &> /dev/null; then
-  echo "⬇️ Installing Redocly CLI..."
-  npm install -g @redocly/cli
-else
+if nvm exec "$NODE_VERSION" redocly --version >/dev/null 2>&1; then
   echo "✅ Redocly CLI already installed."
+else
+  echo "⬇️ Installing Redocly CLI..."
+  nvm exec "$NODE_VERSION" npm install -g @redocly/cli
 fi
 
 # --- YQ INSTALL ---
