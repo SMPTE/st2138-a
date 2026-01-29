@@ -87,9 +87,6 @@ fi
 # --- NODE 20.19.0 INSTALL ---
 NODE_VERSION="20.19.0"
 
-# ensure nvm is loaded (you already do above)
-# . "$NVM_DIR/nvm.sh"
-
 if command -v node >/dev/null 2>&1; then
   CURRENT_NODE_VERSION="$(node -v | sed 's/^v//')"
 else
@@ -146,10 +143,46 @@ if ! command -v yq &> /dev/null; then
     VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
       https://github.com/mikefarah/yq/releases/latest | sed 's|.*/tag/||')"
 
+    INSTALL_DIR="$HOME/.local/bin"
+
     echo "📦 Downloading yq ${VERSION} for ${OS}/${ARCH}..."
-    curl -fL -o /usr/local/bin/yq \
+
+    mkdir -p "$INSTALL_DIR"
+
+    curl -fL -o "$INSTALL_DIR/yq" \
       "https://github.com/mikefarah/yq/releases/download/${VERSION}/yq_${OS}_${ARCH}"
-    chmod +x /usr/local/bin/yq
+
+    chmod +x "$INSTALL_DIR/yq"
+
+    # --- PATH handling ------------------------------------------------------
+
+    # Add to PATH for current shell
+    if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
+      export PATH="$INSTALL_DIR:$PATH"
+    fi
+
+    # Decide which rc file to modify
+    if [ -n "${ZSH_VERSION:-}" ]; then
+      RC_FILE="$HOME/.zshrc"
+    elif [ -n "${BASH_VERSION:-}" ]; then
+      RC_FILE="$HOME/.bashrc"
+    else
+      RC_FILE=""
+    fi
+
+    # Persist PATH update if possible
+    if [ -n "$RC_FILE" ]; then
+      if ! grep -qs 'export PATH="$HOME/.local/bin:$PATH"' "$RC_FILE"; then
+        echo "" >> "$RC_FILE"
+        echo "# Added by yq installer" >> "$RC_FILE"
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC_FILE"
+        echo "➕ Added ~/.local/bin to PATH in $(basename "$RC_FILE")"
+      else
+        echo "✅ ~/.local/bin already on PATH in $(basename "$RC_FILE")"
+      fi
+    else
+      echo "⚠️ Could not determine shell rc file; PATH not persisted"
+    fi
   fi
 
 else
