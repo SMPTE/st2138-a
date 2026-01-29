@@ -51,19 +51,33 @@ detect_os() {
 
 echo "🔧 Starting toolchain setup..."
 
-# --- NVM INSTALL ---
-if ! command -v nvm &> /dev/null; then
-  echo "⬇️ Installing NVM..."
+
+# Install nvm if not already installed
+# N.B. nvm is not a command, it's a script that needs to be sourced into the
+# current shell to make the nvm command available.
+echo "⬇️ Checking nvm..."
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  # Installed: load it
+  . "$NVM_DIR/nvm.sh"
+  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+fi
+
+if type nvm >/dev/null 2>&1; then
+  echo "✅ NVM already installed & loaded."
+else
+  echo "⬇️ Installing nvm..."
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 
   # Load into current shell
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-else
-  echo "✅ NVM already installed."
-fi
+  . "$NVM_DIR/nvm.sh"
+  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
 
+  # Optional: fail fast if something went wrong
+  type nvm >/dev/null 2>&1 || { echo "❌ nvm install succeeded but nvm failed to load"; exit 1; }
+fi
+exit 0
 # --- NODE 20.19.0 INSTALL ---
 NODE_VERSION="20.19.0"
 
