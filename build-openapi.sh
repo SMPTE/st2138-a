@@ -1,6 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
+
+# fail fast if running as root or with sudo
+require_not_root || exit 1
+
+# put yq on PATH in current shell
+put_yq_on_path
+
 echo "🔄 Converting YAML schema to JSON with \$id stripped..."
 
 # 1. Convert YAML to JSON and remove $id and x-anchors
