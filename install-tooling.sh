@@ -70,11 +70,12 @@ echo "📦 Node.js version set to $(node -v)"
 
 
 # --- REDOCLY CLI INSTALL ---
-if nvm exec "$NODE_VERSION" redocly --version >/dev/null 2>&1; then
-  echo "✅ Redocly CLI already installed."
+# Runs the CLI via npx; downloads if needed, caches automatically.
+if npx -y @redocly/cli --version >/dev/null 2>&1; then
+  echo "✅ Redocly CLI available via npx."
 else
-  echo "⬇️ Installing Redocly CLI..."
-  nvm exec "$NODE_VERSION" npm install -g @redocly/cli
+  echo "❌ npx failed (Node/npm not available)."
+  exit 1
 fi
 
 # --- YQ INSTALL ---
