@@ -14,35 +14,32 @@ source "$SCRIPT_DIR/common.sh"
 # fail fast if running as root or with sudo
 require_not_root || exit 1
 
+load_nvm() {
+  echo "⬇️ Checking nvm..."
+  export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+
+  if [ -s "$NVM_DIR/nvm.sh" ]; then
+    # Installed: load it
+    . "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+  fi
+
+  if type nvm >/dev/null 2>&1; then
+    echo "✅ NVM already installed & loaded."
+  else
+    echo "⬇️ Installing nvm..."
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+    # Load into current shell
+    . "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+
+    # Optional: fail fast if something went wrong
+    type nvm >/dev/null 2>&1 || { echo "❌ nvm install succeeded but nvm failed to load"; exit 1; }
+  fi
+}
+
 echo "🔧 Starting toolchain setup..."
-
-# Install nvm if not already installed
-# N.B. nvm is not a command, it's a script that needs to be sourced into the
-# current shell to make the nvm command available.
-echo "⬇️ Checking nvm..."
-export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-
-if [ -s "$NVM_DIR/nvm.sh" ]; then
-  # Installed: load it
-  . "$NVM_DIR/nvm.sh"
-  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-fi
-
-if type nvm >/dev/null 2>&1; then
-  echo "✅ NVM already installed & loaded."
-else
-  echo "⬇️ Installing nvm..."
-  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-
-  # Load into current shell
-  . "$NVM_DIR/nvm.sh"
-  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-
-  # Optional: fail fast if something went wrong
-  type nvm >/dev/null 2>&1 || { echo "❌ nvm install succeeded but nvm failed to load"; exit 1; }
-fi
-
-# --- NODE 20.19.0 INSTALL ---
 NODE_VERSION="20.19.0"
 
 if command -v node >/dev/null 2>&1; then
@@ -52,18 +49,18 @@ else
 fi
 
 if [ -z "$CURRENT_NODE_VERSION" ] || ! version_ge "$CURRENT_NODE_VERSION" "$NODE_VERSION"; then
+  load_nvm
   echo "⬇️ Installing Node.js $NODE_VERSION..."
   nvm install "$NODE_VERSION"
+  # activate this version and ensure node is on PATH for the rest of the script
+  nvm use "$NODE_VERSION" >/dev/null
+  NODE_INST_DIR="$NVM_DIR/versions/node/v$NODE_VERSION"
+  if [ -d "$NODE_INST_DIR/bin" ]; then
+    export PATH="$NODE_INST_DIR/bin:$PATH"
+    hash -r
+  fi
 else
   echo "✅ Node.js $CURRENT_NODE_VERSION already satisfies >= $NODE_VERSION"
-fi
-
-# activate this version and ensure node is on PATH for the rest of the script
-nvm use "$NODE_VERSION" >/dev/null
-NODE_INST_DIR="$NVM_DIR/versions/node/v$NODE_VERSION"
-if [ -d "$NODE_INST_DIR/bin" ]; then
-  export PATH="$NODE_INST_DIR/bin:$PATH"
-  hash -r
 fi
 
 # final sanity check
