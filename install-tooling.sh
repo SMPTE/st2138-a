@@ -1,62 +1,20 @@
 #!/usr/bin/env bash
 
-
 # This script installs the tools used by build-openapi.sh
 # and /tools/validator.js
 # do not run as root
 
-
 set -euo pipefail
 
+# source the common.sh script, the -- tells cd and dirname that everything that
+# follows is data, not options.
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
-# ensure script is not run as root or with sudo
-if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
-  if [[ -n "${SUDO_USER:-}" ]]; then
-    echo "❌ This script was run with sudo."
-    echo "   Re-run it without sudo:"
-    echo
-    echo "     $0"
-  else
-    echo "❌ This script is running as root."
-    echo "   Please run it as a normal user."
-  fi
-  exit 1
-fi
-
-# --- helpers ------------------------------------------------------------
-
-# detect the instruction set architecture (amd64, arm64, arm, 386)
-# returns: amd64, arm64, arm, 386 or 1 if not detected
-detect_arch() {
-  case "$(uname -m)" in
-    x86_64|amd64)   echo amd64 ;;
-    aarch64|arm64) echo arm64 ;;
-    armv7l|armv7*) echo arm ;;
-    i386|i686)     echo 386 ;;
-    *) return 1 ;;
-  esac
-}
-
-# detect the operating system (linux, darwin, unknown)
-# returns: linux, darwin or 1 if not known
-detect_os() {
-  case "$(uname -s)" in
-    Linux*)     echo linux ;;
-    Darwin*)    echo darwin ;;
-    *)          return 1 ;;
-  esac
-}
-
-# compare two semantic version strings
-# returns 0 if $1 >= $2
-version_ge() {
-  [ "$(printf '%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]
-}
-
-# --- main ----------------------------------------------------------------
+# fail fast if running as root or with sudo
+require_not_root || exit 1
 
 echo "🔧 Starting toolchain setup..."
-
 
 # Install nvm if not already installed
 # N.B. nvm is not a command, it's a script that needs to be sourced into the
@@ -161,28 +119,6 @@ if ! command -v yq &> /dev/null; then
       export PATH="$INSTALL_DIR:$PATH"
     fi
 
-    # Decide which rc file to modify
-    if [ -n "${ZSH_VERSION:-}" ]; then
-      RC_FILE="$HOME/.zshrc"
-    elif [ -n "${BASH_VERSION:-}" ]; then
-      RC_FILE="$HOME/.bashrc"
-    else
-      RC_FILE=""
-    fi
-
-    # Persist PATH update if possible
-    if [ -n "$RC_FILE" ]; then
-      if ! grep -qs 'export PATH="$HOME/.local/bin:$PATH"' "$RC_FILE"; then
-        echo "" >> "$RC_FILE"
-        echo "# Added by yq installer" >> "$RC_FILE"
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC_FILE"
-        echo "➕ Added ~/.local/bin to PATH in $(basename "$RC_FILE")"
-      else
-        echo "✅ ~/.local/bin already on PATH in $(basename "$RC_FILE")"
-      fi
-    else
-      echo "⚠️ Could not determine shell rc file; PATH not persisted"
-    fi
   fi
 
 else
