@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 
 # require_not_root ensures the script is not run as root or with sudo.
+# unless running in a container
 require_not_root() {
+
+  # skip this check if running in a container
+  if [ -f /.dockerenv ]; then
+    return 0
+  fi
+
   local uid
   uid="${EUID:-$(id -u)}"
 
