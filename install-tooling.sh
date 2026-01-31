@@ -75,6 +75,7 @@ if npx -y @redocly/cli --version >/dev/null 2>&1; then
   echo "✅ Redocly CLI available via npx."
 else
   echo "❌ npx failed (Node/npm not available)."
+  npx -y @redocly/cli --version 
   exit 1
 fi
 
@@ -128,5 +129,5 @@ echo ""
 echo "🎉 Toolchain is ready:"
 echo "• Node.js: $(node -v)"
 echo "• npm:     $(npm -v)"
-echo "• redocly: $(redocly --version)"
+echo "• redocly: $(npx -y @redocly/cli --version)"
 echo "• yq:      $(yq --version)"
