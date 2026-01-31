@@ -5,7 +5,8 @@
 require_not_root() {
 
   # skip this check if running in a container
-  if [ -f /.dockerenv ]; then
+  if [[ "${IN_CONTAINER_BUILD:-0}" == "1" ]]; then
+    echo "🐳 Container build detected, skipping root check"
     return 0
   fi
 
