@@ -60,6 +60,8 @@ get:
       schema:
         $ref: "../../schemata/device.json#/$defs/fqoid"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Parameters
     - Subscriptions

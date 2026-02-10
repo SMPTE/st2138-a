@@ -42,6 +42,8 @@ get:
       schema:
         $ref: "../../schemata/device.json#/$defs/slot"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Subscriptions
     - Parameters

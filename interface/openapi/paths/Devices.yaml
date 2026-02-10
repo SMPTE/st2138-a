@@ -38,6 +38,9 @@ get:
   tags:
     - Discovery
 
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   responses:
     '200':
       description: A list of the slot numbers that are occupied by a device

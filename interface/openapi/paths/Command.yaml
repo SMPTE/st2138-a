@@ -66,6 +66,8 @@ post:
         enum: ["true"]
         default: "true" # because protobuf defaults to false
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Commands
     

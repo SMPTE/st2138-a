@@ -58,6 +58,8 @@ get:
         enum: [UNCOMPRESSED, GZIP, DEFLATE]
       example: "UNCOMPRESSED"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Assets
     
@@ -130,6 +132,8 @@ post:
         $ref: "../../schemata/device.json#/$defs/fqoid"
       example: "image.png"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   requestBody:
     required: true
     content:
@@ -189,6 +193,8 @@ put:
         $ref: "../../schemata/device.json#/$defs/fqoid"
       example: "image.png"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   requestBody:
     required: true
     content:
@@ -245,6 +251,8 @@ delete:
       schema:
         $ref: "../../schemata/device.json#/$defs/fqoid"
       example: "image.png"
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
   
   requestBody:
     required: true

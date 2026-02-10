@@ -37,6 +37,9 @@ get:
   tags:
     - Discovery
 
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   responses:
     "200":
       description: Indicates that the Catena REST service is healthy

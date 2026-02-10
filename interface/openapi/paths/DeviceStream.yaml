@@ -49,6 +49,8 @@ get:
       schema:
         $ref: "../../schemata/device.json#/$defs/detail_level"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Discovery
 

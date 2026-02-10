@@ -51,6 +51,8 @@ get:
         $ref: "../../schemata/device.json#/$defs/slot"
       example: 1  
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Languages
 
