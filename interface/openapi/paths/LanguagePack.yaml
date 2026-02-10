@@ -51,6 +51,8 @@ get:
         default: "en"
       example: "es"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Languages
 
@@ -118,6 +120,8 @@ post:
         type: string
         default: "" 
       example: "fr"
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
   requestBody:
     required: true
@@ -189,6 +193,8 @@ delete:
         default: "en"
         example: "fr"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   responses:
     "204":
       description: Empty response - everything is OK
@@ -245,6 +251,8 @@ put:
         type: string
         default: "en"
         example: "fr"
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
   requestBody:
     required: true

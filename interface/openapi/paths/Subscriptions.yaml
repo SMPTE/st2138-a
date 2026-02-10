@@ -42,6 +42,8 @@ get:
       schema:
         $ref: "../../schemata/device.json#/$defs/slot"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Subscriptions
     - Parameters
@@ -127,6 +129,8 @@ put:
       description: The slot of the device model containing the subscriptions to update
       schema:
         $ref: "../../schemata/device.json#/$defs/slot"
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
   
   tags:
     - Parameters

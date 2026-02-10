@@ -35,7 +35,10 @@ get:
 
   tags:
     - Access Management
-    
+
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   responses:
     "200":
       description: |
@@ -75,6 +78,9 @@ post:
       - st2138:adm:w
   tags:
     - Access Management
+
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
   requestBody:
     required: true

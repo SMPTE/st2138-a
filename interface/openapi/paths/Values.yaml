@@ -50,7 +50,9 @@ put:
       description: The slot of the device model containing the parameters to get info for
       schema:
         $ref: "../../schemata/device.json#/$defs/slot"
-  
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Parameters
 

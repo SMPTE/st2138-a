@@ -49,6 +49,8 @@ get:
         $ref: "../../schemata/device.json#/$defs/fqoid"
       example: "text_box"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Parameters
 

@@ -49,6 +49,8 @@ get:
         $ref: "../../schemata/device.json#/$defs/fqoid"
       example: "image.png"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Assets
     

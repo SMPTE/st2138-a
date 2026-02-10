@@ -53,6 +53,8 @@ get:
       style: form
       explode: false
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Parameters
     - Subscriptions
