@@ -23,8 +23,6 @@ paths:
       operationId: Health
       tags:
         - Discovery
-      parameters:
-        - $ref: '#/components/parameters/RequestStart'
       responses:
         '200':
           description: Indicates that the Catena REST service is healthy
@@ -45,8 +43,6 @@ paths:
       operationId: Devices
       tags:
         - Discovery
-      parameters:
-        - $ref: '#/components/parameters/RequestStart'
       responses:
         '200':
           description: A list of the slot numbers that are occupied by a device
@@ -90,7 +86,6 @@ paths:
           description: The level of detail to request the device in
           schema:
             $ref: '#/components/schemas/detail_level'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Discovery
       responses:
@@ -139,7 +134,6 @@ paths:
           description: The level of detail to request the device in
           schema:
             $ref: '#/components/schemas/detail_level'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Discovery
       responses:
@@ -217,7 +211,6 @@ paths:
             enum:
               - 'true'
             default: 'true'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Commands
       requestBody:
@@ -289,7 +282,6 @@ paths:
             enum:
               - 'true'
             default: 'true'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Commands
       requestBody:
@@ -384,7 +376,6 @@ paths:
               - GZIP
               - DEFLATE
           example: UNCOMPRESSED
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Assets
       responses:
@@ -431,7 +422,6 @@ paths:
           schema:
             $ref: '#/components/schemas/fqoid'
           example: image.png
-        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -477,7 +467,6 @@ paths:
           schema:
             $ref: '#/components/schemas/fqoid'
           example: image.png
-        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -523,7 +512,6 @@ paths:
           schema:
             $ref: '#/components/schemas/fqoid'
           example: image.png
-        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -561,7 +549,6 @@ paths:
           schema:
             $ref: '#/components/schemas/fqoid'
           example: image.png
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Assets
       responses:
@@ -603,7 +590,6 @@ paths:
           description: Fully qualified OID of the parameter to get info for
           schema:
             $ref: '#/components/schemas/fqoid'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
         - Subscriptions
@@ -658,7 +644,6 @@ paths:
           description: The prefix of the OID to get info for
           schema:
             $ref: '#/components/schemas/fqoid'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
         - Subscriptions
@@ -719,7 +704,6 @@ paths:
             type: boolean
           style: form
           explode: false
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
         - Subscriptions
@@ -778,7 +762,6 @@ paths:
           description: Fully qualified OID of the parameter to get info for
           schema:
             $ref: '#/components/schemas/fqoid'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
       responses:
@@ -827,7 +810,6 @@ paths:
           description: Fully qualified OID of the parameter to get info for
           schema:
             $ref: '#/components/schemas/fqoid'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
       requestBody:
@@ -873,7 +855,6 @@ paths:
           description: The slot of the device model containing the parameters to get info for
           schema:
             $ref: '#/components/schemas/slot'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
       requestBody:
@@ -935,7 +916,6 @@ paths:
           description: The slot of the device model containing the subscriptions to get
           schema:
             $ref: '#/components/schemas/slot'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Subscriptions
         - Parameters
@@ -996,7 +976,6 @@ paths:
           description: The slot of the device model containing the subscriptions to update
           schema:
             $ref: '#/components/schemas/slot'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
         - Subscriptions
@@ -1047,7 +1026,6 @@ paths:
           description: The slot of the device model containing the parameters to get info for
           schema:
             $ref: '#/components/schemas/slot'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Subscriptions
         - Parameters
@@ -1090,7 +1068,6 @@ paths:
           schema:
             $ref: '#/components/schemas/fqoid'
           example: text_box
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
       responses:
@@ -1134,7 +1111,6 @@ paths:
           description: The level of detail to connect in
           schema:
             $ref: '#/components/schemas/detail_level'
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Updates
       responses:
@@ -1198,7 +1174,6 @@ paths:
             type: string
             default: en
           example: es
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Languages
       responses:
@@ -1246,7 +1221,6 @@ paths:
             type: string
             default: ''
           example: fr
-        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -1299,7 +1273,6 @@ paths:
             type: string
             default: en
             example: fr
-        - $ref: '#/components/parameters/RequestStart'
       responses:
         '204':
           description: Empty response - everything is OK
@@ -1340,7 +1313,6 @@ paths:
             type: string
             default: en
             example: fr
-        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -1388,7 +1360,6 @@ paths:
           schema:
             $ref: '#/components/schemas/slot'
           example: 1
-        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Languages
       responses:
@@ -1423,8 +1394,6 @@ paths:
       operationId: RefreshToken
       tags:
         - Access Management
-      parameters:
-        - $ref: '#/components/parameters/RequestStart'
       responses:
         '200':
           description: |
@@ -1455,8 +1424,6 @@ paths:
             - st2138:adm:w
       tags:
         - Access Management
-      parameters:
-        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -1492,18 +1459,6 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 components:
-  parameters:
-    RequestStart:
-      name: Request-Start
-      in: header
-      required: false
-      description: |
-        The time at which the request was sent,
-        <number of milliseconds since start of epoch>
-      schema:
-        type: integer
-        minimum: 0
-      example: 1234512345123
   responses:
     NotFound:
       description: The requested resource was not found
