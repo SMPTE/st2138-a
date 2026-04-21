@@ -124,8 +124,9 @@ components:
         The time at which the request was sent,
         <number of milliseconds since start of epoch>
       schema:
-        type: number
-      example: "1234512345123"
+        type: integer
+        minimum: 0
+      example: 1234512345123
 
   responses:
 
