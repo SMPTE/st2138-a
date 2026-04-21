@@ -821,7 +821,7 @@ $defs:
           properties:
             type:
               const: FLOAT_RANGE
-            float32_range:
+            float_range:
               type: object
               properties:
                 min_value:
