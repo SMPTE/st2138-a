@@ -123,7 +123,7 @@ menu_groups:
           display_strings:
             $key: product
         param_oids:
-          - /product
+          - product
         hidden: false
         disabled: false
         order: 0

@@ -342,8 +342,7 @@ $defs:
       A list of fully qualified OIDs.
     type: array
     items:
-      type: string
-      format: json-pointer
+      $ref: "#/$defs/fqoid"
 
   param:
     title: Schema for Catena's Param object
@@ -558,12 +557,12 @@ $defs:
     description: |
       A fully qualified OID is used to uniquely locate a specific item in the
       device model, and elements of array type objects.
-      It is a "headless" json-pointer with the leading solidus implied.
       It is composed of segments of two types, separated by a solidus.
       - simple OIDs
       - array indices
       - the one-past-the-end index indicated by '-', only valid at the end of
       the fqoid
+      A leading solidus is not used.
       An additional restriction is that the last segment cannot be 'stream'
       because the REST API uses this after the fqoid in the path as a Parameter
       to indicate that the response is a stream of SSEs.
@@ -573,9 +572,7 @@ $defs:
   template_oid:
     title: Template OID
     description: The fully qualified OID of the template that this parameter is based on.
-    type: string
-    format: json-pointer
-    default: ""
+    $ref: "#/$defs/fqoid"
 
   constraint_ref:
     title: Constraint Reference
