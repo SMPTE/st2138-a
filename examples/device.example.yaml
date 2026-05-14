@@ -38,6 +38,7 @@ constraints:
 params:
   product:
     type: STRUCT
+    read_only: true
     name:
       display_strings:
         en: Product Information
@@ -54,6 +55,18 @@ params:
         type: STRING
         value:
           string_value: SMPTE
+      serial_number:
+        type: STRING
+        value:
+          string_value: "0000-0000-0000"
+      catena_sdk:
+        type: STRING
+        value:
+          string_value: ""
+      catena_sdk_version:
+        type: STRING
+        value:
+          string_value: ""
     
 # list the access scopes supported by the device.
 # this one supports all scopes.
