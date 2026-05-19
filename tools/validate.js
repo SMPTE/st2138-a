@@ -24,7 +24,6 @@
 
 const path = require('node:path');
 const Validator = require('./validator');
-const { validateRequiredParamsAndScopes } = require('./mandatory');
 'use strict'; // <-- now applied after AJV is safely loaded (via validator.js)
 
 const disableMandatory = process.argv.includes('--disable-mandatory-enforcement');
@@ -54,7 +53,9 @@ const schemaName = path.parse(url.pathname).name.split('.')[0];
 const digest = args[3] || null;
 
 (async () => {
-    const validator = new Validator();
+    const validator = new Validator({
+        disableMandatoryParams: disableMandatory
+    });
     console.log(`Applying schema '${schemaName}' to '${url}'`);
     const ans = await validator.validate(schemaName, url, digest);
 
@@ -65,13 +66,8 @@ const digest = args[3] || null;
 
     console.log('✅ Schema validation succeeded.');
 
-    if (schemaName.startsWith('device')) {
-        if (disableMandatory) {
-            console.log('Mandatory parameter enforcement disabled.');
-        } else {
-            validateRequiredParamsAndScopes(ans.data);
-            console.log('✅ Mandatory parameter validation succeeded.');
-        }
+    if (schemaName.startsWith('device') && !disableMandatory) {
+        console.log('✅ Mandatory parameter validation succeeded.');
     }
 
     process.exit(0);

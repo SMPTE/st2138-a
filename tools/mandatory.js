@@ -29,14 +29,14 @@
 
 'use strict';
 
-const REQUIRED_PARAMS = {
-    "name": true,
-    "vendor": true,
-    "version": true,
-    "catena_sdk": false,
-    "catena_sdk_version": false,
-    "serial_number": true
-};
+const REQUIRED_PARAMS = [
+    "name",
+    "vendor",
+    "version",
+    "catena_sdk",
+    "catena_sdk_version",
+    "serial_number"
+];
 
 const REQUIRED_SCOPE = "st2138:mon";
 
@@ -112,7 +112,7 @@ function validateRequiredParamsAndScopes(deviceDesc, disableMandatoryEnforcement
     const emptyValues = [];
     const invalidScopes = [];
 
-    for (const [key, checkValue] of Object.entries(REQUIRED_PARAMS)) {
+    for (const key of REQUIRED_PARAMS) {
         const param = productParams[key];
 
         if (!param) {
@@ -130,14 +130,12 @@ function validateRequiredParamsAndScopes(deviceDesc, disableMandatoryEnforcement
             invalidScopes.push(`${key} (derived scope is invalid, must be '${REQUIRED_SCOPE}')`);
         }
 
-        if (checkValue) {
-            const stringValue = getStringValue(param, productValue, key);
+        const stringValue = getStringValue(param, productValue, key);
 
-            if (stringValue === undefined || stringValue === null) {
-                emptyValues.push(`${key} (no value found)`);
-            } else if (String(stringValue).trim() === '') {
-                emptyValues.push(`${key} (empty string value)`);
-            }
+        if (stringValue === undefined || stringValue === null) {
+            emptyValues.push(`${key} (no value found)`);
+        } else if (String(stringValue).trim() === '') {
+            emptyValues.push(`${key} (empty string value)`);
         }
     }
 
