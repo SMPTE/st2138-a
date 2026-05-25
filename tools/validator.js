@@ -11,6 +11,11 @@ const { validateRequiredParamsAndScopes } = require('./mandatory');
 'use strict'; // <-- now applied after AJV is safely loaded
 
 class Validator {
+    /**
+     *
+     * @param {object} options optional options
+     * @param {boolean} options.disableMandatoryParams if true, skip mandatory product parameter checks
+     */
     constructor(options = {}) {
         this.disableMandatoryParams = options.disableMandatoryParams || false;
 
@@ -104,7 +109,11 @@ class Validator {
         }
 
         if (isDeviceSchema && !this.disableMandatoryParams) {
-            validateRequiredParamsAndScopes(data);
+            const mandatoryErrors = validateRequiredParamsAndScopes(data);
+            if (mandatoryErrors.length > 0) {
+                Validator.showErrors(mandatoryErrors, sourceMap);
+                return {valid: false};
+            }
         }
 
         return {valid: true, data: data};

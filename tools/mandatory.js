@@ -83,71 +83,62 @@ function getStringValue(param, productValue, key) {
  * Validates that all mandatory product parameters and scopes are present
  * and have valid values.
  * @param {object} deviceDesc the complete device model object
- * @param {boolean} disableMandatoryEnforcement if true, skip validation
- * @throws {Error} if mandatory parameters are missing or have invalid values
+ * @returns {Array<{message: string, instancePath: string}>} array of errors
+ *   (empty if valid). Each entry carries an instancePath suitable for
+ *   source-map lookup so callers can report line numbers.
  */
-function validateRequiredParamsAndScopes(deviceDesc, disableMandatoryEnforcement = false) {
-    if (disableMandatoryEnforcement) {
-        return;
-    }
+function validateRequiredParamsAndScopes(deviceDesc) {
+    const errors = [];
 
     if (!deviceDesc || !deviceDesc.params || !deviceDesc.params.product) {
-        throw new Error('Missing mandatory product struct in params');
+        errors.push({ message: 'Missing mandatory product struct in params', instancePath: '/params/product' });
+        return errors;
     }
 
-    if (deviceDesc.params.product.type !== 'STRUCT') {
-        throw new Error(`Product parameter must be STRUCT type, not ${deviceDesc.params.product.type}`);
+    const product = deviceDesc.params.product;
+
+    if (product.type !== 'STRUCT') {
+        errors.push({ message: `Product parameter must be STRUCT type, not ${product.type}`, instancePath: '/params/product/type' });
     }
 
-    if (!deviceDesc.params.product.read_only) {
-        throw new Error('Product parameter must be read_only');
+    if (!product.read_only) {
+        errors.push({ message: 'Product parameter must be read_only', instancePath: '/params/product/read_only' });
     }
 
-    const productParams = deviceDesc.params.product.params || {};
-    const productValue = deviceDesc.params.product.value;
-    const productScope = deviceDesc.params.product.access_scope;
+    const productParams = product.params || {};
+    const productValue = product.value;
+    const productScope = product.access_scope;
     const defaultScope = deviceDesc.default_scope;
-
-    const missing = [];
-    const emptyValues = [];
-    const invalidScopes = [];
 
     for (const key of REQUIRED_PARAMS) {
         const param = productParams[key];
+        const basePath = `/params/product/params/${key}`;
 
         if (!param) {
-            missing.push(key);
+            errors.push({ message: `Missing mandatory product parameter '${key}'`, instancePath: basePath });
             continue;
         }
 
         if (param.type !== 'STRING') {
-            missing.push(`${key} (not STRING type)`);
+            errors.push({ message: `Product parameter '${key}' must be STRING type, not ${param.type}`, instancePath: `${basePath}/type` });
             continue;
         }
 
         const derivedScope = getDerivedScope(param, productScope, defaultScope);
         if (derivedScope === "INVALID") {
-            invalidScopes.push(`${key} (derived scope is invalid, must be '${REQUIRED_SCOPE}')`);
+            errors.push({ message: `Product parameter '${key}' has invalid scope (must be '${REQUIRED_SCOPE}')`, instancePath: `${basePath}/access_scope` });
         }
 
         const stringValue = getStringValue(param, productValue, key);
 
         if (stringValue === undefined || stringValue === null) {
-            emptyValues.push(`${key} (no value found)`);
+            errors.push({ message: `Product parameter '${key}' has no value`, instancePath: `${basePath}/value` });
         } else if (String(stringValue).trim() === '') {
-            emptyValues.push(`${key} (empty string value)`);
+            errors.push({ message: `Product parameter '${key}' has empty string value`, instancePath: `${basePath}/value/string_value` });
         }
     }
 
-    const allIssues = [
-        ...missing.map(p => `${p} (missing field)`),
-        ...emptyValues,
-        ...invalidScopes
-    ];
-
-    if (allIssues.length > 0) {
-        throw new Error(`Invalid mandatory product parameters: ${allIssues.join(', ')}`);
-    }
+    return errors;
 }
 
 module.exports = { validateRequiredParamsAndScopes };
