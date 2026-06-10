@@ -66,10 +66,6 @@ const digest = args[3] || null;
 
     console.log('✅ Schema validation succeeded.');
 
-    if (schemaName.startsWith('device') && !disableMandatory) {
-        console.log('✅ Mandatory parameter validation succeeded.');
-    }
-
     process.exit(0);
 })().catch((err) => {
     console.error(`Error: ${err.message}`);
