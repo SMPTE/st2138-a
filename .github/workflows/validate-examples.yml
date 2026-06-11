@@ -11,17 +11,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
+          cache-dependency-path: tools/package-lock.json
 
       - name: Install tooling
-        run: ./install-tooling.sh
+        run: bash ./install-tooling.sh
 
       - name: NPM install
-        run: |
-          cd tools
-          npm install
+        run: npm ci --prefix tools
 
       - name: Validate examples
-        run: ./examples/validate.sh
+        run: bash ./examples/validate.sh
