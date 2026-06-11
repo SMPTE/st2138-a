@@ -1,13 +1,12 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-dir="$(dirname "$(readlink -f "$0")")"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # run build-openapi to ensure the schema is up to date.
 echo "Building schema..."
-$dir/../build-openapi.sh
-
+"$SCRIPT_DIR/../build-openapi.sh"
 
 echo ""
 echo "Validating examples..."
@@ -15,8 +14,8 @@ echo "-------------------"
 failures=0
 
 # Loop through all of the examples and validate them.
-for example in "$dir"/*.yaml; do
-    node "$dir/../tools/validate.js" "$example" || (( ++failures ))
+for example in "$SCRIPT_DIR"/*.yaml; do
+    node "$SCRIPT_DIR/../tools/validate.js" "$example" || (( ++failures ))
 done
 
 echo "-------------------"
