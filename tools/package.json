@@ -12,7 +12,7 @@
   "scripts": {
     "test_good": "node validate.js ./data/device.good.yaml || true",
     "test_bad": "node validate.js ./data/device.bad.yaml || true",
-    "test": "npm run validate.js ./data/device.good.yaml"
+    "test": "jest --coverage"
   },
   "name": "smpte-st2138-a-validator",
   "version": "1.0.0",
@@ -41,5 +41,8 @@
   ],
   "bin": {
     "st2138-a-validate": "./validate.js"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
   }
 }
