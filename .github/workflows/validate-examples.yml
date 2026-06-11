@@ -18,5 +18,10 @@ jobs:
       - name: Install tooling
         run: ./install-tooling.sh
 
+      - name: NPM install
+        run: |
+          cd tools
+          npm install
+
       - name: Validate examples
         run: ./examples/validate.sh
