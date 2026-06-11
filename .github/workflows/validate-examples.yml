@@ -1,0 +1,22 @@
+name: Validate Examples
+on:
+  pull_request:
+  push:
+
+jobs:
+  validate-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Install tooling
+        run: ./install-tooling.sh
+
+      - name: Validate examples
+        run: ./examples/validate.sh
