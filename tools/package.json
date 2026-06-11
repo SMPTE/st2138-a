@@ -10,8 +10,6 @@
     "node": ">=20.7.0"
   },
   "scripts": {
-    "test_good": "node validate.js ./data/device.good.yaml || true",
-    "test_bad": "node validate.js ./data/device.bad.yaml || true",
     "test": "jest --coverage"
   },
   "name": "smpte-st2138-a-validator",
