@@ -125,6 +125,7 @@ components:
         <number of milliseconds since start of epoch>
       schema:
         type: integer
+        format: int64
         minimum: 0
       example: 1234512345123
 
