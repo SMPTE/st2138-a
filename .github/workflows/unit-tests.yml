@@ -18,6 +18,12 @@ jobs:
           cache: "npm"
           cache-dependency-path: tools/package-lock.json
 
+      - name: Install tooling
+        run: bash ./install-tooling.sh
+
+      - name: Build Schema
+        run: bash ./build-openapi.sh
+
       - name: NPM install
         run: npm ci --prefix tools
 
