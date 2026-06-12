@@ -162,36 +162,32 @@ describe('Validator', () => {
         const testData = { name: 'http-test', value: 42 };
         const jsonContent = JSON.stringify(testData);
 
-        global.fetch = jest.fn(() =>
-            Promise.resolve({
-                ok: true,
-                text: () => Promise.resolve(jsonContent)
-            })
-        );
+        const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+            ok: true,
+            text: () => Promise.resolve(jsonContent)
+        });
 
         try {
             const { data } = await Validator.loadTestData(new URL('http://example.com/test.json'));
             expect(data).toEqual(testData);
-            expect(global.fetch).toHaveBeenCalled();
+            expect(fetchSpy).toHaveBeenCalled();
         } finally {
-            delete global.fetch;
+            fetchSpy.mockRestore();
         }
     });
 
     test('loadTestData rejects failed HTTP fetch', async () => {
-        global.fetch = jest.fn(() =>
-            Promise.resolve({
-                ok: false,
-                statusText: 'Not Found'
-            })
-        );
+        const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+            ok: false,
+            statusText: 'Not Found'
+        });
 
         try {
             await expect(
                 Validator.loadTestData(new URL('http://example.com/missing.json'))
             ).rejects.toThrow('Failed to fetch');
         } finally {
-            delete global.fetch;
+            fetchSpy.mockRestore();
         }
     });
 
