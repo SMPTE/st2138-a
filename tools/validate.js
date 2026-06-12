@@ -26,11 +26,16 @@ const path = require('node:path');
 const Validator = require('./validator');
 'use strict'; // <-- now applied after AJV is safely loaded (via validator.js)
 
+const disableMandatory = process.argv.includes('--disable-mandatory-enforcement');
+const args = process.argv.filter(a => !a.startsWith('--'));
+
 // get file from command line
-let testfile = process.argv[2];
+let testfile = args[2];
 
 if (!testfile) {
-    console.log('Usage: node validate.js path/to/test/schema-name.object-name.json or .yaml [digest]');
+    console.log('Usage: node validate.js [options] path/to/test/schema-name.object-name.json or .yaml [digest]');
+    console.log('Options:');
+    console.log('  --disable-mandatory-enforcement   Skip mandatory product parameter checks');
     console.log('Example: node validate.js ./tests/device.my-device.json');
     console.log('Example: node validate.js ./tests/device.param.yaml sha256digest');
     process.exit(1);
@@ -45,14 +50,23 @@ const url = new URL(testfile);
 // extract schema name from input filename
 const schemaName = path.parse(url.pathname).name.split('.')[0];
 
-const digest = process.argv[3] || null;
+const digest = args[3] || null;
 
 (async () => {
-    const validator = new Validator();
+    const validator = new Validator({
+        disableMandatoryParams: disableMandatory
+    });
     console.log(`Applying schema '${schemaName}' to '${url}'`);
     const ans = await validator.validate(schemaName, url, digest);
-    console.log(ans.valid ? '✅ Validation succeeded.' : '❌ Validation failed.');
-    process.exit(ans.valid ? 0 : 2);
+
+    if (!ans.valid) {
+        console.log('❌ Validation failed.');
+        process.exit(2);
+    }
+
+    console.log('✅ Schema validation succeeded.');
+
+    process.exit(0);
 })().catch((err) => {
     console.error(`Error: ${err.message}`);
     process.exit(err.error || 1);

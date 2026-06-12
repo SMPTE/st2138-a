@@ -6,11 +6,18 @@ const fs = require('fs/promises');
 const path = require('node:path');
 const yaml = require('yaml');
 const schema = require('./data/device.json');
+const { validateRequiredParamsAndScopes } = require('./mandatory');
 
 'use strict'; // <-- now applied after AJV is safely loaded
 
 class Validator {
-    constructor() {
+    /**
+     *
+     * @param {object} options optional options
+     * @param {boolean} options.disableMandatoryParams if true, skip mandatory product parameter checks
+     */
+    constructor(options = {}) {
+        this.disableMandatoryParams = options.disableMandatoryParams || false;
 
         this.ajv = new Ajv({
             strict: true,
@@ -99,6 +106,14 @@ class Validator {
         if (!valid) {
             Validator.showErrors(errors, sourceMap);
             return {valid: false}
+        }
+
+        if (isDeviceSchema && !this.disableMandatoryParams) {
+            const mandatoryErrors = validateRequiredParamsAndScopes(data);
+            if (mandatoryErrors.length > 0) {
+                Validator.showErrors(mandatoryErrors, sourceMap);
+                return {valid: false};
+            }
         }
 
         return {valid: true, data: data};

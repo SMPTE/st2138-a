@@ -38,22 +38,38 @@ constraints:
 params:
   product:
     type: STRUCT
+    read_only: true
     name:
       display_strings:
         en: Product Information
+    value:
+      struct_value:
+        fields:
+          name:
+            string_value: "Minimal Device"
+          version:
+            string_value: "1.0.0"
+          vendor:
+            string_value: "SMPTE"
+          serial_number:
+            string_value: "0000-0000-0000"
+          catena_sdk:
+            string_value: "example-sdk"
+          catena_sdk_version:
+            string_value: "0.1.0"
     params:
       name:
         type: STRING
-        value: 
-          string_value: Minimal Device
       version:
         type: STRING
-        value:
-          string_value: 1.0.0
       vendor:
         type: STRING
-        value:
-          string_value: SMPTE
+      serial_number:
+        type: STRING
+      catena_sdk:
+        type: STRING
+      catena_sdk_version:
+        type: STRING
     
 # list the access scopes supported by the device.
 # this one supports all scopes.
