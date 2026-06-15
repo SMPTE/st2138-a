@@ -1,4 +1,7 @@
 module.exports = {
-    collectCoverageFrom: ['validator.js'],
+    collectCoverageFrom: [
+        'mandatory.js',
+        'validator.js',
+    ],
     coverageReporters: ['text', 'lcov']
 };
