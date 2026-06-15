@@ -108,7 +108,7 @@ function validateRequiredParamsAndScopes(deviceDesc) {
         const field = productValue?.struct_value?.fields?.[key];
         const stringValue = field?.string_value;
 
-        if (!stringValue) {
+        if (stringValue === undefined) {
             errors.push({ message: `Product parameter '${key}' has no value`, instancePath: `${basePath}/value` });
         } else if (String(stringValue).trim() === '') {
             errors.push({ message: `Product parameter '${key}' has empty string value`, instancePath: `${basePath}/value/string_value` });
