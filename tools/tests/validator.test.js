@@ -8,6 +8,18 @@ const yaml = require('yaml');
 const Validator = require('../validator');
 
 describe('Validator', () => {
+    const fetchSpy = jest.spyOn(global, 'fetch');
+
+    beforeAll(() => {
+        fetchSpy.mockImplementation(() => {
+            throw new Error('Unexpected fetch call in test');
+        });
+    });
+
+    afterAll(() => {
+        jest.restoreAllMocks();
+    });
+
     test('loadTestData parses YAML file content', async () => {
         const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
         const { data, sourceMap } = await Validator.loadTestData(pathToFileURL(fixturePath));
@@ -71,26 +83,18 @@ describe('Validator', () => {
         };
         const mockErrors = [{ instancePath: '/bad', message: 'must be string' }];
 
-        const loadSpy = jest
-            .spyOn(Validator, 'loadTestData')
-            .mockResolvedValue({ data: {}, sourceMap: mockSourceMap });
-        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementation(() => {});
+        jest.spyOn(Validator, 'loadTestData').mockResolvedValueOnce({ data: {}, sourceMap: mockSourceMap });
+        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementationOnce(() => {});
 
-        const compileSpy = jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
+        jest.spyOn(validator.ajv, 'compile').mockImplementationOnce(() => {
             const validateFn = () => false;
             validateFn.errors = mockErrors;
             return validateFn;
         });
 
-        try {
-            const result = await validator.validate('device', new URL('file:///tmp/device.invalid.yaml'));
-            expect(result).toEqual({ valid: false });
-            expect(showSpy).toHaveBeenCalledWith(mockErrors, mockSourceMap);
-        } finally {
-            compileSpy.mockRestore();
-            showSpy.mockRestore();
-            loadSpy.mockRestore();
-        }
+        const result = await validator.validate('device', new URL('file:///tmp/device.invalid.yaml'));
+        expect(result).toEqual({ valid: false });
+        expect(showSpy).toHaveBeenCalledWith(mockErrors, mockSourceMap);
     });
 
     describe('loadTestData with inline serialized data', () => {
@@ -162,33 +166,25 @@ describe('Validator', () => {
         const testData = { name: 'http-test', value: 42 };
         const jsonContent = JSON.stringify(testData);
 
-        const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+        fetchSpy.mockResolvedValueOnce({
             ok: true,
             text: () => Promise.resolve(jsonContent)
         });
 
-        try {
-            const { data } = await Validator.loadTestData(new URL('http://example.com/test.json'));
-            expect(data).toEqual(testData);
-            expect(fetchSpy).toHaveBeenCalled();
-        } finally {
-            fetchSpy.mockRestore();
-        }
+        const { data } = await Validator.loadTestData(new URL('http://example.com/test.json'));
+        expect(data).toEqual(testData);
+        expect(fetchSpy).toHaveBeenCalled();
     });
 
     test('loadTestData rejects failed HTTP fetch', async () => {
-        const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+        fetchSpy.mockResolvedValueOnce({
             ok: false,
             statusText: 'Not Found'
         });
 
-        try {
-            await expect(
-                Validator.loadTestData(new URL('http://example.com/missing.json'))
-            ).rejects.toThrow('Failed to fetch');
-        } finally {
-            fetchSpy.mockRestore();
-        }
+        await expect(
+            Validator.loadTestData(new URL('http://example.com/missing.json'))
+        ).rejects.toThrow('Failed to fetch');
     });
 
     test('validate handles non-device schema correctly', async () => {
@@ -216,7 +212,6 @@ describe('Validator', () => {
             expect(result.valid).toBe(false);
             expect(logSpy).toHaveBeenCalled();
         } finally {
-            logSpy.mockRestore();
             await fs.rm(tempDir, { recursive: true, force: true });
         }
     });
@@ -228,12 +223,8 @@ describe('Validator', () => {
             { instancePath: '/missing', message: 'field required' }
         ];
 
-        try {
-            Validator.showErrors(errors, sourceMap);
-            expect(logSpy).toHaveBeenCalledWith('field required at /missing');
-        } finally {
-            logSpy.mockRestore();
-        }
+        Validator.showErrors(errors, sourceMap);
+        expect(logSpy).toHaveBeenCalledWith('field required at /missing');
     });
 
     test('showErrors includes line info when sourceMap pointers exist', () => {
@@ -250,11 +241,7 @@ describe('Validator', () => {
             { instancePath: '/field', message: 'type mismatch' }
         ];
 
-        try {
-            Validator.showErrors(errors, sourceMap);
-            expect(logSpy).toHaveBeenCalledWith('type mismatch at /field on lines 5-7');
-        } finally {
-            logSpy.mockRestore();
-        }
+        Validator.showErrors(errors, sourceMap);
+        expect(logSpy).toHaveBeenCalledWith('type mismatch at /field on lines 5-7');
     });
 });
