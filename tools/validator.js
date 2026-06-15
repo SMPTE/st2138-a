@@ -6,7 +6,7 @@ const fs = require('fs/promises');
 const path = require('node:path');
 const yaml = require('yaml');
 const schema = require('./data/device.json');
-const { validateRequiredParamsAndScopes } = require('./mandatory');
+const mandatory = require('./mandatory');
 
 'use strict'; // <-- now applied after AJV is safely loaded
 
@@ -109,7 +109,7 @@ class Validator {
         }
 
         if (isDeviceSchema && !this.disableMandatoryParams) {
-            const mandatoryErrors = validateRequiredParamsAndScopes(data);
+            const mandatoryErrors = mandatory.validateRequiredParamsAndScopes(data);
             if (mandatoryErrors.length > 0) {
                 Validator.showErrors(mandatoryErrors, sourceMap);
                 return {valid: false};

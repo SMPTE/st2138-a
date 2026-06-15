@@ -7,9 +7,11 @@ const yaml = require('yaml');
 const schema = require('../data/device.json');
 
 const Validator = require('../validator');
+const mandatory = require('../mandatory.js');
 
 describe('Validator', () => {
-    const fetchSpy = jest.spyOn(global, 'fetch');
+    let fetchSpy;
+    let mandatorySpy;
     const tempDirs = [];
 
     const createTempDir = async () => {
@@ -18,21 +20,21 @@ describe('Validator', () => {
         return tempDir;
     };
 
-    beforeAll(() => {
+    beforeEach(() => {
         // default fetch mock to prevent unexpected network calls during tests
-        fetchSpy.mockImplementation(() => {
+        fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(() => {
             throw new Error('Unexpected fetch call in test');
         });
-    });
-
-    afterAll(() => {
-        jest.restoreAllMocks();
+        // default mandatory validation mock to prevent unexpected errors during tests
+        mandatorySpy = jest.spyOn(mandatory, 'validateRequiredParamsAndScopes')
+            .mockImplementation(() => { return []; });
     });
 
     afterEach(async () => {
         await Promise.all(
             tempDirs.splice(0).map((dirPath) => fs.rm(dirPath, { recursive: true, force: true }))
         );
+        jest.restoreAllMocks();
     });
 
     test('loadTestData parses YAML file content', async () => {
@@ -68,61 +70,6 @@ describe('Validator', () => {
 
         // should reject with incorrect digest
         await expect(Validator.loadTestData(fixtureUrl, 'bad-digest')).rejects.toThrow('Digest mismatch');
-    });
-
-    test('validate rejects unknown schema names', async () => {
-        const validator = new Validator();
-        const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
-
-        await expect(
-            // 'notASchema' is not a valid schema genus
-            // so this should reject with an error and exit code 2
-            validator.validate('notASchema', pathToFileURL(fixturePath))
-        ).rejects.toMatchObject({
-            error: 2
-        });
-    });
-
-    test('validate returns valid=true for known-good device example', async () => {
-        const validator = new Validator();
-        const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
-
-        // validator.validate should resolve valid: true with known-good example
-        const result = await validator.validate('device', pathToFileURL(fixturePath));
-        expect(result).toEqual({
-            valid: true,
-            data: expect.any(Object)
-        });
-    });
-
-    test('validate returns valid=false when AJV reports schema errors', async () => {
-        const validator = new Validator();
-        const mockSourceMap = {
-            pointers: {
-                '/bad': {
-                    value: { line: 1 },
-                    valueEnd: { line: 1 }
-                }
-            }
-        };
-        const mockErrors = [{ instancePath: '/bad', message: 'must be string' }];
-
-        // mock loadTestData return an empty object with a mocked sourceMap
-        jest.spyOn(Validator, 'loadTestData').mockResolvedValueOnce({ data: {}, sourceMap: mockSourceMap });
-        // mock showErrors to make sure it's called with our mock errors and sourceMap (and to suppress console output during the test)
-        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementationOnce(() => { });
-
-        // mock AJV compile to return a validate function that always fails with our errors
-        jest.spyOn(validator.ajv, 'compile').mockImplementationOnce(() => {
-            const validateFn = () => false;
-            validateFn.errors = mockErrors;
-            return validateFn;
-        });
-
-        // make sure we get the expected errors
-        const result = await validator.validate('device', new URL('file:///tmp/device.invalid.yaml'));
-        expect(result).toEqual({ valid: false });
-        expect(showSpy).toHaveBeenCalledWith(mockErrors, mockSourceMap);
     });
 
     describe('loadTestData with inline serialized data', () => {
@@ -208,6 +155,76 @@ describe('Validator', () => {
         ).rejects.toThrow('Failed to fetch');
     });
 
+    test('validate rejects unknown schema names', async () => {
+        const validator = new Validator();
+        const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
+
+        await expect(
+            // 'notASchema' is not a valid schema genus
+            // so this should reject with an error and exit code 2
+            validator.validate('notASchema', pathToFileURL(fixturePath))
+        ).rejects.toMatchObject({
+            error: 2
+        });
+    });
+
+    test('validate returns valid=true when schema passes and mandatory checks are disabled', async () => {
+        const validator = new Validator({ disableMandatoryParams: true });
+        const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
+
+        const loadSpy = jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+            data: { params: {} },
+            sourceMap: { pointers: {} }
+        });
+
+        const compileSpy = jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
+            const validateFn = () => true;
+            validateFn.errors = null;
+            return validateFn;
+        });
+
+        // validator.validate should resolve valid: true with known-good example
+        const result = await validator.validate('device', pathToFileURL(fixturePath));
+        expect(result).toEqual({
+            valid: true,
+            data: expect.any(Object)
+        });
+        expect(loadSpy).toHaveBeenCalled();
+        expect(compileSpy).toHaveBeenCalled();
+        expect(mandatorySpy).not.toHaveBeenCalled();
+    });
+
+    test('validate returns valid=false when AJV reports schema errors', async () => {
+        const validator = new Validator();
+        const mockSourceMap = {
+            pointers: {
+                '/bad': {
+                    value: { line: 1 },
+                    valueEnd: { line: 1 }
+                }
+            }
+        };
+        const mockErrors = [{ instancePath: '/bad', message: 'must be string' }];
+
+        // mock loadTestData return an empty object with a mocked sourceMap
+        jest.spyOn(Validator, 'loadTestData').mockResolvedValueOnce({ data: {}, sourceMap: mockSourceMap });
+        // mock showErrors to make sure it's called with our mock errors and sourceMap (and to suppress console output during the test)
+        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementationOnce(() => { });
+
+        // mock AJV compile to return a validate function that always fails with our errors
+        jest.spyOn(validator.ajv, 'compile').mockImplementationOnce(() => {
+            const validateFn = () => false;
+            validateFn.errors = mockErrors;
+            return validateFn;
+        });
+
+        // make sure we get the expected errors
+        const result = await validator.validate('device', new URL('file:///tmp/device.invalid.yaml'));
+        expect(result).toEqual({ valid: false });
+        expect(showSpy).toHaveBeenCalledWith(mockErrors, mockSourceMap);
+        expect(mandatorySpy).not.toHaveBeenCalled();
+    });
+
     test('validate handles non-device schema correctly', async () => {
         const validator = new Validator();
         const paramPath = path.resolve(__dirname, '../../examples/param.audio_meter.yaml');
@@ -234,6 +251,81 @@ describe('Validator', () => {
         const result = await validator.validate('param', pathToFileURL(testPath));
         expect(result.valid).toBe(false);
         expect(logSpy).toHaveBeenCalled();
+    });
+
+        test('mandatory parameters checks success', async () => {
+        const validator = new Validator();
+        const mockSourceMap = { pointers: {} };
+
+        const loadSpy = jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+            data: { params: {} },
+            sourceMap: mockSourceMap
+        });
+
+        const compileSpy = jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
+            const validateFn = () => true;
+            validateFn.errors = null;
+            return validateFn;
+        });
+
+        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
+        expect(result).toEqual({
+            valid: true,
+            data: expect.any(Object)
+        });
+        expect(compileSpy).toHaveBeenCalled();
+        expect(loadSpy).toHaveBeenCalled();
+        expect(mandatorySpy).toHaveBeenCalled();
+    });
+
+    test('mandatory product parameter checks are enforced by default', async () => {
+        const validator = new Validator();
+        const mockSourceMap = { pointers: {} };
+        const mockErrors = [{ message: 'missing mandatory param', instancePath: '/params/product' }];
+
+        const loadSpy = jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+            data: { params: {} },
+            sourceMap: mockSourceMap
+        });
+        const compileSpy = jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
+            const validateFn = () => true;
+            validateFn.errors = null;
+            return validateFn;
+        });
+        mandatorySpy.mockReturnValue(mockErrors);
+        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementation(() => {});
+
+        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
+        expect(result).toEqual({ valid: false });
+        expect(mandatorySpy).toHaveBeenCalled();
+        expect(showSpy).toHaveBeenCalledWith(mockErrors, expect.any(Object));
+        expect(compileSpy).toHaveBeenCalled();
+        expect(loadSpy).toHaveBeenCalled();
+    });
+
+    test('mandatory product parameter checks are skipped when disableMandatoryParams is true', async () => {
+        const validator = new Validator({ disableMandatoryParams: true });
+        const mockSourceMap = { pointers: {} };
+        mandatorySpy.mockReturnValue([{ message: 'should be skipped', instancePath: '/params/product' }]);
+
+        const loadSpy = jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+            data: { params: {} },
+            sourceMap: mockSourceMap
+        });
+        const compileSpy = jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
+            const validateFn = () => true;
+            validateFn.errors = null;
+            return validateFn;
+        });
+
+        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
+        expect(result).toEqual({
+            valid: true,
+            data: expect.any(Object)
+        });
+        expect(mandatorySpy).not.toHaveBeenCalled();
+        expect(compileSpy).toHaveBeenCalled();
+        expect(loadSpy).toHaveBeenCalled();
     });
 
     test('showErrors handles errors without sourceMap pointers', () => {
