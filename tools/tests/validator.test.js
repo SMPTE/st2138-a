@@ -4,6 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const yaml = require('yaml');
+const schema = require('../data/device.json');
 
 const Validator = require('../validator');
 
@@ -109,7 +110,7 @@ describe('Validator', () => {
         // mock loadTestData return an empty object with a mocked sourceMap
         jest.spyOn(Validator, 'loadTestData').mockResolvedValueOnce({ data: {}, sourceMap: mockSourceMap });
         // mock showErrors to make sure it's called with our mock errors and sourceMap (and to suppress console output during the test)
-        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementationOnce(() => {});
+        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementationOnce(() => { });
 
         // mock AJV compile to return a validate function that always fails with our errors
         jest.spyOn(validator.ajv, 'compile').mockImplementationOnce(() => {
@@ -228,7 +229,7 @@ describe('Validator', () => {
 
         await fs.writeFile(testPath, JSON.stringify({ invalid: 'data' }), 'utf8');
 
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
 
         const result = await validator.validate('param', pathToFileURL(testPath));
         expect(result.valid).toBe(false);
@@ -236,7 +237,7 @@ describe('Validator', () => {
     });
 
     test('showErrors handles errors without sourceMap pointers', () => {
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
         const sourceMap = { pointers: {} };
         const errors = [
             { instancePath: '/missing', message: 'field required' }
@@ -251,7 +252,7 @@ describe('Validator', () => {
     test('showErrors includes line info when sourceMap pointers exist', () => {
         // normal function of showErrors is to log the error message along with the
         // instancePath and line numbers if available from the sourceMap.
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
         const sourceMap = {
             pointers: {
                 '/field': {
@@ -266,5 +267,83 @@ describe('Validator', () => {
 
         Validator.showErrors(errors, sourceMap);
         expect(logSpy).toHaveBeenCalledWith('type mismatch at /field on lines 5-7');
+    });
+
+    test('addSchemas rethrows addSchema errors with pointer and line info', () => {
+        const testGenus = '__test_genus_for_addSchemas_throw';
+        const testSpecies = 'broken_species';
+
+        // mutate the schema used in validator to add a test genus/species to test against
+        schema[testGenus] = {
+            [testSpecies]: {
+                type: 'string'
+            }
+        };
+
+        // mock the AJV method to throw an error
+        const addSchema = jest.fn(() => {
+            throw new Error('AJV schema error');
+        });
+
+        try {
+            // fancy js magic, you can call a object's methods with a custom "this" context
+            expect(() => Validator.prototype.addSchemas.call({ ajv: { addSchema } }, testGenus)).toThrow(
+                new RegExp(`AJV schema error at #/${testGenus}/${testSpecies} on lines \\d+-\\d+`)
+            );
+            expect(addSchema).toHaveBeenCalledTimes(1);
+        } finally {
+            // clean up the test genus
+            delete schema[testGenus];
+        }
+    });
+
+    test('addSchemas skips inherited and $comment entries in schema genus', () => {
+        // set up a test genus with three types of entries:
+        // 1. an inherited enumerable property (via Object.create(inheritedProto))
+        // 2. an own property starting with '$comment'
+        // 3. a normal own property (control case)
+        const testGenus = '__test_genus_for_addSchemas';
+        const inheritedName = 'inherited_species_for_test';
+        const commentName = '$comment_skip_for_test';
+        // major edge case here, but the code guards against inherited properties,
+        // so we have to intentionally inject one.
+        const inheritedProto = {
+            [inheritedName]: {
+                type: 'string'
+            }
+        };
+        const testGenusEntries = Object.create(inheritedProto);
+        testGenusEntries.valid_species = { type: 'string' };
+        testGenusEntries[commentName] = 'test comment that should be skipped';
+
+        // mutate the schema used in validator to add a test genus
+        schema[testGenus] = testGenusEntries;
+
+        // mock the AJV method to track which entries get passed to it
+        const addSchema = jest.fn();
+
+        try {
+            // call addSchemas with our test genus and fake ajv
+            Validator.prototype.addSchemas.call({ ajv: { addSchema } }, testGenus);
+
+            // verify that the valid own property was passed through to addSchema
+            expect(addSchema).toHaveBeenCalledWith(
+                testGenusEntries.valid_species,
+                `#/${testGenus}/valid_species`
+            );
+            // verify that inherited and $comment entries were filtered out by addSchemas
+            // and never passed to addSchema
+            expect(addSchema).not.toHaveBeenCalledWith(
+                inheritedProto[inheritedName],
+                `#/${testGenus}/${inheritedName}`
+            );
+            expect(addSchema).not.toHaveBeenCalledWith(
+                testGenusEntries[commentName],
+                `#/${testGenus}/${commentName}`
+            );
+        } finally {
+            // clean up the test genus
+            delete schema[testGenus];
+        }
     });
 });
