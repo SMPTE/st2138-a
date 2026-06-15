@@ -9,6 +9,13 @@ const Validator = require('../validator');
 
 describe('Validator', () => {
     const fetchSpy = jest.spyOn(global, 'fetch');
+    const tempDirs = [];
+
+    const createTempDir = async () => {
+        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'st2138-test'));
+        tempDirs.push(tempDir);
+        return tempDir;
+    };
 
     beforeAll(() => {
         fetchSpy.mockImplementation(() => {
@@ -18,6 +25,12 @@ describe('Validator', () => {
 
     afterAll(() => {
         jest.restoreAllMocks();
+    });
+
+    afterEach(async () => {
+        await Promise.all(
+            tempDirs.splice(0).map((dirPath) => fs.rm(dirPath, { recursive: true, force: true }))
+        );
     });
 
     test('loadTestData parses YAML file content', async () => {
@@ -110,55 +123,42 @@ describe('Validator', () => {
         };
 
         test('parses YAML serialized from inline object', async () => {
-            const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'st2138-test-'));
+            const tempDir = await createTempDir();
             const yamlPath = path.join(tempDir, 'test.yaml');
             const yamlContent = yaml.stringify(testData);
 
             await fs.writeFile(yamlPath, yamlContent, 'utf8');
 
-            try {
-                const { data } = await Validator.loadTestData(pathToFileURL(yamlPath));
-                expect(data).toEqual(testData);
-            } finally {
-                await fs.rm(tempDir, { recursive: true, force: true });
-            }
+            const { data } = await Validator.loadTestData(pathToFileURL(yamlPath));
+            expect(data).toEqual(testData);
         });
 
         test('parses JSON serialized from inline object', async () => {
-            const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'st2138-test-'));
+            const tempDir = await createTempDir();
             const jsonPath = path.join(tempDir, 'test.json');
             const jsonContent = JSON.stringify(testData, null, 2);
 
             await fs.writeFile(jsonPath, jsonContent, 'utf8');
 
-            try {
-                const { data } = await Validator.loadTestData(pathToFileURL(jsonPath));
-                expect(data).toEqual(testData);
-            } finally {
-                await fs.rm(tempDir, { recursive: true, force: true });
-            }
+            const { data } = await Validator.loadTestData(pathToFileURL(jsonPath));
+            expect(data).toEqual(testData);
         });
 
         test('returns sourceMap for both YAML and JSON', async () => {
-            const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'st2138-test-'));
+            const tempDir = await createTempDir();
+            const yamlPath = path.join(tempDir, 'test.yaml');
+            await fs.writeFile(yamlPath, yaml.stringify(testData), 'utf8');
 
-            try {
-                const yamlPath = path.join(tempDir, 'test.yaml');
-                await fs.writeFile(yamlPath, yaml.stringify(testData), 'utf8');
+            const jsonPath = path.join(tempDir, 'test.json');
+            await fs.writeFile(jsonPath, JSON.stringify(testData, null, 2), 'utf8');
 
-                const jsonPath = path.join(tempDir, 'test.json');
-                await fs.writeFile(jsonPath, JSON.stringify(testData, null, 2), 'utf8');
+            const yamlResult = await Validator.loadTestData(pathToFileURL(yamlPath));
+            const jsonResult = await Validator.loadTestData(pathToFileURL(jsonPath));
 
-                const yamlResult = await Validator.loadTestData(pathToFileURL(yamlPath));
-                const jsonResult = await Validator.loadTestData(pathToFileURL(jsonPath));
-
-                expect(yamlResult.sourceMap).toBeDefined();
-                expect(yamlResult.sourceMap.pointers).toBeDefined();
-                expect(jsonResult.sourceMap).toBeDefined();
-                expect(jsonResult.sourceMap.pointers).toBeDefined();
-            } finally {
-                await fs.rm(tempDir, { recursive: true, force: true });
-            }
+            expect(yamlResult.sourceMap).toBeDefined();
+            expect(yamlResult.sourceMap.pointers).toBeDefined();
+            expect(jsonResult.sourceMap).toBeDefined();
+            expect(jsonResult.sourceMap.pointers).toBeDefined();
         });
     });
 
@@ -200,20 +200,16 @@ describe('Validator', () => {
 
     test('validate returns invalid for non-device schema with validation errors', async () => {
         const validator = new Validator();
-        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'st2138-test-'));
+        const tempDir = await createTempDir();
         const testPath = path.join(tempDir, 'invalid.json');
 
         await fs.writeFile(testPath, JSON.stringify({ invalid: 'data' }), 'utf8');
 
         const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
-        try {
-            const result = await validator.validate('param', pathToFileURL(testPath));
-            expect(result.valid).toBe(false);
-            expect(logSpy).toHaveBeenCalled();
-        } finally {
-            await fs.rm(tempDir, { recursive: true, force: true });
-        }
+        const result = await validator.validate('param', pathToFileURL(testPath));
+        expect(result.valid).toBe(false);
+        expect(logSpy).toHaveBeenCalled();
     });
 
     test('showErrors handles errors without sourceMap pointers', () => {
