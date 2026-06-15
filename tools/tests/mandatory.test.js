@@ -199,7 +199,7 @@ describe("Mandatory", () => {
         });
 
         for (const key of REQUIRED_KEYS) {
-            test(`returns error when ${key} is explicity read_only: false`, () => {
+            test(`returns error when ${key} is explicitly read_only: false`, () => {
                 device.params.product.params[key].read_only = false;
                 const errors = validateRequiredParamsAndScopes(device);
                 expect(errors).toEqual([
