@@ -253,7 +253,8 @@ describe('Validator', () => {
         expect(logSpy).toHaveBeenCalled();
     });
 
-        test('mandatory parameters checks success', async () => {
+    test('mandatory parameters checks success', async () => {
+        // basic test that runs the mandatory checks (the spy returns no errors by default)
         const validator = new Validator();
         const mockSourceMap = { pointers: {} };
 
@@ -279,6 +280,8 @@ describe('Validator', () => {
     });
 
     test('mandatory product parameter checks are enforced by default', async () => {
+        // specifically tests that the mandatory checks are run by default and that their
+        // errors are handled correctly when disableMandatoryParams is not set.
         const validator = new Validator();
         const mockSourceMap = { pointers: {} };
         const mockErrors = [{ message: 'missing mandatory param', instancePath: '/params/product' }];
@@ -293,7 +296,7 @@ describe('Validator', () => {
             return validateFn;
         });
         mandatorySpy.mockReturnValue(mockErrors);
-        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementation(() => {});
+        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementation(() => { });
 
         const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
         expect(result).toEqual({ valid: false });
@@ -304,8 +307,10 @@ describe('Validator', () => {
     });
 
     test('mandatory product parameter checks are skipped when disableMandatoryParams is true', async () => {
+        // disable the checks and make sure that even if the spy returns errors, they are ignored.
         const validator = new Validator({ disableMandatoryParams: true });
         const mockSourceMap = { pointers: {} };
+        // won't be called, but mock it to return errors to surface if it does get called
         mandatorySpy.mockReturnValue([{ message: 'should be skipped', instancePath: '/params/product' }]);
 
         const loadSpy = jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
@@ -323,6 +328,7 @@ describe('Validator', () => {
             valid: true,
             data: expect.any(Object)
         });
+        // can also assert not called here
         expect(mandatorySpy).not.toHaveBeenCalled();
         expect(compileSpy).toHaveBeenCalled();
         expect(loadSpy).toHaveBeenCalled();
