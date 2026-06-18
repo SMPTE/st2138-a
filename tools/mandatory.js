@@ -53,33 +53,6 @@ function getDerivedScope(param, productScope, defaultScope) {
 }
 
 /**
- * Attempt to read the string value for a product sub-parameter.
- * Supports two value locations:
- *   1. Per-sub-param: product.params[key].value.string_value
- *   2. Struct blob:   product.value.struct_value.fields[key].string_value
- * @param {object} param the sub-parameter descriptor
- * @param {object|undefined} productValue the product param's top-level value
- * @param {string} key the sub-parameter name
- * @returns {string|undefined}
- */
-function getStringValue(param, productValue, key) {
-    if (param.value && param.value.string_value !== undefined) {
-        return param.value.string_value;
-    }
-
-    if (productValue &&
-        productValue.struct_value &&
-        productValue.struct_value.fields) {
-        const field = productValue.struct_value.fields[key];
-        if (field && field.string_value !== undefined) {
-            return field.string_value;
-        }
-    }
-
-    return undefined;
-}
-
-/**
  * Validates that all mandatory product parameters and scopes are present
  * and have valid values.
  * @param {object} deviceDesc the complete device model object
@@ -121,7 +94,10 @@ function validateRequiredParamsAndScopes(deviceDesc) {
 
         if (param.type !== 'STRING') {
             errors.push({ message: `Product parameter '${key}' must be STRING type, not ${param.type}`, instancePath: `${basePath}/type` });
-            continue;
+        }
+
+        if (param.read_only !== undefined && param.read_only !== true) {
+            errors.push({ message: `Product parameter '${key}' must be read_only if specified`, instancePath: `${basePath}/read_only` });
         }
 
         const derivedScope = getDerivedScope(param, productScope, defaultScope);
@@ -129,7 +105,8 @@ function validateRequiredParamsAndScopes(deviceDesc) {
             errors.push({ message: `Product parameter '${key}' has invalid scope (must be '${REQUIRED_SCOPE}')`, instancePath: `${basePath}/access_scope` });
         }
 
-        const stringValue = getStringValue(param, productValue, key);
+        const field = productValue?.struct_value?.fields?.[key];
+        const stringValue = field?.string_value;
 
         if (stringValue === undefined || stringValue === null) {
             errors.push({ message: `Product parameter '${key}' has no value`, instancePath: `${basePath}/value` });
