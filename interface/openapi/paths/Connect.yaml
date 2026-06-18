@@ -41,6 +41,13 @@ get:
       schema:
         $ref: "../../schemata/device.json#/$defs/detail_level"
 
+    - name: Language-Code
+      in: header
+      required: false
+      description: Optionally specify the language code for the response.
+      schema:
+        $ref: "../../schemata/device.json#/$defs/language_code"
+
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
   tags:
