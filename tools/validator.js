@@ -6,7 +6,7 @@ const fs = require('fs/promises');
 const path = require('node:path');
 const yaml = require('yaml');
 const schema = require('./data/device.json');
-const mandatory = require('./mandatory');
+const mandatory = require('./checks/mandatory');
 
 'use strict'; // <-- now applied after AJV is safely loaded
 

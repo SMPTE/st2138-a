@@ -1,4 +1,4 @@
-const { validateRequiredParamsAndScopes } = require('../mandatory.js');
+const { validateRequiredParamsAndScopes } = require('../checks/mandatory.js');
 
 describe("Mandatory", () => {
 

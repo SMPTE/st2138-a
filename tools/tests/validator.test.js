@@ -7,7 +7,7 @@ const yaml = require('yaml');
 const schema = require('../data/device.json');
 
 const Validator = require('../validator');
-const mandatory = require('../mandatory.js');
+const mandatory = require('../checks/mandatory.js');
 
 describe('Validator', () => {
     let fetchSpy;
