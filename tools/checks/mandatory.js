@@ -56,11 +56,16 @@ function getDerivedScope(param, productScope, defaultScope) {
  * Validates that all mandatory product parameters and scopes are present
  * and have valid values.
  * @param {object} deviceDesc the complete device model object
+ * @param {object} opts
+ * @param {string} opts.schemaName the schema being validated
+ * @param {boolean} opts.disableMandatoryParams if true, skip this check
  * @returns {Array<{message: string, instancePath: string}>} array of errors
  *   (empty if valid). Each entry carries an instancePath suitable for
  *   source-map lookup so callers can report line numbers.
  */
-function validateRequiredParamsAndScopes(deviceDesc) {
+function validateRequiredParamsAndScopes(deviceDesc, opts) {
+    if (opts.disableMandatoryParams || opts.schemaName !== 'device') return [];
+
     const errors = [];
 
     if (!deviceDesc || !deviceDesc.params || !deviceDesc.params.product) {
