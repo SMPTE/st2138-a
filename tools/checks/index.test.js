@@ -29,13 +29,16 @@
 
 const checks = require('./index');
 const mandatory = require('./mandatory');
+const nestedValues = require('./nested-values');
 
 describe('getChecks', () => {
     test('returns all checks', () => {
         const result = checks.getChecks();
-        expect(result).toHaveLength(1);
+        expect(result).toHaveLength(2);
         expect(result[0].name).toBe('mandatory');
         expect(result[0].run).toBe(mandatory.validateRequiredParamsAndScopes);
+        expect(result[1].name).toBe('nestedValues');
+        expect(result[1].run).toBe(nestedValues.checkNestedValues);
     });
 });
 

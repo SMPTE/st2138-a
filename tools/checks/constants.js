@@ -29,48 +29,6 @@
 
 'use strict';
 
-const mandatory = require('./mandatory');
-const nestedValues = require('./nested-values');
-const { WARNING } = require('./constants');
+const WARNING = 'warning';
 
-/**
- * Returns the list of all checks. Each check has a `name` and a
- * `run(data, opts)` function that returns an array of errors (empty if the
- * check passes or is disabled/not applicable via opts).
- *
- * @returns {Array<{name: string, run: function(object, object): Array}>}
- */
-function getChecks() {
-    return [
-        {
-            name: 'mandatory',
-            run: mandatory.validateRequiredParamsAndScopes,
-        },
-        {
-            name: 'nestedValues',
-            run: nestedValues.checkNestedValues,
-        },
-    ];
-}
-
-/**
- * Runs all applicable checks against the provided data.
- *
- * @param {object} data the parsed descriptor to validate
- * @param {object} opts
- * @param {string} opts.schemaName the schema being validated
- * @param {boolean} opts.disable... multiple flags to disable specific checks
- * @returns {Array<{message: string, instancePath: string}>} aggregated errors from all checks
- */
-function runChecks(data, opts) {
-    const checks = module.exports.getChecks();
-    for (const check of checks) {
-        const errors = check.run(data, opts);
-        if (errors.length > 0) {
-            return errors;
-        }
-    }
-    return [];
-}
-
-module.exports = { getChecks, runChecks, WARNING };
+module.exports = { WARNING };
