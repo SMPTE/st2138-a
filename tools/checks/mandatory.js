@@ -122,6 +122,10 @@ function validateRequiredParamsAndScopes(deviceDesc, opts) {
         if (param.value !== undefined && param.value !== null) {
             errors.push({ message: `Product parameter '${key}' should not have a 'value' field (use 'value.struct_value.fields.${key}.string_value' instead)`, instancePath: `${basePath}/value` });
         }
+
+        if (param.params !== undefined && param.params !== null) {
+            errors.push({ message: `Product parameter '${key}' should not have a 'params' field`, instancePath: `${basePath}/params` });
+        }
     }
 
     return errors;

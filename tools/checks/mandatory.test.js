@@ -312,6 +312,18 @@ describe("Mandatory", () => {
                     }
                 ]);
             });
+
+            test(`returns error when ${key} has a 'params' field`, () => {
+                // mutate the device to have a 'params' field for the specific key
+                device.params.product.params[key].params = { sub: { type: 'STRING' } };
+                const errors = validateRequiredParamsAndScopes(device, DEVICE_OPTS);
+                expect(errors).toEqual([
+                    {
+                        message: `Product parameter '${key}' should not have a 'params' field`,
+                        instancePath: `/params/product/params/${key}/params`
+                    }
+                ]);
+            });
         }
     });
 });
