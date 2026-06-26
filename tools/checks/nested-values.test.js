@@ -53,6 +53,7 @@ describe('checkNestedValues', () => {
             // will be used for mutations
             deep_parent: {
                 type: 'STRUCT',
+                value: { struct_value: {} },
                 params: {
                     mid: {
                         type: 'STRUCT',
@@ -112,6 +113,17 @@ describe('checkNestedValues', () => {
         delete device.params;
         const result = checkNestedValues(device, ENABLED_OPTS);
         expect(result).toEqual([]);
+    });
+
+    // check that top-level params without a value are warned unless they are templates
+    test('warns when top-level param has no value and is not a template', () => {
+        delete device.params.parent.value;
+        const result = checkNestedValues(device, ENABLED_OPTS);
+        expect(result).toContainEqual({
+            message: "Top-level parameter 'parent' has no value and is not a template",
+            instancePath: 'params/parent/value',
+            type: WARNING,
+        });
     });
 
     // check that it does not flag top-level param values, only nested values

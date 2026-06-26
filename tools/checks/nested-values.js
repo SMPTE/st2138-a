@@ -53,9 +53,19 @@ function checkNestedValues(desc, opts) {
         searchTemplate(param, templateOids);
     }
 
-    // then look for any nested values in the params
     const warnings = [];
+    // go through each top-level param
     for (const [key, param] of Object.entries(desc.params)) {
+        // check if it has a value, it should unless its a template
+        if ((param.value === undefined || param.value === null) && !param.template_oid) {
+            warnings.push({
+                message: `Top-level parameter '${key}' has no value and is not a template`,
+                instancePath: `params/${key}/value`,
+                type: WARNING,
+            });
+        }
+
+        // look for any nested values in the params
         checkParam(param, `params/${key}`, templateOids, warnings);
     }
 
