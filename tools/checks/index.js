@@ -63,14 +63,13 @@ function getChecks() {
  * @returns {Array<{message: string, instancePath: string}>} aggregated errors from all checks
  */
 function runChecks(data, opts) {
+    const errors = [];
     const checks = module.exports.getChecks();
     for (const check of checks) {
-        const errors = check.run(data, opts);
-        if (errors.length > 0) {
-            return errors;
-        }
+        const checkErrors = check.run(data, opts);
+        errors.push(...checkErrors);
     }
-    return [];
+    return errors;
 }
 
 module.exports = { getChecks, runChecks, WARNING };

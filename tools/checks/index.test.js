@@ -32,6 +32,7 @@ const mandatory = require('./mandatory');
 const nestedValues = require('./nested-values');
 
 describe('getChecks', () => {
+    // lock in the expected checks
     test('returns all checks', () => {
         const result = checks.getChecks();
         expect(result).toHaveLength(2);
@@ -47,6 +48,7 @@ describe('runChecks', () => {
 
     beforeEach(() => {
         getChecksSpy = jest.spyOn(checks, 'getChecks').mockImplementation(() => {
+            // force tests to provide their own implementation for isolation
             throw new Error('getChecks should not be called directly in this test');
         });
     });
@@ -55,6 +57,7 @@ describe('runChecks', () => {
         jest.restoreAllMocks();
     });
 
+    // base case for successful checks
     test('returns empty array when all checks pass', () => {
         getChecksSpy.mockReturnValue([
             { name: 'check1', run: () => [] },
@@ -65,7 +68,8 @@ describe('runChecks', () => {
         expect(result).toEqual([]);
     });
 
-    test('returns errors from the first failing check and stops', () => {
+    // case for failing checks
+    test('returns errors from all failing checks', () => {
         const check2Run = jest.fn(() => []);
         const mockErrors = [{ message: 'check1 failed', instancePath: '/bad' }];
 
@@ -76,9 +80,10 @@ describe('runChecks', () => {
 
         const result = checks.runChecks({}, { schemaName: 'device' });
         expect(result).toEqual(mockErrors);
-        expect(check2Run).not.toHaveBeenCalled();
+        expect(check2Run).toHaveBeenCalled();
     });
 
+    // passes data and opts to each check run function correctly
     test('passes data and opts to each check run function', () => {
         const check1Run = jest.fn(() => []);
         const testData = { params: { foo: 'bar' } };
@@ -92,6 +97,7 @@ describe('runChecks', () => {
         expect(check1Run).toHaveBeenCalledWith(testData, opts);
     });
 
+    // enforces that getChecks is called with no arguments
     test('calls getChecks with no arguments', () => {
         getChecksSpy.mockReturnValue([]);
 

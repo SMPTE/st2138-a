@@ -44,6 +44,9 @@ function checkNestedValues(desc, opts) {
     if (opts.disableNestedValueChecks) return [];
     if (opts.schemaName !== 'device') return [];
 
+    // no device, nothing to do
+    if (!desc) return [];
+
     // if the device has no params, there's nothing to check
     if (!desc.params) return [];
 
@@ -60,13 +63,14 @@ function checkNestedValues(desc, opts) {
         if ((param.value === undefined || param.value === null) && !param.template_oid) {
             warnings.push({
                 message: `Top-level parameter '${key}' has no value and is not a template`,
-                instancePath: `params/${key}/value`,
+                // leading slash, this is a json pointer for the source map, not an fqoid
+                instancePath: `/params/${key}/value`,
                 type: WARNING,
             });
         }
 
         // look for any nested values in the params
-        checkParam(param, `params/${key}`, templateOids, warnings);
+        checkParam(param, `/params/${key}`, templateOids, warnings);
     }
 
     return warnings;
@@ -113,9 +117,9 @@ function checkParam(param, path, templateOids, warnings) {
         }
 
         // if the param has a value, check if something else references it as a template_oid
-        // first take the /params/, which are not part of template_oids
-        // just searching for 'params/' to remove the starting params/ prefix from the root of the path
-        const template_oid = subPath.replaceAll('params/', '');
+        // covert from source map pointer to template_oid by replacing /params/ with /
+        // and removing the leading slash
+        const template_oid = subPath.replaceAll('/params/', '/').substring(1);
         if (!templateOids.has(template_oid)) {
             warnings.push({
                 message: `Nested value found in parameter '${key}' which is not referenced by any template_oid`,

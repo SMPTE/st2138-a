@@ -110,7 +110,7 @@ describe("Mandatory", () => {
     });
 
     test('returns error when deviceDesc is null', () => {
-        // hitting the nul check
+        // hitting the null check
         const errors = validateRequiredParamsAndScopes(null, DEVICE_OPTS);
         expect(errors).toEqual([
             { message: 'Missing mandatory product struct in params', instancePath: '/params/product' }

@@ -87,6 +87,12 @@ describe('checkNestedValues', () => {
         expect(result).toEqual([]);
     });
 
+    // test for no device, should return empty
+    test('returns empty when no device is provided', () => {
+        const result = checkNestedValues(null, ENABLED_OPTS);
+        expect(result).toEqual([]);
+    });
+
     // test that disabling the check works
     test('returns empty when disabled', () => {
         // add a nested value that would normally warn
@@ -121,7 +127,7 @@ describe('checkNestedValues', () => {
         const result = checkNestedValues(device, ENABLED_OPTS);
         expect(result).toContainEqual({
             message: "Top-level parameter 'parent' has no value and is not a template",
-            instancePath: 'params/parent/value',
+            instancePath: '/params/parent/value',
             type: WARNING,
         });
     });
@@ -142,7 +148,7 @@ describe('checkNestedValues', () => {
         expect(result).toEqual([
             {
                 message: "Nested value found in parameter 'sibling' which is not referenced by any template_oid",
-                instancePath: 'params/parent/params/sibling/value',
+                instancePath: '/params/parent/params/sibling/value',
                 type: WARNING,
             },
         ]);
@@ -155,7 +161,7 @@ describe('checkNestedValues', () => {
         expect(result).toEqual([
             {
                 message: "Nested value found in parameter 'leaf' which is not referenced by any template_oid",
-                instancePath: 'params/deep_parent/params/mid/params/leaf/value',
+                instancePath: '/params/deep_parent/params/mid/params/leaf/value',
                 type: WARNING,
             },
         ]);
@@ -181,12 +187,12 @@ describe('checkNestedValues', () => {
         expect(result).toEqual([
             {
                 message: "Nested value found in parameter 'child' which is not referenced by any template_oid",
-                instancePath: 'params/parent/params/child/value',
+                instancePath: '/params/parent/params/child/value',
                 type: WARNING,
             },
             {
                 message: "Nested value found in parameter 'sibling' which is not referenced by any template_oid",
-                instancePath: 'params/parent/params/sibling/value',
+                instancePath: '/params/parent/params/sibling/value',
                 type: WARNING,
             },
         ]);
