@@ -31,7 +31,7 @@
 
 const mandatory = require('./mandatory');
 const nestedValues = require('./nested-values');
-const { WARNING } = require('./constants');
+const { WARNING, ERROR } = require('./constants');
 
 /**
  * Returns the list of all checks. Each check has a `name` and a
@@ -72,4 +72,4 @@ function runChecks(data, opts) {
     return errors;
 }
 
-module.exports = { getChecks, runChecks, WARNING };
+module.exports = { getChecks, runChecks, WARNING, ERROR };

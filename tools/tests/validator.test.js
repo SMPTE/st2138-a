@@ -336,6 +336,28 @@ describe('Validator', () => {
         );
     });
 
+    test('validate returns valid=true when runChecks returns only warnings', async () => {
+        const validator = new Validator();
+        const mockSourceMap = { pointers: {} };
+        const mockWarnings = [{ type: checks.WARNING, message: 'just a warning', instancePath: '/params/foo/value' }];
+
+        jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+            data: { params: {} },
+            sourceMap: mockSourceMap
+        });
+        jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
+            const validateFn = () => true;
+            validateFn.errors = null;
+            return validateFn;
+        });
+        runChecksSpy.mockReturnValue(mockWarnings);
+        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementation(() => { });
+
+        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
+        expect(result).toEqual({ valid: true, data: expect.any(Object) });
+        expect(showSpy).toHaveBeenCalledWith(mockWarnings, mockSourceMap);
+    });
+
     test('validate returns valid=false when runChecks returns errors', async () => {
         const validator = new Validator();
         const mockSourceMap = { pointers: {} };
@@ -368,7 +390,7 @@ describe('Validator', () => {
         // if the '/missing' path doesn't exist in sourceMap pointers,
         // it should do its best to still log a useful message
         Validator.showErrors(errors, sourceMap);
-        expect(logSpy).toHaveBeenCalledWith('field required at /missing');
+        expect(logSpy).toHaveBeenCalledWith('ERROR: field required at /missing');
     });
 
     test('showErrors includes line info when sourceMap pointers exist', () => {
@@ -388,7 +410,24 @@ describe('Validator', () => {
         ];
 
         Validator.showErrors(errors, sourceMap);
-        expect(logSpy).toHaveBeenCalledWith('type mismatch at /field on lines 5-7');
+        expect(logSpy).toHaveBeenCalledWith('ERROR: type mismatch at /field on lines 5-7');
+    });
+
+    test('showErrors handles warnings in addition to errors', () => {
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+        const sourceMap = {
+            pointers: {
+                '/warnField': {
+                    value: { line: 10 },
+                    valueEnd: { line: 12 }
+                }
+            }
+        };
+        const warnings = [
+            { type: checks.WARNING, instancePath: '/warnField', message: 'deprecated field' }
+        ];
+        Validator.showErrors(warnings, sourceMap);
+        expect(logSpy).toHaveBeenCalledWith('WARNING: deprecated field at /warnField on lines 10-12');
     });
 
     test('addSchemas rethrows addSchema errors with pointer and line info', () => {

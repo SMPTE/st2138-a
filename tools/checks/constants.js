@@ -30,5 +30,6 @@
 'use strict';
 
 const WARNING = 'warning';
+const ERROR = 'error';
 
-module.exports = { WARNING };
+module.exports = { WARNING, ERROR };

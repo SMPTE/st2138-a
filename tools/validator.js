@@ -115,7 +115,9 @@ class Validator {
         const checkErrors = checks.runChecks(data, { ...this.checkOpts, schemaName });
         if (checkErrors.length > 0) {
             Validator.showErrors(checkErrors, sourceMap);
-            return {valid: false};
+            if (checkErrors.some(err => err.type === undefined || err.type === checks.ERROR)) {
+                return {valid: false};
+            }
         }
 
         return {valid: true, data: data};
@@ -123,9 +125,13 @@ class Validator {
 
     static showErrors(errors, sourceMap) {
         for (const err of errors) {
+            let level = 'ERROR';
+            if (err.type === checks.WARNING) {
+                level = 'WARNING';
+            }
             const pointer = sourceMap.pointers[err.instancePath];
             const lineInfo = pointer ? ` on lines ${pointer.value.line}-${pointer.valueEnd.line}` : '';
-            console.log(`${err.message} at ${err.instancePath}${lineInfo}`);
+            console.log(`${level}: ${err.message} at ${err.instancePath}${lineInfo}`);
         }
     }
 }
