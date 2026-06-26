@@ -6,7 +6,8 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # run build-openapi to ensure the schema is up to date.
 echo "Building schema..."
-"$SCRIPT_DIR/../build-openapi.sh"
+cd "$SCRIPT_DIR/.."
+./build-openapi.sh
 
 echo ""
 echo "Validating examples..."
