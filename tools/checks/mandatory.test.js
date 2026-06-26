@@ -300,6 +300,18 @@ describe("Mandatory", () => {
                     }
                 ]);
             });
+
+            test(`returns error when ${key} has a 'value' field`, () => {
+                // mutate the device to have a 'value' field for the specific key
+                device.params.product.params[key].value = { string_value: 'should not be here' };
+                const errors = validateRequiredParamsAndScopes(device, DEVICE_OPTS);
+                expect(errors).toEqual([
+                    {
+                        message: `Product parameter '${key}' should not have a 'value' field (use 'value.struct_value.fields.${key}.string_value' instead)`,
+                        instancePath: `/params/product/params/${key}/value`
+                    }
+                ]);
+            });
         }
     });
 });

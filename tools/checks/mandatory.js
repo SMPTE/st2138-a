@@ -118,6 +118,10 @@ function validateRequiredParamsAndScopes(deviceDesc, opts) {
         } else if (String(stringValue).trim() === '') {
             errors.push({ message: `Product parameter '${key}' has empty string value`, instancePath: `${basePath}/value/string_value` });
         }
+
+        if (param.value !== undefined && param.value !== null) {
+            errors.push({ message: `Product parameter '${key}' should not have a 'value' field (use 'value.struct_value.fields.${key}.string_value' instead)`, instancePath: `${basePath}/value` });
+        }
     }
 
     return errors;
