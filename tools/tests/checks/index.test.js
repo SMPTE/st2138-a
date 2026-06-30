@@ -1,5 +1,5 @@
 /*
- * Copyright © MMXXV 2026 by the Society of Motion Picture and Television Engineers
+ * Copyright © MMXXVI 2026 by the Society of Motion Picture and Television Engineers
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -27,9 +27,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const checks = require('./index');
-const mandatory = require('./mandatory');
-const nestedValues = require('./nested-values');
+const checks = require('../../checks/index');
+const mandatory = require('../../checks/mandatory');
+const nestedValues = require('../../checks/nested-values');
 
 describe('getChecks', () => {
     // lock in the expected checks

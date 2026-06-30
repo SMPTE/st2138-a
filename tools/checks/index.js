@@ -1,5 +1,5 @@
 /*
- * Copyright © MMXXV 2026 by the Society of Motion Picture and Television Engineers
+ * Copyright © MMXXVI 2026 by the Society of Motion Picture and Television Engineers
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -60,7 +60,7 @@ function getChecks() {
  * @param {object} opts
  * @param {string} opts.schemaName the schema being validated
  * @param {boolean} opts.disable... multiple flags to disable specific checks
- * @returns {Array<{message: string, instancePath: string}>} aggregated errors from all checks
+ * @returns {Array<{message: string, instancePath: string, type?: string}>} aggregated errors from all checks
  */
 function runChecks(data, opts) {
     const errors = [];

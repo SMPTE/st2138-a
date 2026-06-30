@@ -1,5 +1,5 @@
 /*
- * Copyright © MMXXV 2026 by the Society of Motion Picture and Television Engineers
+ * Copyright © MMXXVI 2026 by the Society of Motion Picture and Television Engineers
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -117,7 +117,7 @@ function checkParam(param, path, templateOids, warnings) {
         }
 
         // if the param has a value, check if something else references it as a template_oid
-        // covert from source map pointer to template_oid by replacing /params/ with /
+        // convert from source map pointer to template_oid by replacing /params/ with /
         // and removing the leading slash
         const template_oid = subPath.replaceAll('/params/', '/').substring(1);
         if (!templateOids.has(template_oid)) {
