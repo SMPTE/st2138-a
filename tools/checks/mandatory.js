@@ -1,5 +1,5 @@
 /*
- * Copyright © MMXXV 2026 by the Society of Motion Picture and Television Engineers
+ * Copyright © MMXXVI 2026 by the Society of Motion Picture and Television Engineers
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -56,11 +56,16 @@ function getDerivedScope(param, productScope, defaultScope) {
  * Validates that all mandatory product parameters and scopes are present
  * and have valid values.
  * @param {object} deviceDesc the complete device model object
+ * @param {object} opts
+ * @param {string} opts.schemaName the schema being validated
+ * @param {boolean} opts.disableMandatoryParams if true, skip this check
  * @returns {Array<{message: string, instancePath: string}>} array of errors
  *   (empty if valid). Each entry carries an instancePath suitable for
  *   source-map lookup so callers can report line numbers.
  */
-function validateRequiredParamsAndScopes(deviceDesc) {
+function validateRequiredParamsAndScopes(deviceDesc, opts) {
+    if (opts.disableMandatoryParams || opts.schemaName !== 'device') return [];
+
     const errors = [];
 
     if (!deviceDesc || !deviceDesc.params || !deviceDesc.params.product) {
@@ -112,6 +117,14 @@ function validateRequiredParamsAndScopes(deviceDesc) {
             errors.push({ message: `Product parameter '${key}' has no value`, instancePath: `${basePath}/value` });
         } else if (String(stringValue).trim() === '') {
             errors.push({ message: `Product parameter '${key}' has empty string value`, instancePath: `${basePath}/value/string_value` });
+        }
+
+        if (param.value !== undefined && param.value !== null) {
+            errors.push({ message: `Product parameter '${key}' should not have a 'value' field (use 'value.struct_value.fields.${key}.string_value' instead)`, instancePath: `${basePath}/value` });
+        }
+
+        if (param.params !== undefined && param.params !== null) {
+            errors.push({ message: `Product parameter '${key}' should not have a 'params' field`, instancePath: `${basePath}/params` });
         }
     }
 

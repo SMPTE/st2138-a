@@ -6,7 +6,7 @@ const fs = require('fs/promises');
 const path = require('node:path');
 const yaml = require('yaml');
 const schema = require('./data/device.json');
-const mandatory = require('./mandatory');
+const checks = require('./checks');
 
 'use strict'; // <-- now applied after AJV is safely loaded
 
@@ -15,9 +15,13 @@ class Validator {
      *
      * @param {object} options optional options
      * @param {boolean} options.disableMandatoryParams if true, skip mandatory product parameter checks
+     * @param {boolean} options.disableNestedValueChecks if true, skip checks for nested values
      */
     constructor(options = {}) {
-        this.disableMandatoryParams = options.disableMandatoryParams || false;
+        this.checkOpts = {
+            disableMandatoryParams: options.disableMandatoryParams || false,
+            disableNestedValueChecks: options.disableNestedValueChecks || false,
+        };
 
         this.ajv = new Ajv({
             strict: true,
@@ -108,10 +112,10 @@ class Validator {
             return {valid: false}
         }
 
-        if (isDeviceSchema && !this.disableMandatoryParams) {
-            const mandatoryErrors = mandatory.validateRequiredParamsAndScopes(data);
-            if (mandatoryErrors.length > 0) {
-                Validator.showErrors(mandatoryErrors, sourceMap);
+        const checkErrors = checks.runChecks(data, { ...this.checkOpts, schemaName });
+        if (checkErrors.length > 0) {
+            Validator.showErrors(checkErrors, sourceMap);
+            if (checkErrors.some(err => err.type === undefined || err.type === checks.ERROR)) {
                 return {valid: false};
             }
         }
@@ -121,9 +125,13 @@ class Validator {
 
     static showErrors(errors, sourceMap) {
         for (const err of errors) {
+            let level = 'ERROR';
+            if (err.type === checks.WARNING) {
+                level = 'WARNING';
+            }
             const pointer = sourceMap.pointers[err.instancePath];
             const lineInfo = pointer ? ` on lines ${pointer.value.line}-${pointer.valueEnd.line}` : '';
-            console.log(`${err.message} at ${err.instancePath}${lineInfo}`);
+            console.log(`${level}: ${err.message} at ${err.instancePath}${lineInfo}`);
         }
     }
 }
