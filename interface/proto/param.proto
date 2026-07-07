@@ -143,7 +143,7 @@ message Param {
   Import import = 16;
 
   /* Additional OIDs represented by this parameter - used to allow a client to locate a parameter that may have been moved or renamed.
-   * An alias must not conflict with any real fully qualified OID in the device model. */
+   * An alias must be unique and must not conflict with any other alias or fully qualified OID (FQOID) */
   repeated string oid_aliases = 17;
 
   /* When true, indicates that the parameter is part of the minimal set of parameters that should be reported by the device */
