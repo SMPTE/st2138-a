@@ -105,15 +105,40 @@ describe('walkParams', () => {
         expect(order).toEqual(['visit:x', 'visit:y', 'finalize']);
     });
 
-    // is a no-op when there is nothing to walk
-    test('does nothing when there is no descriptor, no params, or no visitors', () => {
+    // is a no-op when there is no descriptor or no visitors
+    test('does nothing when there is no descriptor or no visitors', () => {
         const visitor = { visit: jest.fn(), finalize: jest.fn() };
 
         walkParams(null, [visitor], []);
-        walkParams({}, [visitor], []);
+        walkParams(undefined, [visitor], []);
         walkParams({ params: { x: {} } }, [], []);
 
         expect(visitor.visit).not.toHaveBeenCalled();
         expect(visitor.finalize).not.toHaveBeenCalled();
+    });
+
+    // finalize still runs when the descriptor has no params, so params-less
+    // checks (e.g. commands) are not skipped
+    test('runs finalize even when the descriptor has no params', () => {
+        const visit = jest.fn();
+        const finalize = jest.fn((warnings) => warnings.push('finalized'));
+        const warnings = [];
+
+        walkParams({}, [{ visit, finalize }], warnings);
+
+        expect(visit).not.toHaveBeenCalled();
+        expect(finalize).toHaveBeenCalledTimes(1);
+        expect(warnings).toEqual(['finalized']);
+    });
+
+    // an empty params map still triggers finalize without visiting anything
+    test('runs finalize for an empty params map', () => {
+        const visit = jest.fn();
+        const finalize = jest.fn();
+
+        walkParams({ params: {} }, [{ visit, finalize }], []);
+
+        expect(visit).not.toHaveBeenCalled();
+        expect(finalize).toHaveBeenCalledTimes(1);
     });
 });

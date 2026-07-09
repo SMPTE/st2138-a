@@ -56,6 +56,8 @@
  * After every parameter has been visited, each visitor's optional `finalize`
  * hook is called so checks that need the full tree state (for example, a set of
  * template references gathered along the way) can emit their deferred findings.
+ * `finalize` always runs (given a descriptor and at least one visitor), even
+ * when the descriptor has no params, so params-less checks are not skipped.
  *
  * @param {object} desc the root device descriptor (with a `params` map)
  * @param {Array<Visitor>} visitors the visitors to invoke for each parameter
@@ -64,9 +66,9 @@
  * @returns {void}
  */
 function walkParams(desc, visitors, warnings) {
-    if (!desc || !desc.params || visitors.length === 0) return;
+    if (!desc || visitors.length === 0) return;
 
-    for (const [key, param] of Object.entries(desc.params)) {
+    for (const [key, param] of Object.entries(desc.params || {})) {
         walkParam(param, {
             param,
             key,
