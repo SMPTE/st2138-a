@@ -16,11 +16,13 @@ class Validator {
      * @param {object} options optional options
      * @param {boolean} options.disableMandatoryParams if true, skip mandatory product parameter checks
      * @param {boolean} options.disableNestedValueChecks if true, skip checks for nested values
+     * @param {boolean} options.disableScopeChecks if true, skip checks for undeclared access scopes
      */
     constructor(options = {}) {
         this.checkOpts = {
             disableMandatoryParams: options.disableMandatoryParams || false,
             disableNestedValueChecks: options.disableNestedValueChecks || false,
+            disableScopeChecks: options.disableScopeChecks || false,
         };
 
         this.ajv = new Ajv({

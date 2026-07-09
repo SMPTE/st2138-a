@@ -35,11 +35,11 @@ describe('getChecks', () => {
     // lock in the expected checks
     test('returns all checks', () => {
         const result = checks.getChecks();
-        expect(result).toHaveLength(2);
+        expect(result).toHaveLength(3);
         expect(result[0].name).toBe('mandatory');
         expect(result[0].run).toBe(mandatory.validateRequiredParamsAndScopes);
         expect(result[1].name).toBe('nestedValues');
-        expect(result[1].run).toBe(nestedValues.checkNestedValues);
+        expect(result[1].createVisitor).toBe(nestedValues.createNestedValuesVisitor);
     });
 });
 
@@ -103,5 +103,83 @@ describe('runChecks', () => {
 
         checks.runChecks({}, { schemaName: 'param' });
         expect(getChecksSpy).toHaveBeenCalledWith();
+    });
+
+    // walk checks contribute a visitor that shares a single traversal
+    test('creates visitors for walk checks and walks the param tree once', () => {
+        const opts = { schemaName: 'device' };
+        const testData = { params: { foo: {}, bar: {} } };
+
+        const visit = jest.fn((ctx, warnings) => {
+            warnings.push({ message: `visited ${ctx.key}`, instancePath: ctx.path });
+        });
+        const createVisitor = jest.fn(() => ({ visit }));
+
+        getChecksSpy.mockReturnValue([
+            { name: 'walkCheck', createVisitor },
+        ]);
+
+        const result = checks.runChecks(testData, opts);
+
+        // createVisitor is called once with data and opts
+        expect(createVisitor).toHaveBeenCalledTimes(1);
+        expect(createVisitor).toHaveBeenCalledWith(testData, opts);
+        // the visitor is invoked once per param in a single traversal
+        expect(visit).toHaveBeenCalledTimes(2);
+        expect(result).toEqual([
+            { message: 'visited foo', instancePath: '/params/foo' },
+            { message: 'visited bar', instancePath: '/params/bar' },
+        ]);
+    });
+
+    // walk checks that opt out (return null) are skipped
+    test('skips walk checks whose createVisitor returns null', () => {
+        const opts = { schemaName: 'param' };
+        const testData = { params: { foo: {} } };
+
+        const createVisitor = jest.fn(() => null);
+
+        getChecksSpy.mockReturnValue([
+            { name: 'walkCheck', createVisitor },
+        ]);
+
+        const result = checks.runChecks(testData, opts);
+
+        expect(createVisitor).toHaveBeenCalledWith(testData, opts);
+        expect(result).toEqual([]);
+    });
+
+    // checks that expose neither a run function nor a createVisitor are ignored
+    test('ignores checks with neither run nor createVisitor', () => {
+        const testData = { params: { foo: {} } };
+
+        getChecksSpy.mockReturnValue([
+            { name: 'inert' },
+        ]);
+
+        const result = checks.runChecks(testData, { schemaName: 'device' });
+        expect(result).toEqual([]);
+    });
+
+    // standalone and walk checks combine their findings
+    test('combines errors from standalone run checks and walk visitors', () => {
+        const testData = { params: { foo: {} } };
+        const runError = { message: 'run failed', instancePath: '/run' };
+
+        getChecksSpy.mockReturnValue([
+            { name: 'standalone', run: () => [runError] },
+            {
+                name: 'walkCheck',
+                createVisitor: () => ({
+                    visit: (ctx, warnings) => warnings.push({ message: 'walk finding', instancePath: ctx.path }),
+                }),
+            },
+        ]);
+
+        const result = checks.runChecks(testData, { schemaName: 'device' });
+        expect(result).toEqual([
+            runError,
+            { message: 'walk finding', instancePath: '/params/foo' },
+        ]);
     });
 });
