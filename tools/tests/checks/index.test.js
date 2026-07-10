@@ -30,6 +30,7 @@
 const checks = require('../../checks/index');
 const mandatory = require('../../checks/mandatory');
 const nestedValues = require('../../checks/nested-values');
+const scopes = require('../../checks/scopes');
 
 describe('getChecks', () => {
     // lock in the expected checks
@@ -40,6 +41,8 @@ describe('getChecks', () => {
         expect(result[0].run).toBe(mandatory.validateRequiredParamsAndScopes);
         expect(result[1].name).toBe('nestedValues');
         expect(result[1].createVisitor).toBe(nestedValues.createNestedValuesVisitor);
+        expect(result[2].name).toBe('scopes');
+        expect(result[2].createVisitor).toBe(scopes.createScopesVisitor);
     });
 });
 
