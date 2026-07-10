@@ -60,7 +60,10 @@ post:
     - name: respond
       in: query
       required: false
-      description: flag to suppress the server's response; set to false to opt out, otherwise the server responds
+      description: >-
+        Controls whether the server sends a response body. The server responds
+        unless this is explicitly set to false; any other value (or omitting the
+        parameter) results in a response.
       schema:
         type: boolean
         default: true
