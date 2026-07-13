@@ -65,7 +65,7 @@ get:
           schema:
             type: string
           example: |
-            <stringified {"value": {string_value: "Hello, world!"}}>
+            data: <stringified PushUpdates>
           x-sse-event-schema:
             message:
               $ref: "../../schemata/device.json#/$defs/push_updates"

@@ -63,9 +63,9 @@ get:
         text/event-stream:
           schema:
             type: string
-            example: |
-              data: <stringified ExternalObjectPayload>
-              data: <stringified ExternalObjectPayload>
+          example: |
+            data: <stringified ExternalObjectPayload>
+            data: <stringified ExternalObjectPayload>
           x-sse-event-schema:
             message:
               $ref: "../../schemata/device.json#/$defs/external_object_payload"
