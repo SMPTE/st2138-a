@@ -115,6 +115,28 @@ paths:
     $ref: './paths/Access.yaml'
 
 components:
+  schemas:
+    # x-sse-event-schema maps SSE event types to their data schemas.
+    # "message" is the default event type when no event: field is sent.
+    SseError:
+      type: object
+      description: >-
+        An error event sent in an SSE stream when an error occurs after
+        HTTP headers have already been sent. Carried as an SSE event with
+        event type "error".
+      required:
+        - code
+      properties:
+        code:
+          type: integer
+          description: The HTTP status code that would have been returned
+        message:
+          type: string
+          description: >-
+            A human-readable error message. Optional because servers may
+            omit or generalize this field in production to avoid exposing
+            internal details.
+
   parameters:
     RequestStart:
       name: Request-Start

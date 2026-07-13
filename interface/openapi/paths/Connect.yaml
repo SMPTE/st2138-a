@@ -67,7 +67,10 @@ get:
           example: |
             <stringified {"value": {string_value: "Hello, world!"}}>
           x-sse-event-schema:
-            $ref: "../../schemata/device.json#/$defs/push_updates"
+            message:
+              $ref: "../../schemata/device.json#/$defs/push_updates"
+            error:
+              $ref: '../openapi.yaml#/components/schemas/SseError'
     "400":
       $ref: '../openapi.yaml#/components/responses/BadRequest'
     "401":

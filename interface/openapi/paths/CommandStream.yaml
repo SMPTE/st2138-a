@@ -91,7 +91,6 @@ post:
         content, just the status code.
         The response is a sequence of stringified JSON objects, each containing
         a single command response.
-        Each object in the stream has the following structure:
       content:
         text/event-stream:
           schema:
@@ -101,7 +100,10 @@ post:
             data: <stringified {"response":{"string_value":"Command executed successfully"}}>
             data: <stringified {"exception":{"type":"Invalid Command","error_message":"Error message","details":"Something went wrong"}}>
           x-sse-event-schema:
-            $ref: "../../schemata/device.json#/$defs/command_response"
+            message:
+              $ref: "../../schemata/device.json#/$defs/command_response"
+            error:
+              $ref: '../openapi.yaml#/components/schemas/SseError'
 
     "500":
       $ref: '../openapi.yaml#/components/responses/InternalServerError'

@@ -61,7 +61,11 @@ get:
             data: <stringified ComponentParam>
             data: <stringified ComponentParam>
             data: <stringified ComponentParam>
-        
+          x-sse-event-schema:
+            message:
+              $ref: "../../schemata/device.json#/$defs/component_param"
+            error:
+              $ref: '../openapi.yaml#/components/schemas/SseError'
 
     "500":
       $ref: '../openapi.yaml#/components/responses/InternalServerError'

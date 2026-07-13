@@ -79,7 +79,10 @@ get:
             data: <more DeviceComponents>
           
           x-sse-event-schema:
-            $ref: "../../schemata/device.json#/$defs/device_component"
+            message:
+              $ref: "../../schemata/device.json#/$defs/device_component"
+            error:
+              $ref: '../openapi.yaml#/components/schemas/SseError'
     
     '500':
       $ref: '../openapi.yaml#/components/responses/InternalServerError'
