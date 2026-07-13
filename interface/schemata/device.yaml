@@ -117,6 +117,10 @@ properties:
   menu_groups:
     $ref: "#/$defs/menu_groups"
 additionalProperties: false
+required:
+  - slot
+  - access_scopes
+  - default_scope
 
 $defs:
   access_scopes:
@@ -126,6 +130,7 @@ $defs:
     type: array
     items:
       $ref: "#/$defs/access_scope"
+    uniqueItems: true
   
   default_scope:
     title: Default Scope
@@ -133,8 +138,7 @@ $defs:
       The default scope for the device.
       Objects in the model will have this access scope unless overridden
       explicitly, or implicitly by inheritance
-    type: string
-    default: ""
+    $ref: "#/$defs/access_scopes_enum"
 
   slot:
     title: Slot
@@ -1344,14 +1348,22 @@ $defs:
     description: Recommended UI widget to use for the parameter
     type: string
 
+  access_scopes_enum:
+    title: Access Scopes Enum
+    description: |
+      The set of access scopes recognized by ST 2138.
+    type: string
+    enum: [st2138:mon, st2138:op, st2138:cfg, st2138:adm]
+
   access_scope:
     title: Access Scope
     description: |
       The parameter's access scope. If not present, the parameter's parent's
       access scope is used unless the parameter is a top-level one, in which
       case the device's default access scope is used.
-    type: string
-    enum: [st2138:mon, st2138:op, st2138:cfg, st2138:adm]
+    anyOf:
+      - $ref: "#/$defs/access_scopes_enum"
+      - type: string
 
   client_hints:
     title: Client Hints
