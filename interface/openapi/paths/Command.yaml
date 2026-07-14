@@ -56,15 +56,17 @@ post:
       description: The fully qualified object ID of the command to execute
       schema:
         $ref: "../../schemata/device.json#/$defs/fqoid"
-    
+
     - name: respond
       in: query
       required: false
-      description: flag to suppress the server's response unless set to true
+      description: >-
+        Controls whether the server sends a response body. The server does not
+        respond unless this is explicitly set to true; any other value (or
+        omitting the parameter) results in no response.
       schema:
-        type: string
-        enum: ["true"]
-        default: "true" # because protobuf defaults to false
+        type: boolean
+        default: false
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
