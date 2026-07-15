@@ -32,102 +32,104 @@
 const { WARNING } = require('./constants');
 
 /**
- * 
- * @param {object} desc The input object to check
+ * Create a walker visitor that flags nested parameter values not referenced by
+ * any template_oid, and top-level parameters that lack a value while not being
+ * templates. The visitor gathers every template_oid as it walks the tree and
+ * defers the nested-value decision to `finalize`, since a referencing
+ * template_oid may appear anywhere in the hierarchy.
+ *
+ * Rules (each produces a WARNING):
+ *
+ *   R1. Top-level param (depth 0) with NO value AND NO template_oid
+ *       -> "Top-level parameter '<key>' has no value and is not a template".
+ *       Top-level params are expected to carry a value. A template
+ *       (template_oid present) is exempt from R1; it may or may not also declare
+ *       its own value, and either is allowed.
+ *
+ *   R2. Nested param (depth >= 1) WITH a value that is NOT referenced by any
+ *       template_oid anywhere in the tree
+ *       -> "Nested value found in parameter '<key>' which is not referenced by
+ *       any template_oid". Sub-params should not carry standalone values unless
+ *       some param points at them via template_oid.
+ *
+ * Non-rules (explicitly NOT flagged):
+ *   - Top-level param WITH a value (expected, never flagged).
+ *   - Top-level param that is a template (has template_oid): exempt from R1,
+ *     whether or not it also declares its own value.
+ *   - Nested param with NO value (nothing to reference, never flagged).
+ *   - Nested param whose path IS referenced by a template_oid: exempt from R2.
+ *
+ * @param {object} desc The device descriptor to check
  * @param {object} opts Collection of options
  * @param {string} opts.schemaName The schema name of the input object
  * @param {boolean} opts.disableNestedValueChecks If true, skip checks for nested values
- * @returns {Array<{message: string, instancePath: string, type: string}>} Array of error messages for any nested values found
+ * @returns {import('./walker').Visitor|null} a visitor, or null if the check does not apply
  */
-function checkNestedValues(desc, opts) {
+function createNestedValuesVisitor(desc, opts) {
     // base disable checks
-    if (opts.disableNestedValueChecks) return [];
-    if (opts.schemaName !== 'device') return [];
+    if (opts.disableNestedValueChecks) return null;
+    if (opts.schemaName !== 'device') return null;
 
-    // no device, nothing to do
-    if (!desc) return [];
+    // no device or no params, nothing to check
+    if (!desc || !desc.params) return null;
 
-    // if the device has no params, there's nothing to check
-    if (!desc.params) return [];
-
-    // first scan for all template_oids and build a map of them
     const templateOids = new Set();
-    for (const param of Object.values(desc.params)) {
-        searchTemplate(param, templateOids);
-    }
+    const candidates = [];
 
-    const warnings = [];
-    // go through each top-level param
-    for (const [key, param] of Object.entries(desc.params)) {
-        // check if it has a value, it should unless its a template
-        if ((param.value === undefined || param.value === null) && !param.template_oid) {
-            warnings.push({
-                message: `Top-level parameter '${key}' has no value and is not a template`,
-                // leading slash, this is a json pointer for the source map, not an fqoid
-                instancePath: `/params/${key}/value`,
-                type: WARNING,
-            });
-        }
+    return {
+        visit(ctx, warnings) {
+            const { param, key, path, depth } = ctx;
 
-        // look for any nested values in the params
-        checkParam(param, `/params/${key}`, templateOids, warnings);
-    }
+            const isTopLevel = depth === 0;
+            const isTemplate = Boolean(param.template_oid);
+            const hasValue = param.value !== undefined && param.value !== null;
 
-    return warnings;
+            // every template_oid is recorded up front so R2 can be resolved in
+            // finalize, once the full set of references is known
+            if (isTemplate) {
+                templateOids.add(param.template_oid);
+            }
+
+            // R1: top-level param with no value and not a template -> WARNING
+            if (isTopLevel) {
+                if (!hasValue && !isTemplate) {
+                    warnings.push({
+                        message: `Top-level parameter '${key}' has no value and is not a template`,
+                        // leading slash, this is a json pointer for the source map, not an fqoid
+                        instancePath: `${path}/value`,
+                        type: WARNING,
+                    });
+                }
+                // top-level params are never subject to R2, so stop here
+                return;
+            }
+
+            // R2 candidate: a nested param that carries a value. The template_oid
+            // that would justify it may not have been seen yet, so defer the
+            // decision to finalize. Nested params without a value are never flagged.
+            if (hasValue) {
+                candidates.push({ key, path });
+            }
+        },
+        finalize(warnings) {
+            // R2: for each nested value, flag it unless some template_oid points
+            // at its path
+            for (const { key, path } of candidates) {
+                // convert from source map pointer to template_oid by replacing /params/ with /
+                // and removing the leading slash
+                const template_oid = path.replaceAll('/params/', '/').substring(1);
+
+                const isReferenced = templateOids.has(template_oid);
+                if (!isReferenced) {
+                    warnings.push({
+                        message: `Nested value found in parameter '${key}' which is not referenced by any template_oid`,
+                        instancePath: `${path}/value`,
+                        type: WARNING,
+                    });
+                }
+            }
+        },
+    };
 }
 
-/**
- * Search for template_oid in the given object and add them to the templateOids set.
- * @param {object} obj The object to search
- * @param {Set<string>} templateOids The set to add found template_oids to
- * @returns {void}
- */
-function searchTemplate(obj, templateOids) {
-    if (obj.template_oid) {
-        templateOids.add(obj.template_oid);
-    }
-    if (obj.params) {
-        for (const param of Object.values(obj.params)) {
-            searchTemplate(param, templateOids);
-        }
-    }
-}
-
-/**
- * Check the given parameter for nested values and warn if its not a template_oid.
- * @param {object} param The parameter to check
- * @param {string} path The current path in the object
- * @param {Set<string>} templateOids The set of template_oids to check against
- * @param {Array<{message: string, instancePath: string, type: string}>} warnings The array to add warnings to
- * @returns {void}
- */
-function checkParam(param, path, templateOids, warnings) {
-    // nothing to check if there are no sub-params
-    if (!param.params) return;
-
-    for (const [key, subParam] of Object.entries(param.params)) {
-        const subPath = `${path}/params/${key}`;
-
-        // recursively check sub-params
-        checkParam(subParam, subPath, templateOids, warnings);
-
-        // no value, no problem
-        if (subParam.value === undefined || subParam.value === null) {
-            continue;
-        }
-
-        // if the param has a value, check if something else references it as a template_oid
-        // convert from source map pointer to template_oid by replacing /params/ with /
-        // and removing the leading slash
-        const template_oid = subPath.replaceAll('/params/', '/').substring(1);
-        if (!templateOids.has(template_oid)) {
-            warnings.push({
-                message: `Nested value found in parameter '${key}' which is not referenced by any template_oid`,
-                instancePath: `${subPath}/value`,
-                type: WARNING
-            });
-        }
-    }
-}
-
-module.exports = { checkNestedValues };
+module.exports = { createNestedValuesVisitor };

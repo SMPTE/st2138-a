@@ -306,12 +306,13 @@ describe('Validator', () => {
                 schemaName: 'device',
                 disableMandatoryParams: false,
                 disableNestedValueChecks: false,
+                disableScopeChecks: false,
             }
         );
     });
 
     test('validate passes disable flags through to runChecks', async () => {
-        const validator = new Validator({ disableMandatoryParams: true, disableNestedValueChecks: true });
+        const validator = new Validator({ disableMandatoryParams: true, disableNestedValueChecks: true, disableScopeChecks: true });
         const mockSourceMap = { pointers: {} };
 
         jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
@@ -332,6 +333,7 @@ describe('Validator', () => {
                 schemaName: 'device',
                 disableMandatoryParams: true,
                 disableNestedValueChecks: true,
+                disableScopeChecks: true,
             }
         );
     });
