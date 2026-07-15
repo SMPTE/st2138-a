@@ -63,10 +63,14 @@ get:
         text/event-stream:
           schema:
             type: string
-            example: |
-              data: <stringified ExternalObjectPayload>
-              data: <stringified ExternalObjectPayload>
-      # ExternalObjectPayload doesn't yet have a schema, todo!
+          example: |
+            data: <stringified ExternalObjectPayload>
+            data: <stringified ExternalObjectPayload>
+          x-sse-event-schema:
+            message:
+              $ref: "../../schemata/device.json#/$defs/external_object_payload"
+            error:
+              $ref: '../openapi.yaml#/components/schemas/SseError'
           
     "401":
       $ref: '../openapi.yaml#/components/responses/Unauthorized'

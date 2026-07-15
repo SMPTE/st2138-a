@@ -76,7 +76,10 @@ get:
             data: <stringified {info: ParamInfo, array_length: 1}>
             data: <stringified {info: ParamInfo, array_length: 2}>
           x-sse-event-schema:
-            $ref: "../../schemata/device.json#/$defs/param_info"
+            message:
+              $ref: "../../schemata/device.json#/$defs/param_info"
+            error:
+              $ref: '../openapi.yaml#/components/schemas/SseError'
 
     "500":
       $ref: '../openapi.yaml#/components/responses/InternalServerError'
