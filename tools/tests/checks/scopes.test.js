@@ -116,6 +116,13 @@ describe('checkScopes', () => {
         expect(result).toEqual([]);
     });
 
+    // called with no opts: the `opts = {}` default applies, so schemaName is
+    // undefined and the check disables itself by returning null
+    test('returns null when called with no opts', () => {
+        const visitor = createScopesVisitor(device);
+        expect(visitor).toBeNull();
+    });
+
     // test that disabling the check works
     test('returns empty when disabled', () => {
         device.params.parent.access_scope = 'st2138:bogus';
