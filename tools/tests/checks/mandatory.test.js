@@ -27,7 +27,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const { validateRequiredParamsAndScopes } = require('../../checks/mandatory.js');
+const { validateRequiredParamsAndScopes } = require('../../src/checks/mandatory.js');
 
 describe("Mandatory", () => {
 

@@ -27,9 +27,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const { createScopesVisitor } = require('../../checks/scopes');
-const { walkParams } = require('../../checks/walker');
-const { ERROR } = require('../../checks/constants');
+const { createScopesVisitor } = require('../../src/checks/scopes');
+const { walkParams } = require('../../src/checks/walker');
+const { ERROR } = require('../../src/checks/constants');
 
 // drive the scopes visitor through the walker the same way runChecks does
 function checkScopes(desc, opts) {

@@ -27,9 +27,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const { createNestedValuesVisitor } = require('../../checks/nested-values');
-const { walkParams } = require('../../checks/walker');
-const { WARNING } = require('../../checks/constants');
+const { createNestedValuesVisitor } = require('../../src/checks/nested-values');
+const { walkParams } = require('../../src/checks/walker');
+const { WARNING } = require('../../src/checks/constants');
 
 // drive the nested-values visitor through the walker the same way runChecks does
 function checkNestedValues(desc, opts) {

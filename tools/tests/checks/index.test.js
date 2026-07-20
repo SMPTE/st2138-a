@@ -27,10 +27,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const checks = require('../../checks/index');
-const mandatory = require('../../checks/mandatory');
-const nestedValues = require('../../checks/nested-values');
-const scopes = require('../../checks/scopes');
+const checks = require('../../src/checks/index');
+const mandatory = require('../../src/checks/mandatory');
+const nestedValues = require('../../src/checks/nested-values');
+const scopes = require('../../src/checks/scopes');
 
 describe('getChecks', () => {
     // lock in the expected checks

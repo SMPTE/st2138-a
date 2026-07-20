@@ -27,7 +27,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const { walkParams } = require('../../checks/walker');
+const { walkParams } = require('../../src/checks/walker');
 
 describe('walkParams', () => {
 

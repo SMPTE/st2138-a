@@ -33,10 +33,10 @@ const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const yaml = require('yaml');
-const schema = require('../data/device.json');
+const schema = require('../src/data/device.json');
 
-const Validator = require('../validator');
-const checks = require('../checks');
+const Validator = require('../src/validator');
+const checks = require('../src/checks');
 
 describe('Validator', () => {
     let fetchSpy;

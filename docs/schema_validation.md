@@ -16,21 +16,21 @@ local `settings.json`
 
 ## Command Line
 
-You can install the validator globally:
+You can install the tools globally:
 
 ```bash
-npm install -g smpte-st2138-a-validator
+npm install -g smpte-st2138-a-tools
 ```
 
 Then run
 
 ```bash
-st2138-a-validate ./data/device.good.yaml
+st2138 validate ./data/device.good.yaml
 ```
 
-Or ust npx to run without installation
+Or use npx to run without installation
 
 ```bash
-npx smpte-st2138-a-validator ./data/device.good.yaml
+npx smpte-st2138-a-tools validate ./data/device.good.yaml
 ```
 
