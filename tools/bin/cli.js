@@ -1,17 +1,32 @@
 #!/usr/bin/env node
 
 /*
- * Copyright (c) by the Society of Motion Picture and Television Engineers
+ * Copyright © MMXXVI 2026 by the Society of Motion Picture and Television Engineers
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
+ *    list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation and/or
- * other materials provided with the distribution.
+ *    this list of conditions and the following disclaimer in the documentation and/or
+ *    other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 /*
@@ -22,34 +37,12 @@
  * it can be reused by consumers that import the package directly.
  */
 
-const path = require('node:path');
 const { program } = require('commander');
 const pkg = require('../package.json');
-const Validator = require('../src/validator');
+const { validate, printDiagnostics } = require('../src');
+const { toUrl, schemaNameFromUrl } = require('../src/urls');
 
 'use strict';
-
-/**
- * Resolve a CLI file argument into a URL the library understands.
- * @param {string} testfile a path or URL
- * @returns {URL}
- */
-function toUrl(testfile) {
-    if (testfile.indexOf('://') === -1) {
-        testfile = 'file://' + path.resolve(testfile);
-    }
-    return new URL(testfile);
-}
-
-/**
- * Derive the schema name from a descriptor filename, e.g. `device.example.yaml`
- * -> `device`.
- * @param {URL} url
- * @returns {string}
- */
-function schemaNameFromUrl(url) {
-    return path.parse(url.pathname).name.split('.')[0];
-}
 
 program
     .name('st2138')
@@ -64,16 +57,16 @@ program
     .option('--disable-mandatory-enforcement', 'skip mandatory product parameter checks')
     .action(async (file, digest, options) => {
         const url = toUrl(file);
-        const schemaName = schemaNameFromUrl(url);
+        console.log(`Applying schema '${schemaNameFromUrl(url)}' to '${url}'`);
 
-        const validator = new Validator({
+        const result = await validate(url, {
+            digest: digest || null,
             disableMandatoryParams: Boolean(options.disableMandatoryEnforcement)
         });
 
-        console.log(`Applying schema '${schemaName}' to '${url}'`);
-        const ans = await validator.validate(schemaName, url, digest || null);
+        printDiagnostics(result.diagnostics);
 
-        if (!ans.valid) {
+        if (!result.valid) {
             console.log('❌ Validation failed.');
             process.exitCode = 2;
             return;

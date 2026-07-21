@@ -1,28 +1,95 @@
 /*
- * Copyright (c) by the Society of Motion Picture and Television Engineers
+ * Copyright © MMXXVI 2026 by the Society of Motion Picture and Television Engineers
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
+ *    list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation and/or
- * other materials provided with the distribution.
- */
-
-/*
- * Public library surface for the st2138-a tools package.
+ *    this list of conditions and the following disclaimer in the documentation and/or
+ *    other materials provided with the distribution.
  *
- * For backwards compatibility the Validator class remains the default export so
- * existing consumers using `require('smpte-st2138-a-tools')` continue to work.
- * It is also available as a named export.
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 'use strict';
 
 const Validator = require('./validator');
+const { toUrl, schemaNameFromUrl } = require('./urls');
 
-module.exports = Validator;
-module.exports.Validator = Validator;
+/**
+ * @typedef {import('./types').ValidateOptions} ValidateOptions
+ * @typedef {import('./types').ValidationResult} ValidationResult
+ * @typedef {import('./types').Diagnostic} Diagnostic
+ * 
+ */
+
+let defaultEngine;
+
+/**
+ * Return the shared Validator engine, building it once on first use. The engine
+ * holds the compiled AJV schema, so reusing it avoids recompiling per call.
+ * @returns {Validator}
+ */
+function getEngine() {
+    return (defaultEngine ??= new Validator());
+}
+
+/**
+ * Format a single diagnostic (from a validation result) as a human-readable
+ * line, e.g. `ERROR: must be string at /params/foo on lines 5-7`.
+ * @param {Diagnostic} diagnostic
+ * @returns {string}
+ */
+function formatDiagnostic(diagnostic) {
+    const lineInfo = diagnostic.lines
+        ? ` on lines ${diagnostic.lines.start}-${diagnostic.lines.end}`
+        : '';
+    return `${diagnostic.level.toUpperCase()}: ${diagnostic.message} at ${diagnostic.instancePath}${lineInfo}`;
+}
+
+/**
+ * Print an array of diagnostics, one formatted line each, via console.log.
+ * @param {Diagnostic[]} diagnostics
+ * @returns {void}
+ */
+function printDiagnostics(diagnostics) {
+    for (const diagnostic of diagnostics) {
+        console.log(formatDiagnostic(diagnostic));
+    }
+}
+
+/**
+ * Validate a device model or parameter descriptor against the ST 2138-a schema.
+ * @param {string|URL} input path or URL to a .json or .yaml descriptor
+ * @param {ValidateOptions} options
+ * @returns {Promise<ValidationResult>}
+ */
+async function validate(input, options = {}) {
+    const url = toUrl(input);
+    const schemaName = options.schemaName || schemaNameFromUrl(url);
+    const checkOpts = {
+        disableMandatoryParams: options.disableMandatoryParams || false,
+        disableNestedValueChecks: options.disableNestedValueChecks || false,
+        disableScopeChecks: options.disableScopeChecks || false,
+    };
+    return getEngine().validate(schemaName, url, options.digest || null, checkOpts);
+}
+
+module.exports = { validate, formatDiagnostic, printDiagnostics };
+

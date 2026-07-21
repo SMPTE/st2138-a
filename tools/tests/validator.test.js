@@ -215,7 +215,8 @@ describe('Validator', () => {
         const result = await validator.validate('device', pathToFileURL(fixturePath));
         expect(result).toEqual({
             valid: true,
-            data: expect.any(Object)
+            data: expect.any(Object),
+            diagnostics: []
         });
         expect(loadSpy).toHaveBeenCalled();
         expect(compileSpy).toHaveBeenCalled();
@@ -239,8 +240,6 @@ describe('Validator', () => {
 
         // mock loadTestData return an empty object with a mocked sourceMap
         jest.spyOn(Validator, 'loadTestData').mockResolvedValueOnce({ data: {}, sourceMap: mockSourceMap });
-        // mock showErrors to make sure it's called with our mock errors and sourceMap (and to suppress console output during the test)
-        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementationOnce(() => { });
 
         // mock AJV compile to return a validate function that always fails with our errors
         jest.spyOn(validator.ajv, 'compile').mockImplementationOnce(() => {
@@ -249,10 +248,12 @@ describe('Validator', () => {
             return validateFn;
         });
 
-        // make sure we get the expected errors
+        // AJV errors should be surfaced as structured diagnostics with line info
         const result = await validator.validate('device', new URL('file:///tmp/device.invalid.yaml'));
-        expect(result).toEqual({ valid: false });
-        expect(showSpy).toHaveBeenCalledWith(mockErrors, mockSourceMap);
+        expect(result.valid).toBe(false);
+        expect(result.diagnostics).toEqual([
+            { level: 'error', message: 'must be string', instancePath: '/bad', lines: { start: 1, end: 1 } }
+        ]);
         expect(runChecksSpy).not.toHaveBeenCalled();
     });
 
@@ -264,7 +265,8 @@ describe('Validator', () => {
         const result = await validator.validate('param', pathToFileURL(paramPath));
         expect(result).toEqual({
             valid: true,
-            data: expect.any(Object)
+            data: expect.any(Object),
+            diagnostics: []
         });
     });
 
@@ -277,11 +279,9 @@ describe('Validator', () => {
 
         await fs.writeFile(testPath, JSON.stringify({ invalid: 'data' }), 'utf8');
 
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
-
         const result = await validator.validate('param', pathToFileURL(testPath));
         expect(result.valid).toBe(false);
-        expect(logSpy).toHaveBeenCalled();
+        expect(result.diagnostics.length).toBeGreaterThan(0);
     });
 
     test('validate calls runChecks with data and opts after AJV passes', async () => {
@@ -298,8 +298,12 @@ describe('Validator', () => {
             return validateFn;
         });
 
-        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
-        expect(result).toEqual({ valid: true, data: expect.any(Object) });
+        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'), null, {
+            disableMandatoryParams: false,
+            disableNestedValueChecks: false,
+            disableScopeChecks: false,
+        });
+        expect(result).toEqual({ valid: true, data: expect.any(Object), diagnostics: [] });
         expect(runChecksSpy).toHaveBeenCalledWith(
             { params: {} },
             {
@@ -312,7 +316,7 @@ describe('Validator', () => {
     });
 
     test('validate passes disable flags through to runChecks', async () => {
-        const validator = new Validator({ disableMandatoryParams: true, disableNestedValueChecks: true, disableScopeChecks: true });
+        const validator = new Validator();
         const mockSourceMap = { pointers: {} };
 
         jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
@@ -325,8 +329,12 @@ describe('Validator', () => {
             return validateFn;
         });
 
-        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
-        expect(result).toEqual({ valid: true, data: expect.any(Object) });
+        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'), null, {
+            disableMandatoryParams: true,
+            disableNestedValueChecks: true,
+            disableScopeChecks: true,
+        });
+        expect(result).toEqual({ valid: true, data: expect.any(Object), diagnostics: [] });
         expect(runChecksSpy).toHaveBeenCalledWith(
             { params: {} },
             {
@@ -353,11 +361,12 @@ describe('Validator', () => {
             return validateFn;
         });
         runChecksSpy.mockReturnValue(mockWarnings);
-        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementation(() => { });
 
         const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
-        expect(result).toEqual({ valid: true, data: expect.any(Object) });
-        expect(showSpy).toHaveBeenCalledWith(mockWarnings, mockSourceMap);
+        expect(result.valid).toBe(true);
+        expect(result.diagnostics).toEqual([
+            { level: 'warning', message: 'just a warning', instancePath: '/params/foo/value', lines: null }
+        ]);
     });
 
     test('validate returns valid=false when runChecks returns errors', async () => {
@@ -375,30 +384,28 @@ describe('Validator', () => {
             return validateFn;
         });
         runChecksSpy.mockReturnValue(mockErrors);
-        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementation(() => { });
 
         const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
-        expect(result).toEqual({ valid: false });
-        expect(showSpy).toHaveBeenCalledWith(mockErrors, mockSourceMap);
+        expect(result.valid).toBe(false);
+        expect(result.diagnostics).toEqual([
+            { level: 'error', message: 'check failed', instancePath: '/params/product', lines: null }
+        ]);
     });
 
-    test('showErrors handles errors without sourceMap pointers', () => {
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+    test('toDiagnostics handles errors without sourceMap pointers', () => {
         const sourceMap = { pointers: {} };
         const errors = [
             { instancePath: '/missing', message: 'field required' }
         ];
 
         // if the '/missing' path doesn't exist in sourceMap pointers,
-        // it should do its best to still log a useful message
-        Validator.showErrors(errors, sourceMap);
-        expect(logSpy).toHaveBeenCalledWith('ERROR: field required at /missing');
+        // the diagnostic should still be produced, just without line info
+        expect(Validator.toDiagnostics(errors, sourceMap)).toEqual([
+            { level: 'error', message: 'field required', instancePath: '/missing', lines: null }
+        ]);
     });
 
-    test('showErrors includes line info when sourceMap pointers exist', () => {
-        // normal function of showErrors is to log the error message along with the
-        // instancePath and line numbers if available from the sourceMap.
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+    test('toDiagnostics includes line info when sourceMap pointers exist', () => {
         const sourceMap = {
             pointers: {
                 '/field': {
@@ -411,12 +418,12 @@ describe('Validator', () => {
             { instancePath: '/field', message: 'type mismatch' }
         ];
 
-        Validator.showErrors(errors, sourceMap);
-        expect(logSpy).toHaveBeenCalledWith('ERROR: type mismatch at /field on lines 5-7');
+        expect(Validator.toDiagnostics(errors, sourceMap)).toEqual([
+            { level: 'error', message: 'type mismatch', instancePath: '/field', lines: { start: 5, end: 7 } }
+        ]);
     });
 
-    test('showErrors handles warnings in addition to errors', () => {
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+    test('toDiagnostics handles warnings in addition to errors', () => {
         const sourceMap = {
             pointers: {
                 '/warnField': {
@@ -428,8 +435,10 @@ describe('Validator', () => {
         const warnings = [
             { type: checks.WARNING, instancePath: '/warnField', message: 'deprecated field' }
         ];
-        Validator.showErrors(warnings, sourceMap);
-        expect(logSpy).toHaveBeenCalledWith('WARNING: deprecated field at /warnField on lines 10-12');
+
+        expect(Validator.toDiagnostics(warnings, sourceMap)).toEqual([
+            { level: 'warning', message: 'deprecated field', instancePath: '/warnField', lines: { start: 10, end: 12 } }
+        ]);
     });
 
     test('addSchemas rethrows addSchema errors with pointer and line info', () => {

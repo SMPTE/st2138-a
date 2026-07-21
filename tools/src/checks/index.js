@@ -36,6 +36,23 @@ const { walkParams } = require('./walker');
 const { WARNING, ERROR } = require('./constants');
 
 /**
+ * @typedef {import('../types').CheckOptions} CheckOptions
+ * @typedef {import('../types').Level} Level
+ * @typedef {import('./walker').Visitor} Visitor
+ */
+
+/**
+ * A raw validation error, before it is resolved into a Diagnostic. Both AJV
+ * errors and check findings share this shape, so it is producer-neutral. When
+ * `type` is omitted the error is treated as an error-level finding.
+ *
+ * @typedef {object} RawError
+ * @property {string} message human-readable description
+ * @property {string} instancePath JSON pointer to the offending node
+ * @property {Level} [type] severity; defaults to error when omitted
+ */
+
+/**
  * Returns the list of all checks. A check is one of two shapes:
  *
  * - a standalone check `{ name, run(data, opts) }` that returns an array of
@@ -44,7 +61,7 @@ const { WARNING, ERROR } = require('./constants');
  *   visitor (or null to opt out). Walk checks share a single traversal of the
  *   parameter hierarchy, appending their findings to a shared list.
  *
- * @returns {Array<{name: string, run?: function(object, object): Array, createVisitor?: function(object, object): (object|null)}>}
+ * @returns {Array<{name: string, run?: function(object, object): RawError[], createVisitor?: function(object, object): (Visitor|null)}>}
  */
 function getChecks() {
     return [
@@ -70,10 +87,8 @@ function getChecks() {
  * checks are registered.
  *
  * @param {object} data the parsed descriptor to validate
- * @param {object} opts
- * @param {string} opts.schemaName the schema being validated
- * @param {boolean} opts.disable... multiple flags to disable specific checks
- * @returns {Array<{message: string, instancePath: string, type?: string}>} aggregated errors from all checks
+ * @param {CheckOptions} opts the options for the checks
+ * @returns {RawError[]} aggregated errors from all checks
  */
 function runChecks(data, opts) {
     const errors = [];

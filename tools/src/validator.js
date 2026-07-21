@@ -1,3 +1,33 @@
+/*
+ * Copyright © MMXXVI 2026 by the Society of Motion Picture and Television Engineers
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation and/or
+ *    other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+
 const Ajv = require('ajv/dist/2020');
 const addFormats = require('ajv-formats').default;
 
@@ -10,21 +40,16 @@ const checks = require('./checks');
 
 'use strict'; // <-- now applied after AJV is safely loaded
 
-class Validator {
-    /**
-     *
-     * @param {object} options optional options
-     * @param {boolean} options.disableMandatoryParams if true, skip mandatory product parameter checks
-     * @param {boolean} options.disableNestedValueChecks if true, skip checks for nested values
-     * @param {boolean} options.disableScopeChecks if true, skip checks for undeclared access scopes
-     */
-    constructor(options = {}) {
-        this.checkOpts = {
-            disableMandatoryParams: options.disableMandatoryParams || false,
-            disableNestedValueChecks: options.disableNestedValueChecks || false,
-            disableScopeChecks: options.disableScopeChecks || false,
-        };
+/**
+ * @typedef {import('./types').ValidateOptions} ValidateOptions
+ * @typedef {import('./types').ValidationResult} ValidationResult
+ * @typedef {import('./types').Diagnostic} Diagnostic
+ * @typedef {import('./types').CheckOptions} CheckOptions
+ * @typedef {import('./checks').RawError} RawError
+ */
 
+class Validator {
+    constructor() {
         this.ajv = new Ajv({
             strict: true,
             strictSchema: true,
@@ -91,7 +116,18 @@ class Validator {
         };
     }
 
-    async validate(schemaName, url, digest = null) {
+    /**
+     * Validate a descriptor against the named schema and run post-schema checks.
+     * Collects findings as structured diagnostics rather than printing them, so
+     * callers (the CLI, resolve) decide how to surface them.
+     *
+     * @param {string} schemaName schema to apply (e.g. `device`, `param`)
+     * @param {URL} url location of the descriptor to load
+     * @param {string} [digest] optional sha256 digest to verify the input against
+     * @param {CheckOptions} [checkOpts] flags to disable individual post-schema checks
+     * @returns {Promise<ValidationResult>}
+     */
+    async validate(schemaName, url, digest = null, checkOpts = {}) {
         const { data, sourceMap } = await Validator.loadTestData(url, digest);
 
         const isDeviceSchema = schemaName.startsWith('device');
@@ -110,31 +146,33 @@ class Validator {
         }
 
         if (!valid) {
-            Validator.showErrors(errors, sourceMap);
-            return {valid: false}
+            return { valid: false, diagnostics: Validator.toDiagnostics(errors, sourceMap), data };
         }
 
-        const checkErrors = checks.runChecks(data, { ...this.checkOpts, schemaName });
-        if (checkErrors.length > 0) {
-            Validator.showErrors(checkErrors, sourceMap);
-            if (checkErrors.some(err => err.type === undefined || err.type === checks.ERROR)) {
-                return {valid: false};
-            }
-        }
+        const checkErrors = checks.runChecks(data, { ...checkOpts, schemaName });
+        const diagnostics = Validator.toDiagnostics(checkErrors, sourceMap);
+        const hasError = checkErrors.some(err => err.type === undefined || err.type === checks.ERROR);
 
-        return {valid: true, data: data};
+        return { valid: !hasError, diagnostics, data };
     }
 
-    static showErrors(errors, sourceMap) {
-        for (const err of errors) {
-            let level = 'ERROR';
-            if (err.type === checks.WARNING) {
-                level = 'WARNING';
-            }
+    /**
+     * Map raw AJV/check errors to structured diagnostics, resolving source line
+     * ranges from the source map where available.
+     *
+     * @param {RawError[]} errors
+     * @param {object} sourceMap json-source-map pointers for the validated document
+     * @returns {Diagnostic[]}
+     */
+    static toDiagnostics(errors, sourceMap) {
+        return errors.map((err) => {
+            const level = err.type === checks.WARNING ? checks.WARNING : checks.ERROR;
             const pointer = sourceMap.pointers[err.instancePath];
-            const lineInfo = pointer ? ` on lines ${pointer.value.line}-${pointer.valueEnd.line}` : '';
-            console.log(`${level}: ${err.message} at ${err.instancePath}${lineInfo}`);
-        }
+            const lines = pointer
+                ? { start: pointer.value.line, end: pointer.valueEnd.line }
+                : null;
+            return { level, message: err.message, instancePath: err.instancePath, lines };
+        });
     }
 }
 
