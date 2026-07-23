@@ -27,19 +27,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
-const yaml = require('yaml');
 const schema = require('../src/data/device.json');
 
 const Validator = require('../src/validator');
 const checks = require('../src/checks');
+const loader = require('../src/loader');
 
 describe('Validator', () => {
-    let fetchSpy;
     let runChecksSpy;
     const tempDirs = [];
 
@@ -50,8 +48,8 @@ describe('Validator', () => {
     };
 
     beforeEach(() => {
-        // default fetch mock to prevent unexpected network calls during tests
-        fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(() => {
+        // guard against unexpected network calls during tests
+        jest.spyOn(global, 'fetch').mockImplementation(() => {
             throw new Error('Unexpected fetch call in test');
         });
         // default runChecks mock to prevent check-specific errors during tests
@@ -64,124 +62,6 @@ describe('Validator', () => {
             tempDirs.splice(0).map((dirPath) => fs.rm(dirPath, { recursive: true, force: true }))
         );
         jest.restoreAllMocks();
-    });
-
-    test('loadTestData parses YAML file content', async () => {
-        // basic success test for a real yaml file.
-        const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
-        const { data, sourceMap } = await Validator.loadTestData(pathToFileURL(fixturePath));
-
-        expect(data).toBeDefined();
-        expect(typeof data).toBe('object');
-        expect(sourceMap).toBeDefined();
-        expect(sourceMap.pointers).toBeDefined();
-    });
-
-    test('loadTestData rejects on unreadable file path', async () => {
-        // path that doesn't exist
-        const missingFile = pathToFileURL('/tmp/does-not-exist-2138.yaml');
-
-        await expect(Validator.loadTestData(missingFile)).rejects.toThrow('Cannot open file');
-    });
-
-    test('loadTestData enforces SHA-256 digest when provided', async () => {
-        // path to the good example
-        const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
-        const fixtureUrl = pathToFileURL(fixturePath);
-        const raw = await fs.readFile(fixturePath, 'utf8');
-        // compute its digest
-        const digest = crypto.createHash('sha256').update(raw).digest('hex');
-
-        // should resolve with correct digest
-        await expect(Validator.loadTestData(fixtureUrl, digest)).resolves.toMatchObject({
-            data: expect.any(Object)
-        });
-
-        // should reject with incorrect digest
-        await expect(Validator.loadTestData(fixtureUrl, 'bad-digest')).rejects.toThrow('Digest mismatch');
-    });
-
-    describe('loadTestData with inline serialized data', () => {
-        // doesn't need to validate for this test, just that it can parse the content
-        // and return a sourceMap
-        const testData = {
-            name: 'test-device',
-            version: '1.0',
-            settings: {
-                enabled: true,
-                timeout: 30
-            },
-            items: ['a', 'b', 'c']
-        };
-
-        test('parses YAML serialized from inline object', async () => {
-            const tempDir = await createTempDir();
-            const yamlPath = path.join(tempDir, 'test.yaml');
-            const yamlContent = yaml.stringify(testData);
-
-            await fs.writeFile(yamlPath, yamlContent, 'utf8');
-
-            // load the testData as yaml
-            const { data } = await Validator.loadTestData(pathToFileURL(yamlPath));
-            expect(data).toEqual(testData);
-        });
-
-        test('parses JSON serialized from inline object', async () => {
-            const tempDir = await createTempDir();
-            const jsonPath = path.join(tempDir, 'test.json');
-            const jsonContent = JSON.stringify(testData, null, 2);
-
-            await fs.writeFile(jsonPath, jsonContent, 'utf8');
-
-            // load the testData as json
-            const { data } = await Validator.loadTestData(pathToFileURL(jsonPath));
-            expect(data).toEqual(testData);
-        });
-
-        test('returns sourceMap for both YAML and JSON', async () => {
-            const tempDir = await createTempDir();
-            const yamlPath = path.join(tempDir, 'test.yaml');
-            await fs.writeFile(yamlPath, yaml.stringify(testData), 'utf8');
-
-            const jsonPath = path.join(tempDir, 'test.json');
-            await fs.writeFile(jsonPath, JSON.stringify(testData, null, 2), 'utf8');
-
-            // check sourcemaps for both
-            const yamlResult = await Validator.loadTestData(pathToFileURL(yamlPath));
-            const jsonResult = await Validator.loadTestData(pathToFileURL(jsonPath));
-
-            expect(yamlResult.sourceMap).toBeDefined();
-            expect(yamlResult.sourceMap.pointers).toBeDefined();
-            expect(jsonResult.sourceMap).toBeDefined();
-            expect(jsonResult.sourceMap.pointers).toBeDefined();
-        });
-    });
-
-    test('loadTestData fetches from HTTP URL successfully', async () => {
-        const testData = { name: 'http-test', value: 42 };
-        const jsonContent = JSON.stringify(testData);
-
-        // override the fetch mock to actually work for this test
-        fetchSpy.mockResolvedValueOnce({
-            ok: true,
-            text: () => Promise.resolve(jsonContent)
-        });
-
-        const { data } = await Validator.loadTestData(new URL('http://example.com/test.json'));
-        expect(data).toEqual(testData);
-        expect(fetchSpy).toHaveBeenCalled();
-    });
-
-    test('loadTestData rejects failed HTTP fetch', async () => {
-        // override the fetch mock to simulate a failed fetch
-        fetchSpy.mockResolvedValueOnce({
-            ok: false,
-            statusText: 'Not Found'
-        });
-
-        await expect(
-            Validator.loadTestData(new URL('http://example.com/missing.json'))
-        ).rejects.toThrow('Failed to fetch');
     });
 
     test('validate rejects unknown schema names', async () => {
@@ -201,7 +81,7 @@ describe('Validator', () => {
         const validator = new Validator();
         const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
 
-        const loadSpy = jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+        const loadSpy = jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
             sourceMap: { pointers: {} }
         });
@@ -238,8 +118,8 @@ describe('Validator', () => {
         };
         const mockErrors = [{ instancePath: '/bad', message: 'must be string' }];
 
-        // mock loadTestData return an empty object with a mocked sourceMap
-        jest.spyOn(Validator, 'loadTestData').mockResolvedValueOnce({ data: {}, sourceMap: mockSourceMap });
+        // mock loadDescriptor return an empty object with a mocked sourceMap
+        jest.spyOn(loader, 'loadDescriptor').mockResolvedValueOnce({ data: {}, sourceMap: mockSourceMap });
 
         // mock AJV compile to return a validate function that always fails with our errors
         jest.spyOn(validator.ajv, 'compile').mockImplementationOnce(() => {
@@ -288,7 +168,7 @@ describe('Validator', () => {
         const validator = new Validator();
         const mockSourceMap = { pointers: {} };
 
-        jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+        jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
             sourceMap: mockSourceMap
         });
@@ -319,7 +199,7 @@ describe('Validator', () => {
         const validator = new Validator();
         const mockSourceMap = { pointers: {} };
 
-        jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+        jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
             sourceMap: mockSourceMap
         });
@@ -351,7 +231,7 @@ describe('Validator', () => {
         const mockSourceMap = { pointers: {} };
         const mockWarnings = [{ type: checks.WARNING, message: 'just a warning', instancePath: '/params/foo/value' }];
 
-        jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+        jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
             sourceMap: mockSourceMap
         });
@@ -374,7 +254,7 @@ describe('Validator', () => {
         const mockSourceMap = { pointers: {} };
         const mockErrors = [{ message: 'check failed', instancePath: '/params/product' }];
 
-        jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+        jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
             sourceMap: mockSourceMap
         });

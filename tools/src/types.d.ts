@@ -66,7 +66,23 @@ export interface CheckOptions {
 export interface ValidateOptions extends CheckOptions {
     /** sha256 digest to verify the input against */
     digest?: string;
+    /**
+     * Custom transport for loading descriptor bytes, in place of the default
+     * file/HTTP loader. Receives the resolved URL and returns the raw text.
+     * Integrity (digest) checks and parsing are still performed by the engine
+     * on whatever this returns.
+     */
+    load?: Loader;
 }
+
+/**
+ * Loads the raw text of a descriptor from a resolved URL. Supply a custom
+ * implementation to control transport (caching, auth, in-memory fixtures);
+ * the engine still verifies and parses the returned bytes. Signal failure by
+ * rejecting the returned promise; the resolved value is always the descriptor
+ * text.
+ */
+export type Loader = (url: URL) => Promise<string>;
 
 /** Validate a descriptor from a path or URL against the ST 2138-a schema. */
 export function validate(

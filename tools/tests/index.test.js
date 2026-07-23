@@ -97,11 +97,16 @@ describe('validate', () => {
 
     test('derives the schema name and applies default check options', async () => {
         await validate('examples/device.example.yaml');
-        expect(mockValidate).toHaveBeenCalledWith('device', expect.any(URL), null, {
-            disableMandatoryParams: false,
-            disableNestedValueChecks: false,
-            disableScopeChecks: false,
-        });
+        expect(mockValidate).toHaveBeenCalledWith(
+            'device',
+            expect.any(URL),
+            { digest: null, load: undefined },
+            {
+                disableMandatoryParams: false,
+                disableNestedValueChecks: false,
+                disableScopeChecks: false,
+            }
+        );
     });
 
     test('honours explicit schema name, digest, and disable flags', async () => {
@@ -112,11 +117,27 @@ describe('validate', () => {
             disableNestedValueChecks: true,
             disableScopeChecks: true,
         });
-        expect(mockValidate).toHaveBeenCalledWith('param', expect.any(URL), 'deadbeef', {
-            disableMandatoryParams: true,
-            disableNestedValueChecks: true,
-            disableScopeChecks: true,
-        });
+        expect(mockValidate).toHaveBeenCalledWith(
+            'param',
+            expect.any(URL),
+            { digest: 'deadbeef', load: undefined },
+            {
+                disableMandatoryParams: true,
+                disableNestedValueChecks: true,
+                disableScopeChecks: true,
+            }
+        );
+    });
+
+    test('threads a custom load function through to the engine', async () => {
+        const load = jest.fn();
+        await validate('examples/device.example.yaml', { load });
+        expect(mockValidate).toHaveBeenCalledWith(
+            'device',
+            expect.any(URL),
+            { digest: null, load },
+            expect.any(Object)
+        );
     });
 
     test('returns the engine result', async () => {

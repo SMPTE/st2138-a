@@ -83,12 +83,16 @@ function printDiagnostics(diagnostics) {
 async function validate(input, options = {}) {
     const url = toUrl(input);
     const schemaName = options.schemaName || schemaNameFromUrl(url);
+    const loadOpts = {
+        digest: options.digest || null,
+        load: options.load,
+    };
     const checkOpts = {
         disableMandatoryParams: options.disableMandatoryParams || false,
         disableNestedValueChecks: options.disableNestedValueChecks || false,
         disableScopeChecks: options.disableScopeChecks || false,
     };
-    return getEngine().validate(schemaName, url, options.digest || null, checkOpts);
+    return getEngine().validate(schemaName, url, loadOpts, checkOpts);
 }
 
 module.exports = { validate, formatDiagnostic, printDiagnostics };
