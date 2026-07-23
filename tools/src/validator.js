@@ -27,6 +27,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+'use strict';
 
 const Ajv = require('ajv/dist/2020');
 const addFormats = require('ajv-formats').default;
@@ -37,8 +38,6 @@ const path = require('node:path');
 const yaml = require('yaml');
 const schema = require('./data/device.json');
 const checks = require('./checks');
-
-'use strict'; // <-- now applied after AJV is safely loaded
 
 /**
  * @typedef {import('./types').ValidateOptions} ValidateOptions
