@@ -29,13 +29,16 @@
 
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
+
 const Ajv = require('ajv/dist/2020');
 const addFormats = require('ajv-formats').default;
 
-const jsonMap = require('json-source-map');
 const schema = require('./data/device.json');
 const checks = require('./checks');
 const loader = require('./loader');
+const sourcemap = require('./sourcemap');
 
 /**
  * @typedef {import('./types').ValidateOptions} ValidateOptions
@@ -44,6 +47,7 @@ const loader = require('./loader');
  * @typedef {import('./types').CheckOptions} CheckOptions
  * @typedef {import('./types').Loader} Loader
  * @typedef {import('./checks').RawError} RawError
+ * @typedef {import('./sourcemap').SourceMap} SourceMap
  */
 
 class Validator {
@@ -60,7 +64,6 @@ class Validator {
     }
 
     addSchemas(genus) {
-        const schemaMap = jsonMap.stringify(schema, null, 2);
         for (const species in schema[genus]) {
             if (!Object.prototype.hasOwnProperty.call(schema[genus], species)) continue;
             if (species.startsWith('$comment')) continue;
@@ -68,8 +71,15 @@ class Validator {
             try {
                 this.ajv.addSchema(schema[genus][species], `#/${genus}/${species}`);
             } catch (err) {
-                const errorPointer = schemaMap.pointers[`/${genus}/${species}`];
-                throw new Error(`${err.message} at #/${genus}/${species} on lines ${errorPointer.value.line}-${errorPointer.valueEnd.line}`);
+                // cold maintainer path: the bundled schema itself is malformed.
+                // Resolve the offending definition's real line range on demand;
+                // if the on-disk file and the loaded schema have drifted the
+                // pointer may not resolve, so degrade to no line info rather
+                // than masking the real error with a null dereference.
+                const raw = fs.readFileSync(path.join(__dirname, 'data', 'device.json'), 'utf8');
+                const lines = sourcemap.parse(raw).sourceMap.linesFor(`/${genus}/${species}`);
+                const where = lines ? ` on lines ${lines.start}-${lines.end}` : '';
+                throw new Error(`${err.message} at #/${genus}/${species}${where}`);
             }
         }
     }
@@ -118,19 +128,16 @@ class Validator {
 
     /**
      * Map raw AJV/check errors to structured diagnostics, resolving source line
-     * ranges from the source map where available.
+     * ranges on demand from the source map where available.
      *
      * @param {RawError[]} errors
-     * @param {object} sourceMap json-source-map pointers for the validated document
+     * @param {SourceMap} sourceMap
      * @returns {Diagnostic[]}
      */
     static toDiagnostics(errors, sourceMap) {
         return errors.map((err) => {
             const level = err.type === checks.WARNING ? checks.WARNING : checks.ERROR;
-            const pointer = sourceMap.pointers[err.instancePath];
-            const lines = pointer
-                ? { start: pointer.value.line, end: pointer.valueEnd.line }
-                : null;
+            const lines = sourceMap.linesFor(err.instancePath);
             return { level, message: err.message, instancePath: err.instancePath, lines };
         });
     }

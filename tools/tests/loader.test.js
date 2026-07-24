@@ -68,7 +68,7 @@ describe('loader', () => {
         expect(data).toBeDefined();
         expect(typeof data).toBe('object');
         expect(sourceMap).toBeDefined();
-        expect(sourceMap.pointers).toBeDefined();
+        expect(typeof sourceMap.linesFor).toBe('function');
     });
 
     test('defaultLoad rejects on unreadable file path', async () => {
@@ -144,10 +144,15 @@ describe('loader', () => {
             const yamlResult = await loadDescriptor(pathToFileURL(yamlPath));
             const jsonResult = await loadDescriptor(pathToFileURL(jsonPath));
 
-            expect(yamlResult.sourceMap).toBeDefined();
-            expect(yamlResult.sourceMap.pointers).toBeDefined();
-            expect(jsonResult.sourceMap).toBeDefined();
-            expect(jsonResult.sourceMap.pointers).toBeDefined();
+            // resolve known pointers on demand; the line numbers must reflect
+            // each real file, so YAML and JSON differ (JSON's leading `{` and
+            // per-item lines push everything down by one or more rows).
+            expect(yamlResult.sourceMap.linesFor('/name')).toEqual({ start: 1, end: 1 });
+            expect(jsonResult.sourceMap.linesFor('/name')).toEqual({ start: 2, end: 2 });
+
+            // a sequence item, addressed by index, resolves deeper in the file
+            expect(yamlResult.sourceMap.linesFor('/items/2')).toEqual({ start: 9, end: 9 });
+            expect(jsonResult.sourceMap.linesFor('/items/2')).toEqual({ start: 11, end: 11 });
         });
     });
 
@@ -203,6 +208,26 @@ describe('loader', () => {
             await expect(
                 loadDescriptor(url, { load: () => Promise.resolve(raw), digest: 'bad-digest' })
             ).rejects.toThrow('Digest mismatch');
+        });
+    });
+
+    describe('JSON strictness', () => {
+        test('rejects a .json descriptor that uses YAML-only syntax', async () => {
+            // comments are valid YAML but not valid JSON; a .json file must stay
+            // portable to strict JSON consumers, so this is refused at load time.
+            const url = new URL('file:///path/device.json');
+            const load = () => Promise.resolve('{ "a": 1 # nope\n}');
+
+            await expect(loadDescriptor(url, { load })).rejects.toThrow('Invalid JSON');
+        });
+
+        test('accepts the same comment-bearing content when it is .yaml', async () => {
+            const url = new URL('file:///path/device.yaml');
+            const load = () => Promise.resolve('a: 1 # fine in yaml');
+
+            await expect(loadDescriptor(url, { load })).resolves.toMatchObject({
+                data: { a: 1 }
+            });
         });
     });
 });

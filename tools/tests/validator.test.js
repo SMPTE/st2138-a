@@ -36,6 +36,7 @@ const schema = require('../src/data/device.json');
 const Validator = require('../src/validator');
 const checks = require('../src/checks');
 const loader = require('../src/loader');
+const sourcemap = require('../src/sourcemap');
 
 describe('Validator', () => {
     let runChecksSpy;
@@ -83,7 +84,7 @@ describe('Validator', () => {
 
         const loadSpy = jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
-            sourceMap: { pointers: {} }
+            sourceMap: { linesFor: () => null }
         });
 
         const compileSpy = jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
@@ -109,12 +110,7 @@ describe('Validator', () => {
     test('validate returns valid=false when AJV reports schema errors', async () => {
         const validator = new Validator();
         const mockSourceMap = {
-            pointers: {
-                '/bad': {
-                    value: { line: 1 },
-                    valueEnd: { line: 1 }
-                }
-            }
+            linesFor: (pointer) => (pointer === '/bad' ? { start: 1, end: 1 } : null)
         };
         const mockErrors = [{ instancePath: '/bad', message: 'must be string' }];
 
@@ -166,7 +162,7 @@ describe('Validator', () => {
 
     test('validate calls runChecks with data and opts after AJV passes', async () => {
         const validator = new Validator();
-        const mockSourceMap = { pointers: {} };
+        const mockSourceMap = { linesFor: () => null };
 
         jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
@@ -197,7 +193,7 @@ describe('Validator', () => {
 
     test('validate passes disable flags through to runChecks', async () => {
         const validator = new Validator();
-        const mockSourceMap = { pointers: {} };
+        const mockSourceMap = { linesFor: () => null };
 
         jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
@@ -228,7 +224,7 @@ describe('Validator', () => {
 
     test('validate returns valid=true when runChecks returns only warnings', async () => {
         const validator = new Validator();
-        const mockSourceMap = { pointers: {} };
+        const mockSourceMap = { linesFor: () => null };
         const mockWarnings = [{ type: checks.WARNING, message: 'just a warning', instancePath: '/params/foo/value' }];
 
         jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
@@ -251,7 +247,7 @@ describe('Validator', () => {
 
     test('validate returns valid=false when runChecks returns errors', async () => {
         const validator = new Validator();
-        const mockSourceMap = { pointers: {} };
+        const mockSourceMap = { linesFor: () => null };
         const mockErrors = [{ message: 'check failed', instancePath: '/params/product' }];
 
         jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
@@ -272,27 +268,22 @@ describe('Validator', () => {
         ]);
     });
 
-    test('toDiagnostics handles errors without sourceMap pointers', () => {
-        const sourceMap = { pointers: {} };
+    test('toDiagnostics handles errors without source lines', () => {
+        const sourceMap = { linesFor: () => null };
         const errors = [
             { instancePath: '/missing', message: 'field required' }
         ];
 
-        // if the '/missing' path doesn't exist in sourceMap pointers,
-        // the diagnostic should still be produced, just without line info
+        // if the '/missing' path resolves to no node, the diagnostic is still
+        // produced, just without line info
         expect(Validator.toDiagnostics(errors, sourceMap)).toEqual([
             { level: 'error', message: 'field required', instancePath: '/missing', lines: null }
         ]);
     });
 
-    test('toDiagnostics includes line info when sourceMap pointers exist', () => {
+    test('toDiagnostics includes line info when the source map resolves a range', () => {
         const sourceMap = {
-            pointers: {
-                '/field': {
-                    value: { line: 5 },
-                    valueEnd: { line: 7 }
-                }
-            }
+            linesFor: (pointer) => (pointer === '/field' ? { start: 5, end: 7 } : null)
         };
         const errors = [
             { instancePath: '/field', message: 'type mismatch' }
@@ -305,12 +296,7 @@ describe('Validator', () => {
 
     test('toDiagnostics handles warnings in addition to errors', () => {
         const sourceMap = {
-            pointers: {
-                '/warnField': {
-                    value: { line: 10 },
-                    valueEnd: { line: 12 }
-                }
-            }
+            linesFor: (pointer) => (pointer === '/warnField' ? { start: 10, end: 12 } : null)
         };
         const warnings = [
             { type: checks.WARNING, instancePath: '/warnField', message: 'deprecated field' }
@@ -321,32 +307,40 @@ describe('Validator', () => {
         ]);
     });
 
-    test('addSchemas rethrows addSchema errors with pointer and line info', () => {
-        const testGenus = '__test_genus_for_addSchemas_throw';
-        const testSpecies = 'broken_species';
-
-        // mutate the schema used in validator to add a test genus/species to test against
-        schema[testGenus] = {
-            [testSpecies]: {
-                type: 'string'
-            }
-        };
-
-        // mock the AJV method to throw an error
+    test('addSchemas rethrows addSchema errors with source line info', () => {
+        // force the very first addSchema call to fail; the catch path resolves
+        // the failing definition's real line range from data/device.json.
         const addSchema = jest.fn(() => {
             throw new Error('AJV schema error');
         });
 
+        expect(() => Validator.prototype.addSchemas.call({ ajv: { addSchema } }, '$defs')).toThrow(
+            /AJV schema error at #\/\$defs\/.+ on lines \d+-\d+/
+        );
+        expect(addSchema).toHaveBeenCalledTimes(1);
+    });
+
+    test('addSchemas omits line info when the failing definition cannot be located', () => {
+        // if the on-disk device.json and the loaded schema drift, linesFor
+        // returns null; the thrown error must still carry the real AJV message,
+        // just without a line range (never a null dereference).
+        jest.spyOn(sourcemap, 'parse').mockReturnValue({
+            data: null,
+            sourceMap: { linesFor: () => null }
+        });
+        const addSchema = jest.fn(() => {
+            throw new Error('AJV schema error');
+        });
+
+        let thrown;
         try {
-            // fancy js magic, you can call a object's methods with a custom "this" context
-            expect(() => Validator.prototype.addSchemas.call({ ajv: { addSchema } }, testGenus)).toThrow(
-                new RegExp(`AJV schema error at #/${testGenus}/${testSpecies} on lines \\d+-\\d+`)
-            );
-            expect(addSchema).toHaveBeenCalledTimes(1);
-        } finally {
-            // clean up the test genus
-            delete schema[testGenus];
+            Validator.prototype.addSchemas.call({ ajv: { addSchema } }, '$defs');
+        } catch (err) {
+            thrown = err;
         }
+
+        expect(thrown.message).toMatch(/^AJV schema error at #\/\$defs\/.+/);
+        expect(thrown.message).not.toMatch(/on lines/);
     });
 
     test('addSchemas skips inherited and $comment entries in schema genus', () => {

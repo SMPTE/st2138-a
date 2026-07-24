@@ -44,11 +44,11 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const jsonMap = require('json-source-map');
-const yaml = require('yaml');
+const sourcemap = require('./sourcemap');
 
 /**
  * @typedef {import('./types').Loader} Loader
+ * @typedef {import('./sourcemap').SourceMap} SourceMap
  */
 
 /**
@@ -78,15 +78,18 @@ async function defaultLoad(url) {
 
 /**
  * Load, verify, and parse a descriptor into an object plus a source map for
- * resolving line numbers. The format (YAML vs JSON) is chosen from the URL's
- * file extension.
+ * resolving line numbers in the original text. Parsing always runs through the
+ * YAML engine (JSON is a YAML subset). A `.json` extension additionally gates
+ * the text through strict `JSON.parse`, rejecting YAML-isms (comments,
+ * unquoted keys, ...) so a `.json` descriptor stays portable to strict JSON
+ * consumers.
  *
  * @param {URL} url location of the descriptor to load
  * @param {object} [opts]
  * @param {string} [opts.digest] sha256 digest to verify the loaded bytes against
  * @param {Loader} [opts.load] custom transport; defaults to {@link defaultLoad}
- * @returns {Promise<{data: object, sourceMap: object}>} parsed data and source map
- * @throws {Error} if loading fails or the digest does not match
+ * @returns {Promise<{data: object | null, sourceMap: SourceMap}>} parsed data and source map
+ * @throws {Error} if loading fails, the digest does not match, or the text is malformed
  */
 async function loadDescriptor(url, { digest = null, load = defaultLoad } = {}) {
     const raw = await load(url);
@@ -99,12 +102,17 @@ async function loadDescriptor(url, { digest = null, load = defaultLoad } = {}) {
     }
 
     const ext = path.extname(url.pathname).toLowerCase();
-    const data = ext === '.yaml' || ext === '.yml' ? yaml.parse(raw) : JSON.parse(raw);
+    if (ext === '.json') {
+        // JSON descriptors must be strict JSON; reject YAML-isms (comments,
+        // unquoted keys, ...) that other JSON tools would refuse.
+        try {
+            JSON.parse(raw);
+        } catch (err) {
+            throw new Error(`Invalid JSON in ${url.pathname}: ${err.message}`);
+        }
+    }
 
-    return {
-        data,
-        sourceMap: jsonMap.stringify(data, null, 2)
-    };
+    return sourcemap.parse(raw);
 }
 
 module.exports = { defaultLoad, loadDescriptor };
