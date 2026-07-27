@@ -4,7 +4,7 @@
 #
 # Enforce a clean separation between RPC service definitions and message/enum
 # definitions: any .proto that declares a `service` must not also declare a
-# top-level `message` or `enum`.
+# `message` or `enum`.
 #
 # Why: keeping service definitions in their own file lets language bindings
 # isolate the generated RPC/stub code from the plain data types. Several
