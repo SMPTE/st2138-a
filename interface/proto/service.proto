@@ -42,6 +42,19 @@ import "param.proto";
 import "language.proto";
 import "externalobject.proto";
 
+/*
+ * This file contains only the CatenaService RPC definition; all message and
+ * enum types it references live in the imported .proto files above. Do not add
+ * top-level `message` or `enum` declarations here.
+ *
+ * Keeping service and data-type definitions in separate files lets language
+ * bindings isolate the generated RPC/stub code (which pulls in a gRPC runtime)
+ * from the plain message types, so consumers that only need the messages are
+ * not forced to link the gRPC runtime. Downstream projects rely on this split.
+ *
+ * This invariant is enforced in CI by check-proto-split.sh.
+ */
+
 /* Catena's API */
 service CatenaService {
   rpc DeviceRequest(DeviceRequestPayload) returns (stream DeviceComponent);
