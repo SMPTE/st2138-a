@@ -80,4 +80,51 @@ function escapeSegment(segment) {
     return String(segment).replace(/~/g, '~0').replace(/\//g, '~1');
 }
 
-module.exports = { NESTED_FIELDS, ROOT_FIELDS, walkableFields, isPlainObject, escapeSegment };
+/** Render a key path as an RFC 6901 JSON pointer. */
+function toPointer(path) {
+    return path.map((segment) => `/${escapeSegment(segment)}`).join('');
+}
+
+/**
+ * Enumerate every `import`-bearing node in a descriptor, each paired with the
+ * key path to it. A node may both carry an `import` and nest further
+ * param-bearing maps, so both are examined; only the maps a node of the given
+ * kind can legally contain are descended. This is the read-only counterpart to
+ * the resolver's inlining walk, shared by the pinner (which records each
+ * import's digest) and the digest check (which validates it).
+ *
+ * @param {unknown} descriptor the parsed descriptor to scan
+ * @param {string} schemaName the descriptor's schema kind (device, param, command)
+ * @returns {Array<{path: string[], directive: object}>} imports in document order
+ */
+function collectImports(descriptor, schemaName) {
+    const out = [];
+    collect(descriptor, walkableFields(schemaName), [], out);
+    return out;
+}
+
+/**
+ * @param {unknown} node the node to inspect
+ * @param {string[]} fields the param-bearing maps to descend at this level
+ * @param {string[]} path the key path to `node`
+ * @param {Array<{path: string[], directive: object}>} out collected imports
+ */
+function collect(node, fields, path, out) {
+    if (!isPlainObject(node)) {
+        return;
+    }
+    if (isPlainObject(node.import)) {
+        out.push({ path, directive: node.import });
+    }
+    for (const field of fields) {
+        const map = node[field];
+        if (!isPlainObject(map)) {
+            continue;
+        }
+        for (const key of Object.keys(map)) {
+            collect(map[key], NESTED_FIELDS, [...path, field, key], out);
+        }
+    }
+}
+
+module.exports = { NESTED_FIELDS, ROOT_FIELDS, walkableFields, isPlainObject, escapeSegment, toPointer, collectImports };

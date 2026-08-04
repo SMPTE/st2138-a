@@ -32,6 +32,7 @@
 const mandatory = require('./mandatory');
 const nestedValues = require('./nested-values');
 const scopes = require('./scopes');
+const digest = require('./digest');
 const { walkParams } = require('./walker');
 const { WARNING, ERROR } = require('./constants');
 
@@ -83,6 +84,10 @@ function getChecks() {
         {
             name: 'scopes',
             createVisitor: scopes.createScopesVisitor,
+        },
+        {
+            name: 'digest',
+            run: digest.validateImportDigests,
         },
     ];
 }

@@ -80,6 +80,7 @@ export interface CheckOptions {
     disableMandatoryParams?: boolean;
     disableNestedValueChecks?: boolean;
     disableScopeChecks?: boolean;
+    disableDigestChecks?: boolean;
 }
 
 /**

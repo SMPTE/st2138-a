@@ -29,7 +29,7 @@
 
 'use strict';
 
-const { walkableFields, isPlainObject, escapeSegment, NESTED_FIELDS, ROOT_FIELDS } = require('../src/shape');
+const { walkableFields, isPlainObject, escapeSegment, NESTED_FIELDS, ROOT_FIELDS, toPointer, collectImports } = require('../src/shape');
 
 describe('walkableFields', () => {
     test('descends params and commands at a device root', () => {
@@ -67,5 +67,63 @@ describe('escapeSegment', () => {
 
     test('leaves an ordinary key untouched', () => {
         expect(escapeSegment('gain')).toBe('gain');
+    });
+});
+
+describe('toPointer', () => {
+    test('joins escaped segments into a JSON pointer', () => {
+        expect(toPointer(['params', 'gain', 'import', 'digest'])).toBe('/params/gain/import/digest');
+    });
+
+    test('escapes segments as it joins them', () => {
+        expect(toPointer(['a/b', 'c~d'])).toBe('/a~1b/c~0d');
+    });
+
+    test('returns the empty string for a root path', () => {
+        expect(toPointer([])).toBe('');
+    });
+});
+
+describe('collectImports', () => {
+    test('collects a root-level import with an empty path', () => {
+        const imports = collectImports({ import: { url: 'x.yaml' } }, 'param');
+        expect(imports).toEqual([{ path: [], directive: { url: 'x.yaml' } }]);
+    });
+
+    test('collects nested param imports with their key paths', () => {
+        const descriptor = {
+            params: {
+                gain: { import: { url: 'gain.yaml' } },
+                group: { params: { level: { import: { url: 'level.yaml' } } } },
+            },
+        };
+        expect(collectImports(descriptor, 'param')).toEqual([
+            { path: ['params', 'gain'], directive: { url: 'gain.yaml' } },
+            { path: ['params', 'group', 'params', 'level'], directive: { url: 'level.yaml' } },
+        ]);
+    });
+
+    test('descends both params and commands for a device', () => {
+        const descriptor = {
+            params: { gain: { import: { url: 'gain.yaml' } } },
+            commands: { reboot: { import: { url: 'reboot.yaml' } } },
+        };
+        expect(collectImports(descriptor, 'device')).toEqual([
+            { path: ['params', 'gain'], directive: { url: 'gain.yaml' } },
+            { path: ['commands', 'reboot'], directive: { url: 'reboot.yaml' } },
+        ]);
+    });
+
+    test('ignores a param-bearing map that is not an object', () => {
+        const descriptor = { params: 'not-a-map', import: { url: 'x.yaml' } };
+        expect(collectImports(descriptor, 'param')).toEqual([
+            { path: [], directive: { url: 'x.yaml' } },
+        ]);
+    });
+
+    test('returns nothing for a non-object descriptor', () => {
+        expect(collectImports(null, 'param')).toEqual([]);
+        expect(collectImports(undefined, 'device')).toEqual([]);
+        expect(collectImports('text', 'param')).toEqual([]);
     });
 });

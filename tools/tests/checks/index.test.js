@@ -31,18 +31,21 @@ const checks = require('../../src/checks/index');
 const mandatory = require('../../src/checks/mandatory');
 const nestedValues = require('../../src/checks/nested-values');
 const scopes = require('../../src/checks/scopes');
+const digest = require('../../src/checks/digest');
 
 describe('getChecks', () => {
     // lock in the expected checks
     test('returns all checks', () => {
         const result = checks.getChecks();
-        expect(result).toHaveLength(3);
+        expect(result).toHaveLength(4);
         expect(result[0].name).toBe('mandatory');
         expect(result[0].run).toBe(mandatory.validateRequiredParamsAndScopes);
         expect(result[1].name).toBe('nestedValues');
         expect(result[1].createVisitor).toBe(nestedValues.createNestedValuesVisitor);
         expect(result[2].name).toBe('scopes');
         expect(result[2].createVisitor).toBe(scopes.createScopesVisitor);
+        expect(result[3].name).toBe('digest');
+        expect(result[3].run).toBe(digest.validateImportDigests);
     });
 });
 

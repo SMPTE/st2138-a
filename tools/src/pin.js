@@ -51,7 +51,7 @@
 const { parseDocument } = require('yaml');
 const loader = require('./loader');
 const { schemaNameFromUrl, isRemote } = require('./urls');
-const { walkableFields, NESTED_FIELDS, isPlainObject, escapeSegment } = require('./shape');
+const { collectImports, toPointer } = require('./shape');
 
 /**
  * @typedef {import('./types').Loader} Loader
@@ -72,11 +72,6 @@ const { walkableFields, NESTED_FIELDS, isPlainObject, escapeSegment } = require(
  * @property {boolean} ok whether every import was pinned (no failures)
  */
 
-/** Render a key path as an RFC 6901 JSON pointer. */
-function toPointer(path) {
-    return path.map((segment) => `/${escapeSegment(segment)}`).join('');
-}
-
 /**
  * Guard the write-back step: a pin can only be recorded into a local file,
  * since a remote descriptor has no path on disk to rewrite in place.
@@ -87,36 +82,6 @@ function toPointer(path) {
 function assertWritable(url) {
     if (isRemote(url)) {
         throw new Error('cannot write to a remote descriptor; writing pins requires a local file');
-    }
-}
-
-/**
- * Collect every `import`-bearing node in a descriptor, with the key path to each.
- * A node may both carry an `import` and nest further param-bearing maps, so both
- * are always examined. Only the maps a node can legally contain are descended
- * (`params` everywhere, plus `commands` at a device root), matching the walk the
- * resolver uses.
- *
- * @param {unknown} node the node to inspect
- * @param {string[]} fields the param-bearing maps to descend at this level
- * @param {Array<string>} path the key path to `node`
- * @param {Array<{path: string[], directive: object}>} out collected imports
- */
-function collectImports(node, fields, path, out) {
-    if (!isPlainObject(node)) {
-        return;
-    }
-    if (isPlainObject(node.import)) {
-        out.push({ path, directive: node.import });
-    }
-    for (const field of fields) {
-        const map = node[field];
-        if (!isPlainObject(map)) {
-            continue;
-        }
-        for (const key of Object.keys(map)) {
-            collectImports(map[key], NESTED_FIELDS, [...path, field, key], out);
-        }
     }
 }
 
@@ -145,8 +110,7 @@ async function pin(url, { load = loader.defaultLoad, includeLocal = false } = {}
         throw new loader.LoadError(`Invalid YAML in ${url.pathname}: ${doc.errors[0].message}`, { cause: doc.errors[0] });
     }
 
-    const imports = [];
-    collectImports(doc.toJS(), walkableFields(schemaNameFromUrl(url)), [], imports);
+    const imports = collectImports(doc.toJS(), schemaNameFromUrl(url));
 
     const changes = [];
     for (const { path, directive } of imports) {
