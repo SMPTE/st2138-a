@@ -37,6 +37,7 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { Models, Enums, Spec, Serialize } = require('@cyclonedx/cyclonedx-library');
 const { decodeDigest } = require('./digest');
+const { isRemote } = require('./urls');
 const pkg = require('../package.json');
 
 /**
@@ -47,21 +48,26 @@ const SHA256 = Enums.HashAlgorithm['SHA-256'];
 
 /**
  * Build a CycloneDX component for one loaded descriptor file. The sha256 is the
- * durable identity — a `file:///` URL is only a local source hint that means
- * nothing once the BOM outlives the files — so it lands in `hashes` (as the hex
- * CycloneDX expects) while the URL is recorded as an external reference. The
- * resolved URL doubles as the `bom-ref`, giving the dependency graph readable
- * edges.
+ * durable identity, so it lands in `hashes` (as the hex CycloneDX expects) and
+ * also forms the `bom-ref` — a document-internal id — as `name@sha256:<hex>`,
+ * which stays unique without leaking the author's local filesystem path. Only a
+ * remote URL is recorded as an external reference: it is a real distribution
+ * point, whereas a `file:` path is machine-specific and would leak a home
+ * directory while resolving nowhere off the authoring machine.
  *
  * @param {string} href resolved URL the file was loaded from
  * @param {string} digest base64 sha256 of the file's loaded bytes
  * @returns {Models.Component} a CycloneDX component
  */
 function component(href, digest) {
-    const name = path.basename(new URL(href).pathname);
-    const comp = new Models.Component(Enums.ComponentType.File, name, { bomRef: href });
-    comp.hashes.set(SHA256, decodeDigest(digest).toString('hex'));
-    comp.externalReferences.add(new Models.ExternalReference(href, Enums.ExternalReferenceType.Distribution));
+    const url = new URL(href);
+    const name = path.basename(url.pathname);
+    const hex = decodeDigest(digest).toString('hex');
+    const comp = new Models.Component(Enums.ComponentType.File, name, { bomRef: `${name}@sha256:${hex}` });
+    comp.hashes.set(SHA256, hex);
+    if (isRemote(url)) {
+        comp.externalReferences.add(new Models.ExternalReference(href, Enums.ExternalReferenceType.Distribution));
+    }
     return comp;
 }
 

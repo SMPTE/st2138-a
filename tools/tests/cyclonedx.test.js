@@ -36,6 +36,8 @@ const pkg = require('../package.json');
 // The provenance carries base64 digests; the BOM records the same hash as hex.
 const b64 = (text) => crypto.createHash('sha256').update(text).digest('base64');
 const hex = (text) => crypto.createHash('sha256').update(text).digest('hex');
+// A component's bom-ref is its name plus the content hash, not its path.
+const ref = (name, text) => `${name}@sha256:${hex(text)}`;
 
 // toCycloneDx returns a serialized JSON document; parse it back to inspect it.
 const bomOf = (result, subject) => JSON.parse(toCycloneDx(result, subject));
@@ -48,14 +50,12 @@ describe('toCycloneDx', () => {
 
         expect(bom.bomFormat).toBe('CycloneDX');
         expect(bom.specVersion).toBe('1.6');
+        // a local file leaks no path: identified by name + hash, no external ref
         expect(bom.metadata.component).toEqual({
             type: 'file',
             name: 'device.example.yaml',
-            'bom-ref': 'file:///models/device.example.yaml',
-            hashes: [{ alg: 'SHA-256', content: hex('root') }],
-            externalReferences: [
-                { type: 'distribution', url: 'file:///models/device.example.yaml' }
-            ]
+            'bom-ref': ref('device.example.yaml', 'root'),
+            hashes: [{ alg: 'SHA-256', content: hex('root') }]
         });
         expect(bom.components ?? []).toEqual([]);
     });
@@ -95,22 +95,37 @@ describe('toCycloneDx', () => {
             {
                 type: 'file',
                 name: 'param.on_off.yaml',
-                'bom-ref': 'file:///models/param.on_off.yaml',
-                hashes: [{ alg: 'SHA-256', content: hex('onoff') }],
-                externalReferences: [
-                    { type: 'distribution', url: 'file:///models/param.on_off.yaml' }
-                ]
+                'bom-ref': ref('param.on_off.yaml', 'onoff'),
+                hashes: [{ alg: 'SHA-256', content: hex('onoff') }]
             },
             {
                 type: 'file',
                 name: 'param.shared.yaml',
-                'bom-ref': 'file:///models/param.shared.yaml',
-                hashes: [{ alg: 'SHA-256', content: hex('shared') }],
-                externalReferences: [
-                    { type: 'distribution', url: 'file:///models/param.shared.yaml' }
-                ]
+                'bom-ref': ref('param.shared.yaml', 'shared'),
+                hashes: [{ alg: 'SHA-256', content: hex('shared') }]
             }
         ]);
+    });
+
+    test('records an external distribution reference only for remote imports', () => {
+        // a remote URL is a real distribution point; a local path is not, and
+        // recording it would leak the author's filesystem
+        const result = {
+            imports: [
+                { url: 'https://models.example.com/param.remote.yaml', digest: b64('remote'), dependencies: [] },
+                { url: 'file:///models/param.local.yaml', digest: b64('local'), dependencies: [] }
+            ],
+            dependencies: [],
+            digest: b64('root')
+        };
+
+        const bom = bomOf(result, 'file:///models/device.yaml');
+        const [remote, local] = bom.components;
+
+        expect(remote.externalReferences).toEqual([
+            { url: 'https://models.example.com/param.remote.yaml', type: 'distribution' }
+        ]);
+        expect(local).not.toHaveProperty('externalReferences');
     });
 
     test('emits a dependency graph, with a diamond target referenced once', () => {
@@ -128,10 +143,10 @@ describe('toCycloneDx', () => {
         const bom = bomOf(result, 'file:///models/device.yaml');
 
         expect(bom.dependencies).toEqual([
-            { ref: 'file:///models/device.yaml', dependsOn: ['file:///models/a.yaml', 'file:///models/b.yaml'] },
-            { ref: 'file:///models/a.yaml', dependsOn: ['file:///models/shared.yaml'] },
-            { ref: 'file:///models/shared.yaml' },
-            { ref: 'file:///models/b.yaml', dependsOn: ['file:///models/shared.yaml'] }
+            { ref: ref('device.yaml', 'root'), dependsOn: [ref('a.yaml', 'a'), ref('b.yaml', 'b')] },
+            { ref: ref('a.yaml', 'a'), dependsOn: [ref('shared.yaml', 'shared')] },
+            { ref: ref('shared.yaml', 'shared') },
+            { ref: ref('b.yaml', 'b'), dependsOn: [ref('shared.yaml', 'shared')] }
         ]);
     });
 });
