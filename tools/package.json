@@ -1,7 +1,8 @@
 {
   "dependencies": {
+    "@cyclonedx/cyclonedx-library": "^10.1.0",
     "ajv": "^8.20.0",
-    "ajv-formats": "^2.1.1",
+    "ajv-formats": "^3.0.1",
     "commander": "^12.1.0",
     "yaml": "^2.9.0"
   },
