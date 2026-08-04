@@ -32,11 +32,14 @@
 const Validator = require('./validator');
 const { resolve: resolveTree } = require('./resolve');
 const { toCycloneDx } = require('./cyclonedx');
+const { defaultLoad } = require('./loader');
+const { computeDigest } = require('./digest');
 const { toUrl, schemaNameFromUrl } = require('./urls');
 
 /**
  * @typedef {import('./types').ValidateOptions} ValidateOptions
  * @typedef {import('./types').ResolveOptions} ResolveOptions
+ * @typedef {import('./types').DigestOptions} DigestOptions
  * @typedef {import('./types').ValidationResult} ValidationResult
  * @typedef {import('./types').ResolutionResult} ResolutionResult
  * @typedef {import('./types').Diagnostic} Diagnostic
@@ -123,5 +126,19 @@ async function resolve(input, options = {}) {
     return resolveTree(url, { validate, load: options.load, digest: options.digest ?? null });
 }
 
-module.exports = { validate, resolve, toCycloneDx, formatDiagnostic, printDiagnostics };
+/**
+ * Compute the base64 sha256 digest of a descriptor's raw bytes. The bytes are
+ * hashed as loaded — not parsed or validated — so this reports the digest of
+ * any file, and it is the value an `import` directive pins its target against.
+ * @param {string|URL} input path or URL to a descriptor
+ * @param {DigestOptions} options
+ * @returns {Promise<string>} the base64-encoded sha256 digest
+ */
+async function digest(input, options = {}) {
+    const url = toUrl(input);
+    const load = options.load ?? defaultLoad;
+    return computeDigest(await load(url));
+}
+
+module.exports = { validate, resolve, digest, toCycloneDx, formatDiagnostic, printDiagnostics };
 

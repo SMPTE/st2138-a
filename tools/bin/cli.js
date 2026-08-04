@@ -42,7 +42,7 @@ const { stringify } = require('yaml');
 const fs = require('node:fs');
 const path = require('node:path');
 const pkg = require('../package.json');
-const { validate, resolve, toCycloneDx, printDiagnostics, formatDiagnostic } = require('../src');
+const { validate, resolve, digest, toCycloneDx, printDiagnostics, formatDiagnostic } = require('../src');
 const { toUrl, schemaNameFromUrl } = require('../src/urls');
 
 'use strict';
@@ -142,6 +142,23 @@ program
         if (options.sbom) {
             fs.writeFileSync(options.sbom, `${JSON.stringify(toCycloneDx(result, url), null, 2)}\n`);
         }
+    });
+
+program
+    .command('digest')
+    .description('Compute the base64 sha256 digest of a file or URL')
+    .argument('<file>', 'path or URL to a descriptor')
+    .action(async (file) => {
+        console.log(await digest(toUrl(file)));
+    });
+
+program
+    .command('pin')
+    .description('Fill in or refresh the digest of each import in a descriptor')
+    .argument('<file>', 'path to a .json or .yaml descriptor to update')
+    .option('-w, --write', 'rewrite the file in place instead of printing a diff')
+    .action(() => {
+        throw new Error('pin is not implemented yet');
     });
 
 program.parseAsync(process.argv).catch((err) => {

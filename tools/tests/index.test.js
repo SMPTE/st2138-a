@@ -28,6 +28,7 @@
  */
 
 const { formatDiagnostic, printDiagnostics } = require('../src');
+const crypto = require('node:crypto');
 
 describe('formatDiagnostic', () => {
     test('formats a diagnostic with a source line range', () => {
@@ -229,3 +230,34 @@ describe('resolve', () => {
         expect(MockValidator).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('digest', () => {
+    let digest;
+    let mockDefaultLoad;
+
+    beforeEach(() => {
+        jest.resetModules();
+        mockDefaultLoad = jest.fn().mockResolvedValue('hello: world\n');
+        jest.doMock('../src/loader', () => ({ defaultLoad: mockDefaultLoad }));
+        ({ digest } = require('../src'));
+    });
+
+    afterEach(() => {
+        jest.dontMock('../src/loader');
+    });
+
+    test('hashes the raw bytes from the default loader into a base64 digest', async () => {
+        const value = await digest('examples/param.on_off.yaml');
+        expect(mockDefaultLoad).toHaveBeenCalledWith(expect.any(URL));
+        expect(value).toBe(crypto.createHash('sha256').update('hello: world\n').digest('base64'));
+    });
+
+    test('hashes the bytes returned by a custom load function', async () => {
+        const load = jest.fn().mockResolvedValue('other: bytes\n');
+        const value = await digest('examples/param.on_off.yaml', { load });
+        expect(load).toHaveBeenCalledWith(expect.any(URL));
+        expect(mockDefaultLoad).not.toHaveBeenCalled();
+        expect(value).toBe(crypto.createHash('sha256').update('other: bytes\n').digest('base64'));
+    });
+});
+

@@ -115,6 +115,16 @@ export interface ValidateOptions extends DescriptorOptions {}
 export interface ResolveOptions extends DescriptorOptions {}
 
 /**
+ * Options accepted by the `digest` entry point. It only reads bytes, so it
+ * takes just a custom transport — no integrity digest to verify against and no
+ * check toggles, since nothing is parsed or validated.
+ */
+export interface DigestOptions {
+    /** custom transport for loading the bytes to hash; defaults to the file/HTTP loader */
+    load?: Loader;
+}
+
+/**
  * Loads the raw text of a descriptor from a resolved URL. Supply a custom
  * implementation to control transport (caching, auth, in-memory fixtures);
  * the engine still verifies and parses the returned bytes. Signal failure by
@@ -134,6 +144,12 @@ export function resolve(
     input: string | URL,
     options?: ResolveOptions,
 ): Promise<ResolutionResult>;
+
+/** Compute the base64 sha256 digest of a descriptor's raw bytes. */
+export function digest(
+    input: string | URL,
+    options?: DigestOptions,
+): Promise<string>;
 
 /** Render a resolution result's provenance as a CycloneDX 1.6 BOM document. */
 export function toCycloneDx(result: ResolutionResult, subject: string | URL): object;
