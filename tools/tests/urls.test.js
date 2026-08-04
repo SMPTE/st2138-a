@@ -30,7 +30,7 @@
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
-const { toUrl, schemaNameFromUrl } = require('../src/urls');
+const { toUrl, schemaNameFromUrl, isRemote } = require('../src/urls');
 
 describe('toUrl', () => {
     test('returns a URL instance unchanged', () => {
@@ -78,5 +78,15 @@ describe('schemaNameFromUrl', () => {
 
     test('derives the schema name from a param descriptor filename', () => {
         expect(schemaNameFromUrl(new URL('file:///a/b/param.on_off.yaml'))).toBe('param');
+    });
+});
+
+describe('isRemote', () => {
+    test('treats a file URL as local', () => {
+        expect(isRemote(new URL('file:///models/param.on_off.yaml'))).toBe(false);
+    });
+
+    test('treats an http(s) URL as remote', () => {
+        expect(isRemote(new URL('https://cdn.example.com/param.on_off.yaml'))).toBe(true);
     });
 });

@@ -65,6 +65,7 @@
 const loader = require('./loader');
 const { emptySourceMap } = require('./sourcemap');
 const { schemaNameFromUrl } = require('./urls');
+const { NESTED_FIELDS, walkableFields, isPlainObject, escapeSegment } = require('./shape');
 const { ERROR } = require('./checks/constants');
 
 /**
@@ -89,31 +90,6 @@ const { ERROR } = require('./checks/constants');
  */
 
 /**
- * Param-bearing maps to descend, by node kind. `param` and `command` are
- * distinct schemas sharing a YAML anchor (a command adds `response`); both carry
- * only nested `params` (a command's arguments are themselves a `params` map). A
- * `device` additionally carries a top-level `commands` map, which never nests.
- * `import` lives on param/command nodes and is rejected elsewhere by the
- * schema's `additionalProperties: false`, so descending these maps reaches every
- * importable node without a generic object crawl.
- * @type {string[]}
- */
-const NESTED_FIELDS = ['params'];
-const ROOT_FIELDS = ['params', 'commands'];
-
-/**
- * The maps to descend for a descriptor of the given schema type. Deriving the
- * walk from the declared type — rather than from position in the tree — lets
- * resolution run at any level: a whole `device`, or a single imported `param`
- * or `command` fragment, each walk exactly the maps they can legally contain.
- * @param {string} schemaName
- * @returns {string[]}
- */
-function walkableFields(schemaName) {
-    return schemaName === 'device' ? ROOT_FIELDS : NESTED_FIELDS;
-}
-
-/**
  * @typedef {object} ResolvedTree the result of inlining a subtree's imports
  * @property {object} data the resolved, import-free data
  * @property {Diagnostic[]} diagnostics accumulated "before" (as-authored) diagnostics
@@ -122,21 +98,6 @@ function walkableFields(schemaName) {
  * @property {ImportRecord[]} imports every file inlined in this subtree, in DFS order
  * @property {string} [digest] base64 sha256 of this file's loaded bytes; set only by resolveFile
  */
-
-/**
- * True for a mergeable mapping: a non-null, non-array object. Scalars and
- * arrays are treated as atomic values that the local side replaces wholesale.
- * @param {unknown} value
- * @returns {boolean}
- */
-function isPlainObject(value) {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-/** Escape a raw key into a JSON pointer segment (RFC 6901): `~`->`~0`, `/`->`~1`. */
-function escapeSegment(segment) {
-    return segment.replace(/~/g, '~0').replace(/\//g, '~1');
-}
 
 /**
  * Collapse imports of the same file to one record, keeping first-seen order.

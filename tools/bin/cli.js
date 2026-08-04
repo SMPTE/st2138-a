@@ -43,6 +43,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const pkg = require('../package.json');
 const { validate, resolve, digest, toCycloneDx, printDiagnostics, formatDiagnostic } = require('../src');
+const { pin, assertWritable } = require('../src/pin');
 const { toUrl, schemaNameFromUrl } = require('../src/urls');
 
 'use strict';
@@ -156,9 +157,50 @@ program
     .command('pin')
     .description('Fill in or refresh the digest of each import in a descriptor')
     .argument('<file>', 'path to a .json or .yaml descriptor to update')
-    .option('-w, --write', 'rewrite the file in place instead of printing a diff')
-    .action(() => {
-        throw new Error('pin is not implemented yet');
+    .option('-w, --write', 'rewrite the file in place instead of only reporting')
+    .option('--include-local', 'also pin local (file:) imports, not just remote ones')
+    .action(async (file, options) => {
+        const url = toUrl(file);
+        if (options.write) {
+            assertWritable(url);
+        }
+
+        const { text, changes, changed, ok } = await pin(url, { includeLocal: Boolean(options.includeLocal) });
+
+        for (const change of changes) {
+            if (change.error) {
+                console.error(`ERROR: ${change.error} at ${change.pointer}`);
+            } else if (change.skipped) {
+                console.error(`skipped local ${change.url} at ${change.pointer}`);
+            } else if (change.changed) {
+                const verb = change.previous ? 'updated' : 'pinned';
+                console.error(`${verb} ${change.url} -> ${change.digest} at ${change.pointer}`);
+            } else {
+                console.error(`unchanged ${change.url} at ${change.pointer}`);
+            }
+        }
+
+        if (!ok) {
+            console.error('❌ Pinning failed; the file was not modified.');
+            process.exitCode = 2;
+            return;
+        }
+
+        if (changes.some((change) => !change.skipped)) {
+            console.error('Note: pinning records integrity only, not validity — run `validate --resolve` to check the descriptor resolves.');
+        }
+
+        if (!changed) {
+            console.error('All import digests are already up to date.');
+            return;
+        }
+
+        if (options.write) {
+            fs.writeFileSync(file, text);
+            console.error(`Wrote ${file}.`);
+        } else {
+            console.error('Run again with -w to write these changes.');
+        }
     });
 
 program.parseAsync(process.argv).catch((err) => {

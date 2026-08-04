@@ -27,53 +27,45 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Internal URL helpers.
- *
- * These are not part of the package's public surface: `validate` coalesces
- * path/URL inputs on its own, so consumers never need them. They exist to
- * support the CLI, which resolves the input into a URL and schema name for its
- * informational output.
- */
-
 'use strict';
 
-const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { walkableFields, isPlainObject, escapeSegment, NESTED_FIELDS, ROOT_FIELDS } = require('../src/shape');
 
-/**
- * Convert a path or URL into a URL the engine understands.
- * @param {string|URL} input
- * @returns {URL}
- */
-function toUrl(input) {
-    if (input instanceof URL) return input;
-    if (typeof input === 'string' && input.indexOf('://') === -1) {
-        return pathToFileURL(path.resolve(input));
-    }
-    return new URL(input);
-}
+describe('walkableFields', () => {
+    test('descends params and commands at a device root', () => {
+        expect(walkableFields('device')).toBe(ROOT_FIELDS);
+        expect(ROOT_FIELDS).toEqual(['params', 'commands']);
+    });
 
-/**
- * Derive the schema name from a descriptor filename, e.g. `device.example.yaml`
- * -> `device`.
- * @param {URL} url
- * @returns {string}
- */
-function schemaNameFromUrl(url) {
-    return path.parse(url.pathname).name.split('.')[0];
-}
+    test('descends only params for any other kind', () => {
+        expect(walkableFields('param')).toBe(NESTED_FIELDS);
+        expect(walkableFields('command')).toBe(NESTED_FIELDS);
+        expect(NESTED_FIELDS).toEqual(['params']);
+    });
+});
 
-/**
- * Whether a URL points somewhere other than the local filesystem. Bytes behind
- * a remote URL live outside the author's control and version history, so they
- * are the ones a pin most usefully locks; local `file:` bytes are already
- * tracked by the repository around them.
- * @param {URL} url
- * @returns {boolean}
- */
-function isRemote(url) {
-    return url.protocol !== 'file:';
-}
+describe('isPlainObject', () => {
+    test('accepts a plain mapping', () => {
+        expect(isPlainObject({})).toBe(true);
+        expect(isPlainObject({ a: 1 })).toBe(true);
+    });
 
-module.exports = { toUrl, schemaNameFromUrl, isRemote };
+    test('rejects null, arrays, and scalars', () => {
+        expect(isPlainObject(null)).toBe(false);
+        expect(isPlainObject([1, 2])).toBe(false);
+        expect(isPlainObject('text')).toBe(false);
+        expect(isPlainObject(undefined)).toBe(false);
+    });
+});
+
+describe('escapeSegment', () => {
+    test('escapes ~ and / per RFC 6901', () => {
+        expect(escapeSegment('a~b')).toBe('a~0b');
+        expect(escapeSegment('a/b')).toBe('a~1b');
+        expect(escapeSegment('~/')).toBe('~0~1');
+    });
+
+    test('leaves an ordinary key untouched', () => {
+        expect(escapeSegment('gain')).toBe('gain');
+    });
+});
