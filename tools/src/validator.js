@@ -85,21 +85,37 @@ class Validator {
     }
 
     /**
-     * Validate a descriptor against the named schema and run post-schema checks.
-     * Collects findings as structured diagnostics rather than printing them, so
-     * callers (the CLI, resolve) decide how to surface them.
+     * Load a descriptor from a URL and validate it. Thin I/O wrapper around
+     * {@link Validator#validateData}: it resolves the transport, then hands the
+     * parsed data and its source map to the pure validation path.
      *
      * @param {string} schemaName schema to apply (e.g. `device`, `param`)
      * @param {URL} url location of the descriptor to load
      * @param {object} [loadOpts] descriptor loading options
-     * @param {string} [loadOpts.digest] optional sha256 digest to verify the input against
+     * @param {string} [loadOpts.digest] optional base64 sha256 digest to verify the input against
      * @param {Loader} [loadOpts.load] custom transport for loading the descriptor
      * @param {CheckOptions} [checkOpts] flags to disable individual post-schema checks
      * @returns {Promise<ValidationResult>}
      */
-    async validate(schemaName, url, loadOpts = {}, checkOpts = {}) {
+    async validate(schemaName, url, loadOpts = {}, checkOpts) {
         const { data, sourceMap } = await loader.loadDescriptor(url, loadOpts || {});
+        return this.validateData(schemaName, data, sourceMap, checkOpts);
+    }
 
+    /**
+     * Validate already-loaded data against the named schema and run post-schema
+     * checks. Pure and synchronous: no I/O, so callers that already hold the
+     * data (the resolver, in-memory callers) can validate without a transport.
+     * Collects findings as structured diagnostics rather than printing them, so
+     * callers (the CLI, resolve) decide how to surface them.
+     *
+     * @param {string} schemaName schema to apply (e.g. `device`, `param`)
+     * @param {unknown} data the parsed descriptor to validate
+     * @param {SourceMap} sourceMap resolves diagnostic pointers to source lines
+     * @param {CheckOptions} [checkOpts] flags to disable individual post-schema checks
+     * @returns {ValidationResult}
+     */
+    validateData(schemaName, data, sourceMap, checkOpts = {}) {
         const isDeviceSchema = schemaName.startsWith('device');
         if (!isDeviceSchema && !(schemaName in schema.$defs)) {
             throw { error: 2, message: `Could not find ${schemaName} in schema definition file.` };
@@ -116,14 +132,17 @@ class Validator {
         }
 
         if (!valid) {
-            return { valid: false, diagnostics: Validator.toDiagnostics(errors, sourceMap), data };
+            // Invalid results carry no data to trust; the contract is binary,
+            // read `data` only when `valid`. Hand back an empty object so the
+            // type stays honest (never null, never a non-object scalar root).
+            return { valid: false, diagnostics: Validator.toDiagnostics(errors, sourceMap), data: {} };
         }
 
         const checkErrors = checks.runChecks(data, { ...checkOpts, schemaName });
         const diagnostics = Validator.toDiagnostics(checkErrors, sourceMap);
-        const hasError = checkErrors.some(err => err.type === undefined || err.type === checks.ERROR);
+        valid = !checkErrors.some(err => err.type === undefined || err.type === checks.ERROR);
 
-        return { valid: !hasError, diagnostics, data };
+        return { valid, diagnostics, data: valid ? data : {} };
     }
 
     /**

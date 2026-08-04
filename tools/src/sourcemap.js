@@ -54,6 +54,14 @@ const { parseDocument, LineCounter } = require('yaml');
  *   pointer addresses nothing (an absent path or an empty document).
  */
 
+/**
+ * A SourceMap that resolves every pointer to null. Use it when data has no
+ * single source text — e.g. a tree merged from several files — so callers can
+ * validate without special-casing the absence of line information.
+ * @type {SourceMap}
+ */
+const emptySourceMap = { linesFor: () => null };
+
 /** Decode a JSON pointer segment back into a raw key (RFC 6901). */
 function unescapeSegment(segment) {
     return segment.replace(/~1/g, '/').replace(/~0/g, '~');
@@ -64,7 +72,7 @@ function unescapeSegment(segment) {
  * pointers to 1-based line ranges in the original text, on demand.
  *
  * @param {string} raw descriptor text (YAML or JSON)
- * @returns {{data: object | null, sourceMap: SourceMap}}
+ * @returns {{data: unknown, sourceMap: SourceMap}}
  * @throws if the text is not well-formed
  */
 function parse(raw) {
@@ -94,4 +102,4 @@ function parse(raw) {
     return { data: doc.toJS(), sourceMap: { linesFor } };
 }
 
-module.exports = { parse };
+module.exports = { parse, emptySourceMap };

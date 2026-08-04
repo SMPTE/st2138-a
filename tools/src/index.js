@@ -30,11 +30,15 @@
 'use strict';
 
 const Validator = require('./validator');
+const { resolve: resolveTree } = require('./resolve');
+const { toCycloneDx } = require('./cyclonedx');
 const { toUrl, schemaNameFromUrl } = require('./urls');
 
 /**
  * @typedef {import('./types').ValidateOptions} ValidateOptions
+ * @typedef {import('./types').ResolveOptions} ResolveOptions
  * @typedef {import('./types').ValidationResult} ValidationResult
+ * @typedef {import('./types').ResolutionResult} ResolutionResult
  * @typedef {import('./types').Diagnostic} Diagnostic
  * 
  */
@@ -82,9 +86,9 @@ function printDiagnostics(diagnostics) {
  */
 async function validate(input, options = {}) {
     const url = toUrl(input);
-    const schemaName = options.schemaName || schemaNameFromUrl(url);
+    const schemaName = schemaNameFromUrl(url);
     const loadOpts = {
-        digest: options.digest || null,
+        digest: options.digest ?? null,
         load: options.load,
     };
     const checkOpts = {
@@ -95,5 +99,29 @@ async function validate(input, options = {}) {
     return getEngine().validate(schemaName, url, loadOpts, checkOpts);
 }
 
-module.exports = { validate, formatDiagnostic, printDiagnostics };
+/**
+ * Resolve a descriptor's `import` directives into a single self-contained tree.
+ * Each fragment is validated as it is inlined and the merged whole is validated
+ * once more, so the result carries the same diagnostics a `validate` would plus
+ * a record of every file that was pulled in.
+ * @param {string|URL} input path or URL to a .json or .yaml descriptor
+ * @param {ResolveOptions} options
+ * @returns {Promise<ResolutionResult>}
+ */
+async function resolve(input, options = {}) {
+    const url = toUrl(input);
+    const checkOpts = {
+        disableMandatoryParams: options.disableMandatoryParams || false,
+        disableNestedValueChecks: options.disableNestedValueChecks || false,
+        disableScopeChecks: options.disableScopeChecks || false,
+    };
+    const engine = getEngine();
+    // The resolver validates in-memory data (each fragment, then the merged
+    // tree), so it drives the pure `validateData` path rather than the loader.
+    const validate = (schemaName, data, sourceMap) =>
+        engine.validateData(schemaName, data, sourceMap, checkOpts);
+    return resolveTree(url, { validate, load: options.load, digest: options.digest ?? null });
+}
+
+module.exports = { validate, resolve, toCycloneDx, formatDiagnostic, printDiagnostics };
 

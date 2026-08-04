@@ -109,10 +109,10 @@ describe('validate', () => {
         );
     });
 
-    test('honours explicit schema name, digest, and disable flags', async () => {
+    test('honours digest and disable flags', async () => {
+        const digest = Buffer.alloc(32, 0xde).toString('base64');
         await validate('examples/param.on_off.yaml', {
-            schemaName: 'param',
-            digest: 'deadbeef',
+            digest,
             disableMandatoryParams: true,
             disableNestedValueChecks: true,
             disableScopeChecks: true,
@@ -120,7 +120,7 @@ describe('validate', () => {
         expect(mockValidate).toHaveBeenCalledWith(
             'param',
             expect.any(URL),
-            { digest: 'deadbeef', load: undefined },
+            { digest, load: undefined },
             {
                 disableMandatoryParams: true,
                 disableNestedValueChecks: true,
@@ -148,6 +148,84 @@ describe('validate', () => {
     test('builds the engine once and reuses it across calls', async () => {
         await validate('examples/device.example.yaml');
         await validate('examples/param.on_off.yaml');
+        expect(MockValidator).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('resolve', () => {
+    let resolve;
+    let MockValidator;
+    let mockValidateData;
+    let mockResolveTree;
+
+    beforeEach(() => {
+        jest.resetModules();
+        mockValidateData = jest.fn(() => ({ valid: true, diagnostics: [], data: {} }));
+        jest.doMock('../src/validator', () => jest.fn(() => ({ validateData: mockValidateData })));
+        mockResolveTree = jest.fn().mockResolvedValue({ valid: true, diagnostics: [], data: {}, imports: [] });
+        jest.doMock('../src/resolve', () => ({ resolve: mockResolveTree }));
+        MockValidator = require('../src/validator');
+        ({ resolve } = require('../src'));
+    });
+
+    afterEach(() => {
+        jest.dontMock('../src/validator');
+        jest.dontMock('../src/resolve');
+    });
+
+    test('drives the resolver with the digest and a validate closure', async () => {
+        await resolve('examples/device.example.yaml');
+        expect(mockResolveTree).toHaveBeenCalledWith(
+            expect.any(URL),
+            { validate: expect.any(Function), load: undefined, digest: null }
+        );
+    });
+
+    test('the injected validate applies default check options through validateData', async () => {
+        await resolve('examples/device.example.yaml');
+        const { validate: injected } = mockResolveTree.mock.calls[0][1];
+        const sourceMap = { linesFor: () => null };
+        injected('param', { a: 1 }, sourceMap);
+        expect(mockValidateData).toHaveBeenCalledWith('param', { a: 1 }, sourceMap, {
+            disableMandatoryParams: false,
+            disableNestedValueChecks: false,
+            disableScopeChecks: false,
+        });
+    });
+
+    test('honours digest, custom load, and disable flags', async () => {
+        const digest = Buffer.alloc(32, 0xde).toString('base64');
+        const load = jest.fn();
+        await resolve('examples/param.on_off.yaml', {
+            digest,
+            load,
+            disableMandatoryParams: true,
+            disableNestedValueChecks: true,
+            disableScopeChecks: true,
+        });
+        expect(mockResolveTree).toHaveBeenCalledWith(
+            expect.any(URL),
+            { validate: expect.any(Function), load, digest }
+        );
+        const { validate: injected } = mockResolveTree.mock.calls[0][1];
+        injected('param', {}, { linesFor: () => null });
+        expect(mockValidateData).toHaveBeenCalledWith('param', {}, expect.any(Object), {
+            disableMandatoryParams: true,
+            disableNestedValueChecks: true,
+            disableScopeChecks: true,
+        });
+    });
+
+    test('returns the resolver result unchanged', async () => {
+        const out = { valid: false, diagnostics: [{ level: 'error' }], data: {}, imports: [] };
+        mockResolveTree.mockResolvedValue(out);
+        const result = await resolve('examples/device.example.yaml');
+        expect(result).toBe(out);
+    });
+
+    test('builds the engine once and reuses it across calls', async () => {
+        await resolve('examples/device.example.yaml');
+        await resolve('examples/param.on_off.yaml');
         expect(MockValidator).toHaveBeenCalledTimes(1);
     });
 });

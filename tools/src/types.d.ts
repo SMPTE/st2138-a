@@ -53,27 +53,66 @@ export interface ValidationResult {
     data: object;
 }
 
+/** A file that was inlined during resolution — provenance for an SBOM. */
+export interface ImportRecord {
+    /** the resolved absolute URL the import was fetched from */
+    url: string;
+    /** base64-encoded sha256 of the bytes actually loaded for this import */
+    digest: string;
+}
+
+/** Result of resolving a descriptor's `import` directives into a single tree. */
+export interface ResolutionResult {
+    /** the merged self-contained descriptor, or `{}` when invalid */
+    data: object;
+    /** findings gathered during resolution */
+    diagnostics: Diagnostic[];
+    /** whether resolution produced a valid descriptor */
+    valid: boolean;
+    /** every file inlined during resolution, deduped by URL */
+    imports: ImportRecord[];
+    /** base64-encoded sha256 of the bytes loaded for the root descriptor */
+    digest: string;
+}
+
 /** Flags to disable individual post-schema checks. */
 export interface CheckOptions {
-    /** override the schema name derived from the filename */
-    schemaName?: string;
     disableMandatoryParams?: boolean;
     disableNestedValueChecks?: boolean;
     disableScopeChecks?: boolean;
 }
 
-/** Options accepted by the functional `validate` entry point. */
-export interface ValidateOptions extends CheckOptions {
-    /** sha256 digest to verify the input against */
+/**
+ * Options common to the descriptor entry points (`validate` and `resolve`): an
+ * integrity digest, a custom transport, and the check toggles from
+ * {@link CheckOptions}.
+ */
+export interface DescriptorOptions extends CheckOptions {
+    /** base64-encoded sha256 digest to verify the descriptor against (the root file, when resolving) */
     digest?: string;
     /**
      * Custom transport for loading descriptor bytes, in place of the default
-     * file/HTTP loader. Receives the resolved URL and returns the raw text.
-     * Integrity (digest) checks and parsing are still performed by the engine
-     * on whatever this returns.
+     * file/HTTP loader. Receives a resolved URL and returns the raw text;
+     * integrity (digest) checks and parsing are still performed by the engine
+     * on whatever it returns.
      */
     load?: Loader;
 }
+
+/**
+ * Options accepted by the functional `validate` entry point. Identical to
+ * {@link DescriptorOptions} today, but kept as its own name so the two entry
+ * points can diverge without churning callers.
+ */
+export interface ValidateOptions extends DescriptorOptions {}
+
+/**
+ * Options accepted by the functional `resolve` entry point. Identical to
+ * {@link DescriptorOptions} today, but kept as its own name so the two entry
+ * points can diverge without churning callers. Each file's schema is derived
+ * from its own name as the tree is walked.
+ */
+export interface ResolveOptions extends DescriptorOptions {}
 
 /**
  * Loads the raw text of a descriptor from a resolved URL. Supply a custom
@@ -89,6 +128,15 @@ export function validate(
     input: string | URL,
     options?: ValidateOptions,
 ): Promise<ValidationResult>;
+
+/** Resolve a descriptor's `import` directives into a single self-contained tree. */
+export function resolve(
+    input: string | URL,
+    options?: ResolveOptions,
+): Promise<ResolutionResult>;
+
+/** Render a resolution result's provenance as a CycloneDX 1.6 BOM document. */
+export function toCycloneDx(result: ResolutionResult, subject: string | URL): object;
 
 /** Format a single diagnostic as a human-readable line. */
 export function formatDiagnostic(diagnostic: Diagnostic): string;

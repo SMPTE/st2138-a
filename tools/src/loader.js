@@ -41,15 +41,31 @@
 
 'use strict';
 
-const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const sourcemap = require('./sourcemap');
+const { computeDigest, digestsMatch } = require('./digest');
 
 /**
  * @typedef {import('./types').Loader} Loader
  * @typedef {import('./sourcemap').SourceMap} SourceMap
  */
+
+/**
+ * A descriptor that could not be materialized: its bytes could not be obtained
+ * (missing file, failed fetch), failed their integrity check (digest mismatch),
+ * or could not be parsed (malformed JSON/YAML). This is categorically distinct
+ * from a descriptor that loads fine but is *wrong* (a schema violation) — the
+ * node simply does not exist to validate. Typed so the resolver can catch it
+ * selectively and turn an import that fails to load into a located diagnostic,
+ * while letting any other (unexpected) error propagate as a real fault.
+ */
+class LoadError extends Error {
+    constructor(message, options) {
+        super(message, options);
+        this.name = 'LoadError';
+    }
+}
 
 /**
  * Default transport: read `file:` URLs from disk, otherwise fetch over the
@@ -86,19 +102,27 @@ async function defaultLoad(url) {
  *
  * @param {URL} url location of the descriptor to load
  * @param {object} [opts]
- * @param {string} [opts.digest] sha256 digest to verify the loaded bytes against
+ * @param {string} [opts.digest] base64 sha256 digest to verify the loaded bytes against
  * @param {Loader} [opts.load] custom transport; defaults to {@link defaultLoad}
- * @returns {Promise<{data: object | null, sourceMap: SourceMap}>} parsed data and source map
- * @throws {Error} if loading fails, the digest does not match, or the text is malformed
+ * @returns {Promise<{data: unknown, sourceMap: SourceMap, digest: string}>} parsed
+ *   data, its source map, and the base64 sha256 of the bytes actually loaded
+ * @throws {LoadError} if loading fails, the digest does not match, or the text is malformed
  */
 async function loadDescriptor(url, { digest = null, load = defaultLoad } = {}) {
-    const raw = await load(url);
+    let raw;
+    try {
+        raw = await load(url);
+    } catch (err) {
+        // Transport failure (missing file, failed fetch): normalize whatever the
+        // loader threw so the resolver sees one recognizable load-failure type.
+        throw new LoadError(err.message, { cause: err });
+    }
 
-    if (digest) {
-        const hash = crypto.createHash('sha256').update(raw).digest('hex');
-        if (hash !== digest) {
-            throw new Error(`Digest mismatch for ${url}: expected ${digest}, got ${hash}`);
-        }
+    // Hash the loaded bytes once: to verify a supplied digest, and to report
+    // what was actually loaded regardless of whether the caller pinned it.
+    const computed = computeDigest(raw);
+    if (digest && !digestsMatch(digest, computed)) {
+        throw new LoadError(`Digest mismatch for ${url}: expected ${digest}, got ${computed}`);
     }
 
     const ext = path.extname(url.pathname).toLowerCase();
@@ -108,11 +132,15 @@ async function loadDescriptor(url, { digest = null, load = defaultLoad } = {}) {
         try {
             JSON.parse(raw);
         } catch (err) {
-            throw new Error(`Invalid JSON in ${url.pathname}: ${err.message}`);
+            throw new LoadError(`Invalid JSON in ${url.pathname}: ${err.message}`);
         }
     }
 
-    return sourcemap.parse(raw);
+    try {
+        return { ...sourcemap.parse(raw), digest: computed };
+    } catch (err) {
+        throw new LoadError(`Invalid YAML in ${url.pathname}: ${err.message}`);
+    }
 }
 
-module.exports = { defaultLoad, loadDescriptor };
+module.exports = { defaultLoad, loadDescriptor, LoadError };

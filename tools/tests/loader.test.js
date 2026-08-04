@@ -34,7 +34,7 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const yaml = require('yaml');
 
-const { defaultLoad, loadDescriptor } = require('../src/loader');
+const { defaultLoad, loadDescriptor, LoadError } = require('../src/loader');
 
 describe('loader', () => {
     let fetchSpy;
@@ -78,21 +78,36 @@ describe('loader', () => {
         await expect(defaultLoad(missingFile)).rejects.toThrow('Cannot open file');
     });
 
+    test('loadDescriptor returns the base64 sha256 of the bytes it loaded', async () => {
+        // the digest is reported for every load, pinned or not, as provenance
+        const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
+        const raw = await fs.readFile(fixturePath, 'utf8');
+        const expected = crypto.createHash('sha256').update(raw).digest('base64');
+
+        const { digest } = await loadDescriptor(pathToFileURL(fixturePath));
+
+        expect(digest).toBe(expected);
+    });
+
     test('loadDescriptor enforces SHA-256 digest when provided', async () => {
         // path to the good example
         const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
         const fixtureUrl = pathToFileURL(fixturePath);
         const raw = await fs.readFile(fixturePath, 'utf8');
-        // compute its digest
-        const digest = crypto.createHash('sha256').update(raw).digest('hex');
+        // the digest is supplied base64, exactly as the spec and CLI carry it
+        const digest = crypto.createHash('sha256').update(raw).digest('base64');
 
         // should resolve with correct digest
         await expect(loadDescriptor(fixtureUrl, { digest })).resolves.toMatchObject({
             data: expect.any(Object)
         });
 
-        // should reject with incorrect digest
-        await expect(loadDescriptor(fixtureUrl, { digest: 'bad-digest' })).rejects.toThrow('Digest mismatch');
+        // should reject with incorrect digest — a well-formed sha256 (32 zero
+        // bytes) that is not the fixture's hash — a LoadError, like every other
+        // load-time failure, so the resolver can catch and locate it
+        const wrongDigest = Buffer.alloc(32).toString('base64');
+        await expect(loadDescriptor(fixtureUrl, { digest: wrongDigest })).rejects.toThrow(LoadError);
+        await expect(loadDescriptor(fixtureUrl, { digest: wrongDigest })).rejects.toThrow('Digest mismatch');
     });
 
     describe('loadDescriptor with inline serialized data', () => {
@@ -198,15 +213,16 @@ describe('loader', () => {
 
         test('verifies the digest against the injected loader output', async () => {
             const raw = 'name: shimmed';
-            const digest = crypto.createHash('sha256').update(raw).digest('hex');
+            const digest = crypto.createHash('sha256').update(raw).digest('base64');
             const url = new URL('memory://fixtures/device.yaml');
 
             await expect(
                 loadDescriptor(url, { load: () => Promise.resolve(raw), digest })
             ).resolves.toMatchObject({ data: { name: 'shimmed' } });
 
+            const wrongDigest = Buffer.alloc(32).toString('base64');
             await expect(
-                loadDescriptor(url, { load: () => Promise.resolve(raw), digest: 'bad-digest' })
+                loadDescriptor(url, { load: () => Promise.resolve(raw), digest: wrongDigest })
             ).rejects.toThrow('Digest mismatch');
         });
     });
@@ -218,6 +234,7 @@ describe('loader', () => {
             const url = new URL('file:///path/device.json');
             const load = () => Promise.resolve('{ "a": 1 # nope\n}');
 
+            await expect(loadDescriptor(url, { load })).rejects.toThrow(LoadError);
             await expect(loadDescriptor(url, { load })).rejects.toThrow('Invalid JSON');
         });
 
@@ -228,6 +245,25 @@ describe('loader', () => {
             await expect(loadDescriptor(url, { load })).resolves.toMatchObject({
                 data: { a: 1 }
             });
+        });
+    });
+
+    describe('load failures', () => {
+        test('recasts malformed YAML as a LoadError', async () => {
+            // a tab used for indentation is not valid YAML; the parser rejects it
+            const url = new URL('file:///path/device.yaml');
+            const load = () => Promise.resolve('a:\n\t- bad\n');
+
+            await expect(loadDescriptor(url, { load })).rejects.toThrow(LoadError);
+            await expect(loadDescriptor(url, { load })).rejects.toThrow('Invalid YAML');
+        });
+
+        test('recasts a transport failure as a LoadError, preserving its message', async () => {
+            const url = new URL('file:///path/device.yaml');
+            const load = () => Promise.reject(new Error('socket hang up'));
+
+            await expect(loadDescriptor(url, { load })).rejects.toThrow(LoadError);
+            await expect(loadDescriptor(url, { load })).rejects.toThrow('socket hang up');
         });
     });
 });

@@ -42,6 +42,13 @@ const { WARNING, ERROR } = require('./constants');
  */
 
 /**
+ * The options each check receives: the caller's {@link CheckOptions} toggles
+ * plus the schema name currently being checked. The schema name is injected by
+ * the engine per file, not supplied by the caller.
+ * @typedef {CheckOptions & { schemaName: string }} RunCheckOptions
+ */
+
+/**
  * A raw validation error, before it is resolved into a Diagnostic. Both AJV
  * errors and check findings share this shape, so it is producer-neutral. When
  * `type` is omitted the error is treated as an error-level finding.
@@ -87,7 +94,7 @@ function getChecks() {
  * checks are registered.
  *
  * @param {object} data the parsed descriptor to validate
- * @param {CheckOptions} opts the options for the checks
+ * @param {RunCheckOptions} opts the options for the checks
  * @returns {RawError[]} aggregated errors from all checks
  */
 function runChecks(data, opts) {
