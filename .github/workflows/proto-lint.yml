@@ -1,0 +1,15 @@
+name: Proto Lint
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  proto-split:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check service/message separation
+        run: bash ./check-proto-split.sh
