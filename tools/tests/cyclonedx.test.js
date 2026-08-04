@@ -31,56 +31,65 @@
 
 const crypto = require('node:crypto');
 const { toCycloneDx } = require('../src/cyclonedx');
+const pkg = require('../package.json');
 
 // The provenance carries base64 digests; the BOM records the same hash as hex.
 const b64 = (text) => crypto.createHash('sha256').update(text).digest('base64');
 const hex = (text) => crypto.createHash('sha256').update(text).digest('hex');
 
+// toCycloneDx returns a serialized JSON document; parse it back to inspect it.
+const bomOf = (result, subject) => JSON.parse(toCycloneDx(result, subject));
+
 describe('toCycloneDx', () => {
     test('renders a root-only resolution as a BOM with the root as subject and no components', () => {
-        const result = { data: {}, diagnostics: [], valid: true, imports: [], digest: b64('root') };
+        const result = { data: {}, diagnostics: [], valid: true, imports: [], dependencies: [], digest: b64('root') };
 
-        const bom = toCycloneDx(result, 'file:///models/device.example.yaml');
+        const bom = bomOf(result, 'file:///models/device.example.yaml');
 
-        expect(bom).toEqual({
-            $schema: 'http://cyclonedx.org/schema/bom-1.6.schema.json',
-            bomFormat: 'CycloneDX',
-            specVersion: '1.6',
-            version: 1,
-            metadata: {
-                component: {
-                    type: 'file',
-                    name: 'device.example.yaml',
-                    'bom-ref': 'file:///models/device.example.yaml',
-                    hashes: [{ alg: 'SHA-256', content: hex('root') }],
-                    externalReferences: [
-                        { type: 'distribution', url: 'file:///models/device.example.yaml' }
-                    ]
-                }
-            },
-            components: []
+        expect(bom.bomFormat).toBe('CycloneDX');
+        expect(bom.specVersion).toBe('1.6');
+        expect(bom.metadata.component).toEqual({
+            type: 'file',
+            name: 'device.example.yaml',
+            'bom-ref': 'file:///models/device.example.yaml',
+            hashes: [{ alg: 'SHA-256', content: hex('root') }],
+            externalReferences: [
+                { type: 'distribution', url: 'file:///models/device.example.yaml' }
+            ]
         });
+        expect(bom.components ?? []).toEqual([]);
     });
 
-    test('omits the volatile serial number and timestamp so the BOM is reproducible', () => {
-        const result = { imports: [], digest: b64('root') };
+    test('records this tool as the BOM producer', () => {
+        const result = { imports: [], dependencies: [], digest: b64('root') };
 
-        const bom = toCycloneDx(result, new URL('file:///models/device.yaml'));
+        const bom = bomOf(result, 'file:///models/device.yaml');
 
-        expect(bom).not.toHaveProperty('serialNumber');
-        expect(bom.metadata).not.toHaveProperty('timestamp');
+        expect(bom.metadata.tools).toEqual([
+            { vendor: 'SMPTE', name: pkg.name, version: pkg.version }
+        ]);
+    });
+
+    test('carries a urn:uuid serial number and a timestamp', () => {
+        const result = { imports: [], dependencies: [], digest: b64('root') };
+
+        const bom = bomOf(result, new URL('file:///models/device.yaml'));
+
+        expect(bom.serialNumber).toMatch(/^urn:uuid:[0-9a-f-]{36}$/);
+        expect(Number.isNaN(Date.parse(bom.metadata.timestamp))).toBe(false);
     });
 
     test('renders each inlined file as a component identified by its content hash', () => {
         const result = {
             imports: [
-                { url: 'file:///models/param.on_off.yaml', digest: b64('onoff') },
-                { url: 'file:///models/param.shared.yaml', digest: b64('shared') }
+                { url: 'file:///models/param.on_off.yaml', digest: b64('onoff'), dependencies: [] },
+                { url: 'file:///models/param.shared.yaml', digest: b64('shared'), dependencies: [] }
             ],
+            dependencies: [],
             digest: b64('root')
         };
 
-        const bom = toCycloneDx(result, 'file:///models/device.yaml');
+        const bom = bomOf(result, 'file:///models/device.yaml');
 
         expect(bom.components).toEqual([
             {
@@ -101,6 +110,28 @@ describe('toCycloneDx', () => {
                     { type: 'distribution', url: 'file:///models/param.shared.yaml' }
                 ]
             }
+        ]);
+    });
+
+    test('emits a dependency graph, with a diamond target referenced once', () => {
+        // device -> a, b ; a -> shared ; b -> shared ; shared -> (none)
+        const result = {
+            imports: [
+                { url: 'file:///models/a.yaml', digest: b64('a'), dependencies: ['file:///models/shared.yaml'] },
+                { url: 'file:///models/shared.yaml', digest: b64('shared'), dependencies: [] },
+                { url: 'file:///models/b.yaml', digest: b64('b'), dependencies: ['file:///models/shared.yaml'] }
+            ],
+            dependencies: ['file:///models/a.yaml', 'file:///models/b.yaml'],
+            digest: b64('root')
+        };
+
+        const bom = bomOf(result, 'file:///models/device.yaml');
+
+        expect(bom.dependencies).toEqual([
+            { ref: 'file:///models/device.yaml', dependsOn: ['file:///models/a.yaml', 'file:///models/b.yaml'] },
+            { ref: 'file:///models/a.yaml', dependsOn: ['file:///models/shared.yaml'] },
+            { ref: 'file:///models/shared.yaml' },
+            { ref: 'file:///models/b.yaml', dependsOn: ['file:///models/shared.yaml'] }
         ]);
     });
 });

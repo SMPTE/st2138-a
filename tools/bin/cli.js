@@ -141,7 +141,7 @@ program
         // The SBOM is orthogonal to the descriptor output: a machine artifact
         // with only one useful home, a file, so it never touches stdout.
         if (options.sbom) {
-            fs.writeFileSync(options.sbom, `${JSON.stringify(toCycloneDx(result, url), null, 2)}\n`);
+            fs.writeFileSync(options.sbom, `${toCycloneDx(result, url)}\n`);
         }
     });
 

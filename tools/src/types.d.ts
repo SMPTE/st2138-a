@@ -59,6 +59,8 @@ export interface ImportRecord {
     url: string;
     /** base64-encoded sha256 of the bytes actually loaded for this import */
     digest: string;
+    /** resolved URLs this file imports directly — its edges in the dependency graph */
+    dependencies: string[];
 }
 
 /** Result of resolving a descriptor's `import` directives into a single tree. */
@@ -71,6 +73,8 @@ export interface ResolutionResult {
     valid: boolean;
     /** every file inlined during resolution, deduped by URL */
     imports: ImportRecord[];
+    /** resolved URLs the root descriptor imports directly — its graph edges */
+    dependencies: string[];
     /** base64-encoded sha256 of the bytes loaded for the root descriptor */
     digest: string;
 }
@@ -152,8 +156,8 @@ export function digest(
     options?: DigestOptions,
 ): Promise<string>;
 
-/** Render a resolution result's provenance as a CycloneDX 1.6 BOM document. */
-export function toCycloneDx(result: ResolutionResult, subject: string | URL): object;
+/** Render a resolution result's provenance as a serialized CycloneDX 1.6 JSON BOM. */
+export function toCycloneDx(result: ResolutionResult, subject: string | URL): string;
 
 /** Format a single diagnostic as a human-readable line. */
 export function formatDiagnostic(diagnostic: Diagnostic): string;

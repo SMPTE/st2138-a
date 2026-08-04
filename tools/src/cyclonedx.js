@@ -34,54 +34,83 @@
 'use strict';
 
 const path = require('node:path');
+const { randomUUID } = require('node:crypto');
+const { Models, Enums, Spec, Serialize } = require('@cyclonedx/cyclonedx-library');
 const { decodeDigest } = require('./digest');
+const pkg = require('../package.json');
 
 /**
  * @typedef {import('./types').ResolutionResult} ResolutionResult
  */
 
-const SPEC_VERSION = '1.6';
-const SCHEMA_URL = 'http://cyclonedx.org/schema/bom-1.6.schema.json';
+const SHA256 = Enums.HashAlgorithm['SHA-256'];
 
 /**
- * A CycloneDX component describing one loaded descriptor file. The sha256 is the
+ * Build a CycloneDX component for one loaded descriptor file. The sha256 is the
  * durable identity — a `file:///` URL is only a local source hint that means
  * nothing once the BOM outlives the files — so it lands in `hashes` (as the hex
- * CycloneDX expects) while the URL is recorded as an external reference.
+ * CycloneDX expects) while the URL is recorded as an external reference. The
+ * resolved URL doubles as the `bom-ref`, giving the dependency graph readable
+ * edges.
  *
  * @param {string} href resolved URL the file was loaded from
  * @param {string} digest base64 sha256 of the file's loaded bytes
- * @returns {object} a CycloneDX component
+ * @returns {Models.Component} a CycloneDX component
  */
 function component(href, digest) {
-    return {
-        type: 'file',
-        name: path.basename(new URL(href).pathname),
-        'bom-ref': href,
-        hashes: [{ alg: 'SHA-256', content: decodeDigest(digest).toString('hex') }],
-        externalReferences: [{ type: 'distribution', url: href }],
-    };
+    const name = path.basename(new URL(href).pathname);
+    const comp = new Models.Component(Enums.ComponentType.File, name, { bomRef: href });
+    comp.hashes.set(SHA256, decodeDigest(digest).toString('hex'));
+    comp.externalReferences.add(new Models.ExternalReference(href, Enums.ExternalReferenceType.Distribution));
+    return comp;
 }
 
 /**
  * Render a resolution's provenance as a CycloneDX 1.6 BOM: the root descriptor
- * is the BOM's subject and every inlined file is a component. Output is
- * deterministic — no serial number, no timestamp — so it is reproducible and
- * diffable. Call only on a successful resolution, whose digests are then known.
+ * is the BOM's subject, every inlined file is a component, and each file's
+ * direct imports become dependency-graph edges. The BOM carries a random serial
+ * number and a timestamp, and records this tool as its producer. Call only on a
+ * successful resolution, whose digests are then known.
  *
  * @param {ResolutionResult} result a valid resolution result
  * @param {string|URL} subject the root descriptor this BOM describes
- * @returns {object} a CycloneDX 1.6 BOM document
+ * @returns {string} a serialized CycloneDX 1.6 JSON BOM document
  */
 function toCycloneDx(result, subject) {
-    return {
-        $schema: SCHEMA_URL,
-        bomFormat: 'CycloneDX',
-        specVersion: SPEC_VERSION,
-        version: 1,
-        metadata: { component: component(new URL(subject).href, result.digest) },
-        components: result.imports.map((record) => component(record.url, record.digest)),
+    const rootHref = new URL(subject).href;
+    const root = component(rootHref, result.digest);
+
+    // Index every file's component by URL so edges can reference them by bom-ref.
+    const byUrl = new Map([[rootHref, root]]);
+    const components = result.imports.map((record) => {
+        const comp = component(record.url, record.digest);
+        byUrl.set(record.url, comp);
+        return comp;
+    });
+
+    // Wire the graph: each file depends on the files it imports directly. Every
+    // dependency URL is itself an inlined file, so it always has a component.
+    const link = (comp, dependencies) => {
+        for (const url of dependencies) {
+            comp.dependencies.add(byUrl.get(url).bomRef);
+        }
     };
+    link(root, result.dependencies);
+    for (const record of result.imports) {
+        link(byUrl.get(record.url), record.dependencies);
+    }
+
+    const metadata = new Models.Metadata({ component: root, timestamp: new Date() });
+    metadata.tools.tools.add(new Models.Tool({ vendor: 'SMPTE', name: pkg.name, version: pkg.version }));
+
+    const bom = new Models.Bom({ metadata });
+    bom.serialNumber = `urn:uuid:${randomUUID()}`;
+    for (const comp of components) {
+        bom.components.add(comp);
+    }
+
+    const serializer = new Serialize.JsonSerializer(new Serialize.JSON.Normalize.Factory(Spec.Spec1dot6));
+    return serializer.serialize(bom, { space: 2 });
 }
 
 module.exports = { toCycloneDx };

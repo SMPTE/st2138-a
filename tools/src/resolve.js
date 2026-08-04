@@ -54,10 +54,11 @@
  * file, and that subtree stops, so one unreachable import does not abort the
  * whole resolution.
  *
- * Every file actually inlined is recorded as provenance — its resolved URL and
- * the sha256 of the bytes actually loaded — and returned as a list deduped by
- * URL, so a file reached along two branches counts once. This is the raw
- * material for a later SBOM.
+ * Every file actually inlined is recorded as provenance — its resolved URL, the
+ * sha256 of the bytes actually loaded, and the URLs it imports directly — and
+ * returned as a list deduped by URL, so a file reached along two branches counts
+ * once while its edges are preserved. This is the raw material for a later SBOM
+ * and its dependency graph.
  */
 
 'use strict';
@@ -96,6 +97,8 @@ const { ERROR } = require('./checks/constants');
  * @property {boolean} valid whether every as-authored validation passed
  * @property {boolean} imported whether any import directive was inlined
  * @property {ImportRecord[]} imports every file inlined in this subtree, in DFS order
+ * @property {string[]} directImports resolved URLs the current file imports directly,
+ *   its own edges in the dependency graph (reset at each file boundary)
  * @property {string} [digest] base64 sha256 of this file's loaded bytes; set only by resolveFile
  */
 
@@ -133,7 +136,7 @@ function dedupeImports(imports) {
  */
 function importFailure(sourceMap, pointer, message) {
     const diagnostic = { level: ERROR, message, instancePath: pointer, lines: sourceMap.linesFor(pointer) };
-    return { data: {}, diagnostics: [diagnostic], valid: false, imported: true, imports: [] };
+    return { data: {}, diagnostics: [diagnostic], valid: false, imported: true, imports: [], directImports: [] };
 }
 
 /**
@@ -177,6 +180,7 @@ async function resolveChildren(node, source, deps, fields, pointer) {
     const result = { ...node };
     const diagnostics = [];
     const imports = [];
+    const directImports = [];
     let valid = true;
     let imported = false;
 
@@ -191,13 +195,14 @@ async function resolveChildren(node, source, deps, fields, pointer) {
             map[key] = child.data;
             diagnostics.push(...child.diagnostics);
             imports.push(...child.imports);
+            directImports.push(...child.directImports);
             valid = valid && child.valid;
             imported = imported || child.imported;
         }
         result[field] = map;
     }
 
-    return { data: result, diagnostics, valid, imported, imports };
+    return { data: result, diagnostics, valid, imported, imports, directImports };
 }
 
 /**
@@ -257,15 +262,17 @@ async function resolveNode(node, source, deps, fields, pointer) {
     const overrides = await resolveChildren(local, source, deps, NESTED_FIELDS, pointer);
 
     // This import, then the files it pulled in, then those the overrides pull in.
-    // The digest is the hash of what was actually loaded, from the imported file.
-    const record = { url: importUrl.href, digest: imported.digest };
+    // The digest is the hash of what was actually loaded, from the imported file;
+    // the record's dependencies are the files that imported file itself imports.
+    const record = { url: importUrl.href, digest: imported.digest, dependencies: imported.directImports };
 
     return {
         data: mergeImported(imported.data, overrides.data),
         diagnostics: [...imported.diagnostics, ...overrides.diagnostics],
         valid: imported.valid && overrides.valid,
         imported: true,
-        imports: [record, ...imported.imports, ...overrides.imports]
+        imports: [record, ...imported.imports, ...overrides.imports],
+        directImports: [importUrl.href, ...overrides.directImports]
     };
 }
 
@@ -295,7 +302,7 @@ async function resolveFile(url, deps, digest, ancestors = []) {
     if (!before.valid) {
         // Hand back the validation result's data ({} on failure), never the raw
         // parse, so an invalid fragment splices nothing unvalidated into a merge.
-        return { data: before.data, diagnostics: before.diagnostics, valid: false, imported: false, imports: [], digest: loadedDigest };
+        return { data: before.data, diagnostics: before.diagnostics, valid: false, imported: false, imports: [], directImports: [], digest: loadedDigest };
     }
     // Past the gate `before.data` is the validated model — a plain object, not
     // the scalar/array/null a well-formed file could still parse to — so descend
@@ -309,6 +316,7 @@ async function resolveFile(url, deps, digest, ancestors = []) {
         valid: resolved.valid,
         imported: resolved.imported,
         imports: resolved.imports,
+        directImports: resolved.directImports,
         digest: loadedDigest
     };
 }
@@ -335,9 +343,11 @@ async function resolve(url, { validate, load, digest = null }) {
     const deps = { validate, load };
     const resolved = await resolveFile(url, deps, digest);
     const imports = dedupeImports(resolved.imports);
+    // The root's own edges in the dependency graph: the files it imports directly.
+    const dependencies = resolved.directImports;
 
     if (!resolved.imported || !resolved.valid) {
-        return { data: resolved.data, diagnostics: resolved.diagnostics, valid: resolved.valid, imports, digest: resolved.digest };
+        return { data: resolved.data, diagnostics: resolved.diagnostics, valid: resolved.valid, imports, dependencies, digest: resolved.digest };
     }
 
     const after = validate(schemaNameFromUrl(url), resolved.data, emptySourceMap);
@@ -348,6 +358,7 @@ async function resolve(url, { validate, load, digest = null }) {
         diagnostics: [...resolved.diagnostics, ...after.diagnostics],
         valid: after.valid,
         imports,
+        dependencies,
         digest: resolved.digest
     };
 }

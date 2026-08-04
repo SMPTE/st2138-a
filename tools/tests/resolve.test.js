@@ -108,6 +108,8 @@ describe('resolve', () => {
         expect(result.data).toEqual({ type: 'INT32', value: { int32_value: 7 } });
         // no import was inlined, so there is no provenance to record
         expect(result.imports).toEqual([]);
+        // and the root has no dependency-graph edges
+        expect(result.dependencies).toEqual([]);
         // schema derived from filename, and a real source map (resolves lines)
         expect(validate).toHaveBeenCalledTimes(1);
         expect(callArgs(validate, 0).schemaName).toBe('param');
@@ -156,8 +158,10 @@ describe('resolve', () => {
         // the inlined file is recorded as provenance; the digest is the sha256
         // of the bytes actually loaded, computed even when the import is unpinned
         expect(result.imports).toEqual([
-            { url: 'file:///models/param.target.yaml', digest: crypto.createHash('sha256').update(target).digest('base64') }
+            { url: 'file:///models/param.target.yaml', digest: crypto.createHash('sha256').update(target).digest('base64'), dependencies: [] }
         ]);
+        // the root imports the target directly: one dependency-graph edge
+        expect(result.dependencies).toEqual(['file:///models/param.target.yaml']);
 
         // three passes: the root as authored (its import stub is a valid param,
         // real lines), the imported file on its own (real lines), then the
@@ -261,7 +265,7 @@ describe('resolve', () => {
         // provenance carries the digest computed over the bytes loaded, which here
         // matches the declared one exactly
         expect(result.imports).toEqual([
-            { url: 'file:///models/param.target.yaml', digest }
+            { url: 'file:///models/param.target.yaml', digest, dependencies: [] }
         ]);
         // the result also reports the root file's own computed digest
         expect(result.digest).toBe(crypto.createHash('sha256').update(rootText).digest('base64'));
@@ -341,6 +345,8 @@ describe('resolve', () => {
         expect(diag.lines).toEqual({ start: 5, end: 6 });
         // a file that could not be materialized contributes no provenance
         expect(result.imports).toEqual([]);
+        // and no dependency-graph edge, since nothing was inlined
+        expect(result.dependencies).toEqual([]);
     });
 
     test('a malformed import digest propagates rather than being recast as a load failure', async () => {
@@ -433,7 +439,13 @@ describe('resolve', () => {
         });
         // the shared file is reached along both branches but recorded once
         expect(result.imports).toEqual([
-            { url: 'file:///models/param.shared.yaml', digest: crypto.createHash('sha256').update(shared).digest('base64') }
+            { url: 'file:///models/param.shared.yaml', digest: crypto.createHash('sha256').update(shared).digest('base64'), dependencies: [] }
+        ]);
+        // both branches import shared directly, so the root has an edge to it per
+        // branch; the SBOM collapses these into one dependency
+        expect(result.dependencies).toEqual([
+            'file:///models/param.shared.yaml',
+            'file:///models/param.shared.yaml'
         ]);
     });
 
@@ -526,11 +538,14 @@ describe('resolve', () => {
         expect(result.data).not.toHaveProperty('import');
 
         // provenance lists every inlined file in DFS order: b (imported by a),
-        // then c (imported by b); a itself is the root, never an import
+        // then c (imported by b); a itself is the root, never an import. Each
+        // record carries its own direct edges: b imports c, c imports nothing.
         expect(result.imports).toEqual([
-            { url: 'file:///models/param.b.yaml', digest: crypto.createHash('sha256').update(bText).digest('base64') },
-            { url: 'file:///models/param.c.yaml', digest: crypto.createHash('sha256').update(cText).digest('base64') }
+            { url: 'file:///models/param.b.yaml', digest: crypto.createHash('sha256').update(bText).digest('base64'), dependencies: ['file:///models/param.c.yaml'] },
+            { url: 'file:///models/param.c.yaml', digest: crypto.createHash('sha256').update(cText).digest('base64'), dependencies: [] }
         ]);
+        // the root imports only b directly
+        expect(result.dependencies).toEqual(['file:///models/param.b.yaml']);
 
         // each of the three files validated as authored, then the merged tree
         expect(validate).toHaveBeenCalledTimes(4);
