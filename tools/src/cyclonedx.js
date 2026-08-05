@@ -113,6 +113,8 @@ function toCycloneDx(result, subject, options = {}) {
 
     const metadata = new Models.Metadata({ component: root, timestamp: new Date() });
     metadata.tools.tools.add(new Models.Tool({ vendor: 'SMPTE', name: pkg.name, version: pkg.version }));
+    // The SBOM is built from source descriptors, before any product build.
+    metadata.lifecycles.add(Enums.LifecyclePhase.PreBuild);
     // The SBOM Author is required; mark it explicitly Unknown rather than omit.
     const authorName = options.author?.name || 'Unknown';
     metadata.authors.add(new Models.OrganizationalContact({ name: authorName, email: options.author?.email }));

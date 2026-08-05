@@ -70,6 +70,14 @@ describe('toCycloneDx', () => {
         ]);
     });
 
+    test('records the pre-build lifecycle phase', () => {
+        const result = { imports: [], dependencies: [], digest: b64('root') };
+
+        const bom = bomOf(result, 'file:///models/device.yaml');
+
+        expect(bom.metadata.lifecycles).toEqual([{ phase: 'pre-build' }]);
+    });
+
     test('records a supplied author as the entity that generated the SBOM', () => {
         const result = { imports: [], dependencies: [], digest: b64('root') };
 
