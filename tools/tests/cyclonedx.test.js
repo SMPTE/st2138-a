@@ -38,6 +38,8 @@ const b64 = (text) => crypto.createHash('sha256').update(text).digest('base64');
 const hex = (text) => crypto.createHash('sha256').update(text).digest('hex');
 // A component's bom-ref is its name plus the content hash, not its path.
 const ref = (name, text) => `${name}@sha256:${hex(text)}`;
+// With no pipeline defaults, a component's provenance is explicitly Unknown.
+const UNKNOWN = { supplier: { name: 'Unknown' }, version: 'Unknown', licenses: [{ license: { name: 'NOASSERTION' } }] };
 
 // toCycloneDx returns a serialized JSON document; parse it back to inspect it.
 const bomOf = (result, subject, options) => JSON.parse(toCycloneDx(result, subject, options));
@@ -55,7 +57,8 @@ describe('toCycloneDx', () => {
             type: 'file',
             name: 'device.example.yaml',
             'bom-ref': ref('device.example.yaml', 'root'),
-            hashes: [{ alg: 'SHA-256', content: hex('root') }]
+            hashes: [{ alg: 'SHA-256', content: hex('root') }],
+            ...UNKNOWN
         });
         expect(bom.components ?? []).toEqual([]);
     });
@@ -124,13 +127,15 @@ describe('toCycloneDx', () => {
                 type: 'file',
                 name: 'param.on_off.yaml',
                 'bom-ref': ref('param.on_off.yaml', 'onoff'),
-                hashes: [{ alg: 'SHA-256', content: hex('onoff') }]
+                hashes: [{ alg: 'SHA-256', content: hex('onoff') }],
+                ...UNKNOWN
             },
             {
                 type: 'file',
                 name: 'param.shared.yaml',
                 'bom-ref': ref('param.shared.yaml', 'shared'),
-                hashes: [{ alg: 'SHA-256', content: hex('shared') }]
+                hashes: [{ alg: 'SHA-256', content: hex('shared') }],
+                ...UNKNOWN
             }
         ]);
     });
@@ -154,6 +159,31 @@ describe('toCycloneDx', () => {
             { url: 'https://models.example.com/param.remote.yaml', type: 'distribution' }
         ]);
         expect(local).not.toHaveProperty('externalReferences');
+    });
+
+    test('applies pipeline provenance defaults to local files, leaving remote imports Unknown', () => {
+        // local files share this repo's origin, so they inherit the defaults;
+        // a remote import cannot be spoken for and stays explicitly Unknown
+        const result = {
+            imports: [
+                { url: 'https://models.example.com/param.remote.yaml', digest: b64('remote'), dependencies: [] },
+                { url: 'file:///models/param.local.yaml', digest: b64('local'), dependencies: [] }
+            ],
+            dependencies: [],
+            digest: b64('root')
+        };
+
+        const bom = bomOf(result, 'file:///models/device.yaml', {
+            localProvenance: { producer: 'SMPTE', license: 'BSD-3-Clause', version: '1.2.0' }
+        });
+        const [remote, local] = bom.components;
+
+        expect(local.supplier).toEqual({ name: 'SMPTE' });
+        expect(local.version).toBe('1.2.0');
+        expect(local.licenses).toEqual([{ license: { name: 'BSD-3-Clause' } }]);
+        expect(remote.supplier).toEqual({ name: 'Unknown' });
+        expect(remote.version).toBe('Unknown');
+        expect(remote.licenses).toEqual([{ license: { name: 'NOASSERTION' } }]);
     });
 
     test('emits a dependency graph, with a diamond target referenced once', () => {

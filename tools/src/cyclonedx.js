@@ -56,19 +56,37 @@ const SHA256 = Enums.HashAlgorithm['SHA-256'];
  * point, whereas a `file:` path is machine-specific and would leak a home
  * directory while resolving nowhere off the authoring machine.
  *
+ * Producer, license, and version are self-assertions about the file. Local files
+ * inherit the pipeline's env-supplied defaults, since they share this repo's
+ * origin; a remote file cannot be spoken for here. Anything unset is recorded as
+ * an explicit `Unknown` / `NOASSERTION` rather than omitted, per CISA guidance.
+ *
  * @param {string} href resolved URL the file was loaded from
  * @param {string} digest base64 sha256 of the file's loaded bytes
+ * @param {{ producer?: string, license?: string, version?: string }} [localProvenance]
+ *   provenance defaults applied only to local (`file:`) components
  * @returns {Models.Component} a CycloneDX component
  */
-function component(href, digest) {
+function component(href, digest, localProvenance = {}) {
     const url = new URL(href);
     const name = path.basename(url.pathname);
     const hex = decodeDigest(digest).toString('hex');
     const comp = new Models.Component(Enums.ComponentType.File, name, { bomRef: `${name}@sha256:${hex}` });
     comp.hashes.set(SHA256, hex);
-    if (isRemote(url)) {
+    const remote = isRemote(url);
+    if (remote) {
         comp.externalReferences.add(new Models.ExternalReference(href, Enums.ExternalReferenceType.Distribution));
     }
+
+    // TODO: read producer/license/version from descriptor-declared provenance,
+    // which should override these defaults once descriptors carry it.
+    const provenance = remote ? {} : localProvenance;
+    comp.supplier = new Models.OrganizationalEntity({ name: provenance.producer || 'Unknown' });
+    comp.version = provenance.version || 'Unknown';
+    comp.licenses.add(provenance.license
+        ? new Models.NamedLicense(provenance.license)
+        : new Models.NamedLicense('NOASSERTION'));
+
     return comp;
 }
 
@@ -79,8 +97,10 @@ function component(href, digest) {
  * number and a timestamp, and records this tool as its producer. The author
  * names the entity that generated the SBOM; when none is supplied it is recorded
  * as an explicit "Unknown" rather than omitted, since the SBOM Author is a
- * required element. Call only on a successful resolution, whose digests are then
- * known.
+ * required element. Component producer/license/version come from the caller's
+ * local defaults (applied to `file:` components only); anything unset is likewise
+ * an explicit "Unknown"/"NOASSERTION". Call only on a successful resolution,
+ * whose digests are then known.
  *
  * @param {ResolutionResult} result a valid resolution result
  * @param {string|URL} subject the root descriptor this BOM describes
@@ -88,13 +108,14 @@ function component(href, digest) {
  * @returns {string} a serialized CycloneDX 1.6 JSON BOM document
  */
 function toCycloneDx(result, subject, options = {}) {
+    const localProvenance = options.localProvenance || {};
     const rootHref = new URL(subject).href;
-    const root = component(rootHref, result.digest);
+    const root = component(rootHref, result.digest, localProvenance);
 
     // Index every file's component by URL so edges can reference them by bom-ref.
     const byUrl = new Map([[rootHref, root]]);
     const components = result.imports.map((record) => {
-        const comp = component(record.url, record.digest);
+        const comp = component(record.url, record.digest, localProvenance);
         byUrl.set(record.url, comp);
         return comp;
     });

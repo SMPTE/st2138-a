@@ -113,14 +113,18 @@ program
     .option('--disable-mandatory-enforcement', 'skip mandatory product parameter checks')
     .addHelpText('after', '\n' +
         'Environment variables:\n' +
-        '  ST2138_SBOM_AUTHOR        full name of the entity generating the SBOM,\n' +
-        '                            e.g. "Acme Corporation"\n' +
+        '  ST2138_SBOM_AUTHOR        full name of the entity generating the SBOM\n' +
         '  ST2138_SBOM_AUTHOR_EMAIL  optional contact email for that entity\n' +
+        '  ST2138_SBOM_PRODUCER      producer of the local descriptor files\n' +
+        '  ST2138_SBOM_LICENSE       SPDX license of the local files, e.g. "BSD-3-Clause"\n' +
+        '  ST2138_SBOM_VERSION       version of the local files, e.g. "1.2.0"\n' +
         '\n' +
         'The SBOM author (per the 2026 "Minimum Elements for a Software Bill of\n' +
         'Materials (SBOM)") is a constant of the publishing pipeline, not a\n' +
         'per-run flag. When unset, it is recorded as "Unknown" and a warning is\n' +
-        'printed to stderr.')
+        'printed to stderr. The producer/license/version apply only to local\n' +
+        'files (remote imports cannot be spoken for); each is recorded as an\n' +
+        'explicit "Unknown"/"NOASSERTION" when unset.')
     .action(async (file, options) => {
         const format = outputFormat(options);
         const url = toUrl(file);
@@ -162,6 +166,13 @@ program
             const sbomOptions = name
                 ? { author: { name, email: process.env.ST2138_SBOM_AUTHOR_EMAIL || undefined } }
                 : {};
+            // Producer/license/version describe the local files, which share
+            // this repo's origin; remote imports are left explicitly Unknown.
+            sbomOptions.localProvenance = {
+                producer: process.env.ST2138_SBOM_PRODUCER || undefined,
+                license: process.env.ST2138_SBOM_LICENSE || undefined,
+                version: process.env.ST2138_SBOM_VERSION || undefined
+            };
             fs.writeFileSync(options.sbom, `${toCycloneDx(result, url, sbomOptions)}\n`);
         }
     });

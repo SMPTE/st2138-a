@@ -46,14 +46,14 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
 
 | Element | Status | Where / Evidence |
 | --- | --- | --- |
-| Component Producer | ⬜ | not emitted |
+| Component Producer | 🚧 | `component.supplier` (local default / `Unknown`; remote provenance TODO) |
 | Component Dependency Relationship | ✅ | `dependencies[]` |
 | Component Hash Value | ✅ | `components[].hashes[].content` |
 | Component Hash Algorithm | ✅ | `components[].hashes[].alg` |
 | Component Identifiers | 🚧 | `bom-ref` content hash; no CPE/PURL |
-| Component License | ⬜ | not emitted |
+| Component License | 🚧 | `component.licenses` (local default / `NOASSERTION`; remote provenance TODO) |
 | Component Name | ✅ | `components[].name` |
-| Component Version | ⬜ | not emitted |
+| Component Version | 🚧 | `component.version` (local default / `Unknown`; remote provenance TODO) |
 
 ### Practices and Processes
 
@@ -62,7 +62,7 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
 | Accommodation of Updates to SBOM Data | ⬜ | organizational process |
 | Coverage | ✅ | full transitive import closure |
 | Distribution and Delivery | ⬜ | organizational / pipeline |
-| Explicitly Identifying Unknown Information | 🚧 | author marked `Unknown`; other fields omitted |
+| Explicitly Identifying Unknown Information | ✅ | author + producer/license/version marked explicitly |
 | Frequency | 🚧 | fresh SBOM per run; cadence is policy |
 | Machine-Processable Data | ✅ | CycloneDX 1.6 JSON |
 
@@ -190,7 +190,7 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
 
 ## Component Data
 
-### Component Producer — ⬜ not started
+### Component Producer — 🚧 partial
 
 > The name of an entity that creates, defines, and identifies components.
 
@@ -203,8 +203,10 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
   unknown provenance.
 - This element is distinct from SBOM Author and replaces the 2021
   `Supplier Name` element.
-- **Implementation:** Not emitted. Candidate: `component.supplier` /
-  `metadata.supplier`.
+- **Implementation:** `component.supplier.name`. Local (`file:`) components take
+  `ST2138_SBOM_PRODUCER`, since they share this repo's origin; remote imports
+  cannot be spoken for. Anything unset is an explicit `Unknown`, never guessed
+  from the fetch URL. TODO: let descriptor-declared provenance override this.
 
 ### Component Dependency Relationship — ✅ implemented
 
@@ -256,7 +258,7 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
 - **Implementation:** `bom-ref` is `<name>@sha256:<hex>`, an intrinsic
   content-hash identifier. No CPE or PURL — descriptor files have neither.
 
-### Component License — ⬜ not started
+### Component License — 🚧 partial
 
 > The identifier(s) for the license(s) under which the software component is
 > available.
@@ -269,7 +271,10 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
   terms, such as a URL.
 - Include information about proprietary license conditions.
 - If the license information is not known, explicitly identify it as unknown.
-- **Implementation:** Not emitted. Candidate: `component.licenses`.
+- **Implementation:** `component.licenses`. Local components take
+  `ST2138_SBOM_LICENSE` (an SPDX id such as `BSD-3-Clause`); when unset, or for a
+  remote import, the license is an explicit `NOASSERTION`. TODO: let
+  descriptor-declared provenance override this, and emit a typed SPDX license.
 
 ### Component Name — ✅ implemented
 
@@ -282,7 +287,7 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
   component name.
 - **Implementation:** `components[].name` — the descriptor's filename.
 
-### Component Version — ⬜ not started
+### Component Version — 🚧 partial
 
 > Identifier used by the component producer to specify a change in a software
 > component from a previously identified version or to indicate that it is the
@@ -292,8 +297,9 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
   delivery.
 - If the component producer does not provide a version, explicitly state that
   the information is unknown.
-- **Implementation:** Not emitted; descriptor files carry no producer version,
-  and "unknown" is not yet stated explicitly.
+- **Implementation:** `component.version`. Local components take
+  `ST2138_SBOM_VERSION`; when unset, or for a remote import, the version is an
+  explicit `Unknown`. TODO: let descriptor-declared provenance override this.
 
 ## Practices and Processes
 
@@ -348,7 +354,7 @@ the data fields.
 - **Implementation:** Organizational / pipeline concern — the tool only writes a
   file via `--sbom`.
 
-### Explicitly Identifying Unknown Information — 🚧 partial
+### Explicitly Identifying Unknown Information — ✅ implemented
 
 > When required data is not provided, the SBOM author should explicitly state
 > whether it is unknown or intentionally withheld.
@@ -360,10 +366,11 @@ the data fields.
   security-related information.
 - An organization may consider an SBOM incomplete when essential component data
   is withheld.
-- **Implementation:** A missing SBOM author is recorded as an explicit `Unknown`
-  (with a stderr warning), not silently omitted. Other unknowns — component
-  producer, license, version — are still omitted rather than marked, so this is
-  only partially satisfied.
+- **Implementation:** No required field is silently omitted. A missing SBOM
+  author is recorded as an explicit `Unknown` (with a stderr warning); component
+  producer, version, and license likewise fall back to explicit
+  `Unknown`/`NOASSERTION` when the pipeline supplies no value and for remote
+  imports that cannot be spoken for.
 
 ### Frequency — 🚧 partial
 
@@ -396,6 +403,133 @@ the data fields.
   new software.
 - **Implementation:** Output is CycloneDX 1.6 JSON — one of the two formats named
   by the guidance.
+
+## Proposal: descriptor provenance (for team review)
+
+Three ⬜ Component Data elements — **Producer**, **License**, and **Version** —
+plus the component half of **Explicitly Identifying Unknown Information** all
+depend on the same missing capability: **descriptor files carry no provenance
+metadata**. This section sketches how to add it.
+
+> **Status:** the *pipeline-default* layer is now implemented — local components
+> inherit `ST2138_SBOM_PRODUCER` / `ST2138_SBOM_LICENSE` / `ST2138_SBOM_VERSION`,
+> and everything unset (or remote) is marked explicit `Unknown`/`NOASSERTION`.
+> What remains is reading provenance *from the descriptors themselves* (the
+> shapes below), which would then override the pipeline defaults.
+
+### Why not derive it from the fetch URL
+
+The obvious shortcut for a remote import is to reuse the URL it was fetched from
+as the producer. This does not hold up:
+
+- A URL is a *location*, not an *identity*. `smpte.github.io` conflates the host
+  (GitHub Pages) with the author (SMPTE); `raw.githubusercontent.com/SMPTE/…` is
+  a CDN delivery path, even further from an identity claim.
+- CISA's Component Producer is "the entity that creates, defines, and identifies
+  components" — an assertion only the artifact's author can make truthfully.
+  Inferring it from a host is guessing, which the Explicitly-Identifying-Unknown
+  element tells us not to do.
+- The fetch URL already has a correct home: remote components emit an
+  `externalReferences[]` entry of type `Distribution`. That is "where it came
+  from"; it should stay there and not be overloaded as producer.
+
+Conclusion: producer, license, and version are **self-assertions** and must be
+declared *in the descriptor* by whoever authored it.
+
+### Prior art: MXL `$`-prefixed metadata
+
+The [Media eXchange Layer](https://github.com/dmf-mxl/mxl) project already does
+this in its flow descriptors. For example,
+[`v210_flow.json`](https://raw.githubusercontent.com/dmf-mxl/mxl/refs/heads/main/lib/tests/data/v210_flow.json)
+carries, at the document root:
+
+```json
+{
+  "$copyright": "SPDX-FileCopyrightText: 2025 Contributors to the Media eXchange Layer project.",
+  "$license": "SPDX-License-Identifier: Apache-2.0",
+  ...
+}
+```
+
+The `$`-prefix marks keys the consuming application ignores, and the values are
+SPDX strings (`SPDX-License-Identifier`, `SPDX-FileCopyrightText`) so they are
+machine-processable. This is a clean, low-ceremony precedent from an adjacent
+media-tech project and validates putting license at the descriptor root.
+
+### Candidate shapes
+
+Each descriptor file becomes exactly one SBOM component, so the natural scope is
+the **file root** (unlike `client_hints`, which is per-param because it hints a
+single param's UI widget). Two shapes are worth weighing:
+
+**Option A — MXL-style `$`-prefixed keys**
+
+```yaml
+$copyright: "SPDX-FileCopyrightText: 2026 SMPTE"
+$license:   "SPDX-License-Identifier: BSD-3-Clause"
+$producer:  "SMPTE"
+$version:   "1.2.0"
+```
+
+- Pro: matches an existing sibling-project convention; flat and terse; the `$`
+  visually separates metadata from model content.
+- Con: `$` is JSON Schema's own vocabulary namespace (`$schema`, `$id`, `$ref`,
+  `$defs` already appear in our schemata), so `$license` reads like a schema
+  keyword; SPDX-string-in-a-string needs parsing before it maps to CycloneDX.
+
+**Option B — a single `provenance` object**
+
+```yaml
+provenance:
+  supplier: { name: "SMPTE", url: "https://www.smpte.org" }
+  version:  "1.2.0"
+  license:  "BSD-3-Clause"     # SPDX id or expression
+  copyright: "2026 SMPTE"
+```
+
+- Pro: one well-known key; fields map 1:1 onto CycloneDX component fields so the
+  renderer stays a dumb mapper; no `$` collision; naturally structured (supplier
+  name + URL) rather than packed into a string.
+- Con: a new bespoke key rather than an existing convention; slightly more
+  verbose.
+
+Either way, because the root schema is `additionalProperties: false`
+([device.yaml](../interface/schemata/device.yaml)), the chosen keys must be
+**explicitly declared in the schema** — nothing is "ignored for free." Making
+the block optional keeps every existing descriptor valid.
+
+### Mapping to CycloneDX and CISA
+
+| Descriptor field | CycloneDX | CISA element |
+| --- | --- | --- |
+| producer / supplier | `component.supplier` | Component Producer |
+| version | `component.version` | Component Version |
+| license | `component.licenses` (SPDX id/expression) | Component License |
+| copyright | `component.copyright` | (supports Producer/License context) |
+
+### Semantics to settle
+
+- **No inheritance by default.** An imported file is authored independently and
+  may carry a different license or producer than its parent; copying a parent's
+  claim downward would fabricate provenance. Each file self-declares.
+- **Missing → explicit Unknown / NOASSERTION** on that component's fields. This
+  is already how the tool behaves for the pipeline-default layer; descriptor
+  provenance would simply supply real values in place of `Unknown` where the
+  file declares them.
+- **Repo-wide defaults** (e.g. "everything here is SMPTE / BSD-3-Clause") are a
+  tooling/config concern, not model data — the same reasoning that put the SBOM
+  author in an env var rather than a per-run flag. This layer is implemented via
+  the `ST2138_SBOM_*` variables; descriptor provenance, once added, takes
+  precedence over it.
+
+### Open questions for the team
+
+1. Option A (`$`-prefixed, MXL-aligned) vs Option B (`provenance` object)?
+2. SPDX identifiers only, or also allow a license URL for non-SPDX terms?
+3. Should we adopt `$copyright`/`$license` verbatim for cross-project
+   consistency with MXL, even under Option B?
+4. Is per-file `version` meaningful for these descriptors, or should version
+   stay `Unknown` until there is a real release process?
 
 ## Source coverage
 

@@ -172,6 +172,21 @@ export interface CycloneDxOptions {
         /** optional contact email for the entity */
         email?: string;
     };
+    /**
+     * Provenance defaults applied to local (`file:`) components only, since they
+     * share this repo's origin. A remote component is never spoken for. Any field
+     * left unset is recorded as an explicit "Unknown"/"NOASSERTION" rather than
+     * omitted. These are pipeline-wide defaults; once descriptors declare their
+     * own provenance it should override them.
+     */
+    localProvenance?: {
+        /** component producer (CycloneDX `component.supplier`) */
+        producer?: string;
+        /** SPDX license id or expression (CycloneDX `component.licenses`) */
+        license?: string;
+        /** component version (CycloneDX `component.version`) */
+        version?: string;
+    };
 }
 
 /** Render a resolution result's provenance as a serialized CycloneDX 1.6 JSON BOM. */
