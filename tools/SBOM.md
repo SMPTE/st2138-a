@@ -62,7 +62,7 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
 | Accommodation of Updates to SBOM Data | ⬜ | organizational process |
 | Coverage | ✅ | full transitive import closure |
 | Distribution and Delivery | ⬜ | organizational / pipeline |
-| Explicitly Identifying Unknown Information | ⬜ | gap: omitted, not marked unknown |
+| Explicitly Identifying Unknown Information | 🚧 | author marked `Unknown`; other fields omitted |
 | Frequency | 🚧 | fresh SBOM per run; cadence is policy |
 | Machine-Processable Data | ✅ | CycloneDX 1.6 JSON |
 
@@ -82,9 +82,10 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
   - `ST2138_SBOM_AUTHOR` — full name of the entity, e.g. `Acme Corporation`
     (use full names, not acronyms, unless the official name has one).
   - `ST2138_SBOM_AUTHOR_EMAIL` — optional contact email.
-- **When unset:** the element is **omitted** (never guessed, to avoid a false
-  compliance claim) and a warning is printed to stderr. A missing author can
-  still be added downstream (e.g. with `cyclonedx-cli`).
+- **When unset:** the author is recorded as an explicit `Unknown` (never guessed
+  into a real name, never silently omitted) and a warning is printed to stderr.
+  A downstream step can overwrite `Unknown` with the real author (e.g. with
+  `cyclonedx-cli`).
 - **Not derived from git identity:** the committer is not the SBOM author, and
   scraping it would leak a person's name/email.
 
@@ -347,7 +348,7 @@ the data fields.
 - **Implementation:** Organizational / pipeline concern — the tool only writes a
   file via `--sbom`.
 
-### Explicitly Identifying Unknown Information — ⬜ not started
+### Explicitly Identifying Unknown Information — 🚧 partial
 
 > When required data is not provided, the SBOM author should explicitly state
 > whether it is unknown or intentionally withheld.
@@ -359,9 +360,10 @@ the data fields.
   security-related information.
 - An organization may consider an SBOM incomplete when essential component data
   is withheld.
-- **Implementation:** Gap — a missing author is omitted (with a stderr warning),
-  not recorded as "unknown" in the document; other unknowns are likewise omitted
-  rather than marked.
+- **Implementation:** A missing SBOM author is recorded as an explicit `Unknown`
+  (with a stderr warning), not silently omitted. Other unknowns — component
+  producer, license, version — are still omitted rather than marked, so this is
+  only partially satisfied.
 
 ### Frequency — 🚧 partial
 

@@ -119,7 +119,8 @@ program
         '\n' +
         'The SBOM author (per the 2026 "Minimum Elements for a Software Bill of\n' +
         'Materials (SBOM)") is a constant of the publishing pipeline, not a\n' +
-        'per-run flag. When unset, it is omitted and a warning is printed to stderr.')
+        'per-run flag. When unset, it is recorded as "Unknown" and a warning is\n' +
+        'printed to stderr.')
     .action(async (file, options) => {
         const format = outputFormat(options);
         const url = toUrl(file);
@@ -151,11 +152,11 @@ program
         // with only one useful home, a file, so it never touches stdout.
         if (options.sbom) {
             // The author is who generated the SBOM, which this tool cannot know;
-            // it comes from the environment, and is omitted (with a nudge) when
-            // unset rather than guessed into a false compliance claim.
+            // it comes from the environment. When unset, the renderer records it
+            // as "Unknown" (never guessed); we still nudge the operator here.
             const name = process.env.ST2138_SBOM_AUTHOR;
             if (!name) {
-                console.error('⚠️  SBOM author unset; omitting the SBOM Author element. ' +
+                console.error('⚠️  SBOM author unset; recording the SBOM author as "Unknown". ' +
                     'Set ST2138_SBOM_AUTHOR to identify the entity generating this SBOM.');
             }
             const sbomOptions = name

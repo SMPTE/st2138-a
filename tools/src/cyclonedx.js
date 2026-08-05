@@ -76,10 +76,11 @@ function component(href, digest) {
  * Render a resolution's provenance as a CycloneDX 1.6 BOM: the root descriptor
  * is the BOM's subject, every inlined file is a component, and each file's
  * direct imports become dependency-graph edges. The BOM carries a random serial
- * number and a timestamp, and records this tool as its producer. A supplied
- * author names the entity that generated the SBOM; it is omitted when unknown
- * rather than guessed. Call only on a successful resolution, whose digests are
- * then known.
+ * number and a timestamp, and records this tool as its producer. The author
+ * names the entity that generated the SBOM; when none is supplied it is recorded
+ * as an explicit "Unknown" rather than omitted, since the SBOM Author is a
+ * required element. Call only on a successful resolution, whose digests are then
+ * known.
  *
  * @param {ResolutionResult} result a valid resolution result
  * @param {string|URL} subject the root descriptor this BOM describes
@@ -112,9 +113,9 @@ function toCycloneDx(result, subject, options = {}) {
 
     const metadata = new Models.Metadata({ component: root, timestamp: new Date() });
     metadata.tools.tools.add(new Models.Tool({ vendor: 'SMPTE', name: pkg.name, version: pkg.version }));
-    if (options.author?.name) {
-        metadata.authors.add(new Models.OrganizationalContact({ name: options.author.name, email: options.author.email }));
-    }
+    // The SBOM Author is required; mark it explicitly Unknown rather than omit.
+    const authorName = options.author?.name || 'Unknown';
+    metadata.authors.add(new Models.OrganizationalContact({ name: authorName, email: options.author?.email }));
 
     const bom = new Models.Bom({ metadata });
     bom.serialNumber = `urn:uuid:${randomUUID()}`;

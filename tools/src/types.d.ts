@@ -161,7 +161,8 @@ export function digest(
  * Elements for a Software Bill of Materials (SBOM)": the entity that generated
  * the SBOM (whoever operated this tool), which is distinct from the tool itself
  * and from the component's producer. It is an input the tool cannot know, so the
- * caller supplies it; it is omitted from the BOM rather than guessed when absent.
+ * caller supplies it; when absent it is recorded as an explicit "Unknown" rather
+ * than omitted, since the SBOM Author is a required element.
  */
 export interface CycloneDxOptions {
     /** the entity that generated the SBOM */

@@ -82,12 +82,12 @@ describe('toCycloneDx', () => {
         ]);
     });
 
-    test('omits the author when none is supplied', () => {
+    test('records the author as Unknown when none is supplied', () => {
         const result = { imports: [], dependencies: [], digest: b64('root') };
 
         const bom = bomOf(result, 'file:///models/device.yaml');
 
-        expect(bom.metadata).not.toHaveProperty('authors');
+        expect(bom.metadata.authors).toEqual([{ name: 'Unknown' }]);
     });
 
     test('carries a urn:uuid serial number and a timestamp', () => {
