@@ -156,8 +156,25 @@ export function digest(
     options?: DigestOptions,
 ): Promise<string>;
 
+/**
+ * Options for rendering an SBOM. Carries the "SBOM Author" of the 2026 "Minimum
+ * Elements for a Software Bill of Materials (SBOM)": the entity that generated
+ * the SBOM (whoever operated this tool), which is distinct from the tool itself
+ * and from the component's producer. It is an input the tool cannot know, so the
+ * caller supplies it; it is omitted from the BOM rather than guessed when absent.
+ */
+export interface CycloneDxOptions {
+    /** the entity that generated the SBOM */
+    author?: {
+        /** the entity's full name (avoid acronyms unless the official name has one) */
+        name: string;
+        /** optional contact email for the entity */
+        email?: string;
+    };
+}
+
 /** Render a resolution result's provenance as a serialized CycloneDX 1.6 JSON BOM. */
-export function toCycloneDx(result: ResolutionResult, subject: string | URL): string;
+export function toCycloneDx(result: ResolutionResult, subject: string | URL, options?: CycloneDxOptions): string;
 
 /** Format a single diagnostic as a human-readable line. */
 export function formatDiagnostic(diagnostic: Diagnostic): string;

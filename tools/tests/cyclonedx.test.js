@@ -40,7 +40,7 @@ const hex = (text) => crypto.createHash('sha256').update(text).digest('hex');
 const ref = (name, text) => `${name}@sha256:${hex(text)}`;
 
 // toCycloneDx returns a serialized JSON document; parse it back to inspect it.
-const bomOf = (result, subject) => JSON.parse(toCycloneDx(result, subject));
+const bomOf = (result, subject, options) => JSON.parse(toCycloneDx(result, subject, options));
 
 describe('toCycloneDx', () => {
     test('renders a root-only resolution as a BOM with the root as subject and no components', () => {
@@ -68,6 +68,26 @@ describe('toCycloneDx', () => {
         expect(bom.metadata.tools).toEqual([
             { vendor: 'SMPTE', name: pkg.name, version: pkg.version }
         ]);
+    });
+
+    test('records a supplied author as the entity that generated the SBOM', () => {
+        const result = { imports: [], dependencies: [], digest: b64('root') };
+
+        const bom = bomOf(result, 'file:///models/device.yaml', {
+            author: { name: 'Acme Corporation', email: 'sbom@acme.example' }
+        });
+
+        expect(bom.metadata.authors).toEqual([
+            { name: 'Acme Corporation', email: 'sbom@acme.example' }
+        ]);
+    });
+
+    test('omits the author when none is supplied', () => {
+        const result = { imports: [], dependencies: [], digest: b64('root') };
+
+        const bom = bomOf(result, 'file:///models/device.yaml');
+
+        expect(bom.metadata).not.toHaveProperty('authors');
     });
 
     test('carries a urn:uuid serial number and a timestamp', () => {

@@ -42,6 +42,7 @@ const pkg = require('../package.json');
 
 /**
  * @typedef {import('./types').ResolutionResult} ResolutionResult
+ * @typedef {import('./types').CycloneDxOptions} CycloneDxOptions
  */
 
 const SHA256 = Enums.HashAlgorithm['SHA-256'];
@@ -75,14 +76,17 @@ function component(href, digest) {
  * Render a resolution's provenance as a CycloneDX 1.6 BOM: the root descriptor
  * is the BOM's subject, every inlined file is a component, and each file's
  * direct imports become dependency-graph edges. The BOM carries a random serial
- * number and a timestamp, and records this tool as its producer. Call only on a
- * successful resolution, whose digests are then known.
+ * number and a timestamp, and records this tool as its producer. A supplied
+ * author names the entity that generated the SBOM; it is omitted when unknown
+ * rather than guessed. Call only on a successful resolution, whose digests are
+ * then known.
  *
  * @param {ResolutionResult} result a valid resolution result
  * @param {string|URL} subject the root descriptor this BOM describes
+ * @param {CycloneDxOptions} [options] SBOM rendering options, e.g. the author
  * @returns {string} a serialized CycloneDX 1.6 JSON BOM document
  */
-function toCycloneDx(result, subject) {
+function toCycloneDx(result, subject, options = {}) {
     const rootHref = new URL(subject).href;
     const root = component(rootHref, result.digest);
 
@@ -108,6 +112,9 @@ function toCycloneDx(result, subject) {
 
     const metadata = new Models.Metadata({ component: root, timestamp: new Date() });
     metadata.tools.tools.add(new Models.Tool({ vendor: 'SMPTE', name: pkg.name, version: pkg.version }));
+    if (options.author?.name) {
+        metadata.authors.add(new Models.OrganizationalContact({ name: options.author.name, email: options.author.email }));
+    }
 
     const bom = new Models.Bom({ metadata });
     bom.serialNumber = `urn:uuid:${randomUUID()}`;

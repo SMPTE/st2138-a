@@ -111,6 +111,15 @@ program
     .option('--yaml', 'emit YAML (the default)')
     .option('--sbom <file>', 'also write a CycloneDX SBOM of the resolved files to a file')
     .option('--disable-mandatory-enforcement', 'skip mandatory product parameter checks')
+    .addHelpText('after', '\n' +
+        'Environment variables:\n' +
+        '  ST2138_SBOM_AUTHOR        full name of the entity generating the SBOM,\n' +
+        '                            e.g. "Acme Corporation"\n' +
+        '  ST2138_SBOM_AUTHOR_EMAIL  optional contact email for that entity\n' +
+        '\n' +
+        'The SBOM author (per the 2026 "Minimum Elements for a Software Bill of\n' +
+        'Materials (SBOM)") is a constant of the publishing pipeline, not a\n' +
+        'per-run flag. When unset, it is omitted and a warning is printed to stderr.')
     .action(async (file, options) => {
         const format = outputFormat(options);
         const url = toUrl(file);
@@ -141,7 +150,18 @@ program
         // The SBOM is orthogonal to the descriptor output: a machine artifact
         // with only one useful home, a file, so it never touches stdout.
         if (options.sbom) {
-            fs.writeFileSync(options.sbom, `${toCycloneDx(result, url)}\n`);
+            // The author is who generated the SBOM, which this tool cannot know;
+            // it comes from the environment, and is omitted (with a nudge) when
+            // unset rather than guessed into a false compliance claim.
+            const name = process.env.ST2138_SBOM_AUTHOR;
+            if (!name) {
+                console.error('⚠️  SBOM author unset; omitting the SBOM Author element. ' +
+                    'Set ST2138_SBOM_AUTHOR to identify the entity generating this SBOM.');
+            }
+            const sbomOptions = name
+                ? { author: { name, email: process.env.ST2138_SBOM_AUTHOR_EMAIL || undefined } }
+                : {};
+            fs.writeFileSync(options.sbom, `${toCycloneDx(result, url, sbomOptions)}\n`);
         }
     });
 
