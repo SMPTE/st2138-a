@@ -257,6 +257,15 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
 - If multiple identifiers exist, include all of them.
 - **Implementation:** `bom-ref` is `<name>@sha256:<hex>`, an intrinsic
   content-hash identifier. No CPE or PURL — descriptor files have neither.
+  - CPE and PURL are the preferred identifiers because both are standardized,
+    machine-processable **look-up keys** into vulnerability databases: CPE is
+    NIST's assigned product name in the NVD (`cpe:2.3:a:vendor:product:version:…`),
+    and PURL is a deterministic ecosystem coordinate (`pkg:npm/lodash@4.17.21`).
+  - Neither fits here: these are ST 2138 descriptors, not packages in an ecosystem
+    (no PURL coordinate — a planned reusable-descriptor library still wouldn't be a
+    registry) and not products in NIST's dictionary (no CPE). The `bom-ref` sha256
+    is an *intrinsic* identifier the element permits, but it's not a shared,
+    searchable vuln-DB key — hence 🚧 rather than ✅.
 
 ### Component License — 🚧 partial
 
