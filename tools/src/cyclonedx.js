@@ -63,11 +63,11 @@ const SHA256 = Enums.HashAlgorithm['SHA-256'];
  *
  * @param {string} href resolved URL the file was loaded from
  * @param {string} digest base64 sha256 of the file's loaded bytes
- * @param {{ producer?: string, license?: string, version?: string }} [localProvenance]
+ * @param {{ producer?: string, license?: string, version?: string }} localProvenance
  *   provenance defaults applied only to local (`file:`) components
  * @returns {Models.Component} a CycloneDX component
  */
-function component(href, digest, localProvenance = {}) {
+function component(href, digest, localProvenance) {
     const url = new URL(href);
     const name = path.basename(url.pathname);
     const hex = decodeDigest(digest).toString('hex');
