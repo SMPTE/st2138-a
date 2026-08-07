@@ -116,7 +116,7 @@ class Validator {
      * @returns {ValidationResult}
      */
     validateData(schemaName, data, sourceMap, checkOpts = {}) {
-        const isDeviceSchema = schemaName.startsWith('device');
+        const isDeviceSchema = schemaName === 'device';
         if (!isDeviceSchema && !(schemaName in schema.$defs)) {
             throw { error: 2, message: `Could not find ${schemaName} in schema definition file.` };
         }

@@ -28,7 +28,7 @@
  */
 
 const { createNestedValuesVisitor } = require('../../src/checks/nested-values');
-const { walkParams } = require('../../src/checks/walker');
+const { walkDesc } = require('../../src/checks/walker');
 const { WARNING } = require('../../src/checks/constants');
 
 // drive the nested-values visitor through the walker the same way runChecks does
@@ -36,7 +36,7 @@ function checkNestedValues(desc, opts) {
     const visitor = createNestedValuesVisitor(desc, opts);
     if (!visitor) return [];
     const warnings = [];
-    walkParams(desc, [visitor], warnings);
+    walkDesc(desc, [visitor], warnings, opts.schemaName);
     return warnings;
 }
 

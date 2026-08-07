@@ -33,7 +33,7 @@ const mandatory = require('./mandatory');
 const nestedValues = require('./nested-values');
 const scopes = require('./scopes');
 const digest = require('./digest');
-const { walkParams } = require('./walker');
+const { walkDesc } = require('./walker');
 const { WARNING, ERROR } = require('./constants');
 
 /**
@@ -116,7 +116,7 @@ function runChecks(data, opts) {
         }
     }
 
-    walkParams(data, visitors, errors);
+    walkDesc(data, visitors, errors, opts.schemaName);
 
     return errors;
 }

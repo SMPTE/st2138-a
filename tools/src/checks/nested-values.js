@@ -108,18 +108,17 @@ function createNestedValuesVisitor(desc, opts) {
             // that would justify it may not have been seen yet, so defer the
             // decision to finalize. Nested params without a value are never flagged.
             if (hasValue) {
-                candidates.push({ key, path });
+                // the fqoid is built from the raw ancestor keys (not the escaped
+                // pointer) so it matches the raw form template_oid values take
+                const fqoid = [...ctx.ancestors.map((a) => a.key), key].join('/');
+                candidates.push({ key, path, fqoid });
             }
         },
         finalize(warnings) {
             // R2: for each nested value, flag it unless some template_oid points
             // at its path
-            for (const { key, path } of candidates) {
-                // convert from source map pointer to template_oid by replacing /params/ with /
-                // and removing the leading slash
-                const template_oid = path.replaceAll('/params/', '/').substring(1);
-
-                const isReferenced = templateOids.has(template_oid);
+            for (const { key, path, fqoid } of candidates) {
+                const isReferenced = templateOids.has(fqoid);
                 if (!isReferenced) {
                     warnings.push({
                         message: `Nested value found in parameter '${key}' which is not referenced by any template_oid`,

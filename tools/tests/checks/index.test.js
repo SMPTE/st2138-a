@@ -32,6 +32,7 @@ const mandatory = require('../../src/checks/mandatory');
 const nestedValues = require('../../src/checks/nested-values');
 const scopes = require('../../src/checks/scopes');
 const digest = require('../../src/checks/digest');
+const clientHints = require('../../src/checks/client-hints');
 
 describe('getChecks', () => {
     // lock in the expected checks

@@ -98,25 +98,23 @@ function createScopesVisitor(desc, opts = {}) {
                 });
             }
         },
-        finalize(warnings) {
-            // R2: top-level commands share the param schema and carry an
-            // access_scope of their own. The walker only visits params, so
-            // commands are checked here. Command arguments (nested params) are
-            // intentionally NOT checked, as their access_scope is meaningless.
-            for (const [key, command] of Object.entries(desc.commands || {})) {
-                const scope = command.access_scope;
+        visitCmd(ctx, warnings) {
+            // only top-level commands are checked (R2); their nested arguments are param-shaped but ignored
+            if (ctx.depth > 0) return;
 
-                // no explicit access_scope on the command, nothing to check
-                if (scope === undefined || scope === null) continue;
+            const scope = ctx.param.access_scope;
 
-                const isDeclared = scopes.has(scope);
-                if (!isDeclared) {
-                    warnings.push({
-                        message: `Command '${key}' has access_scope '${scope}' which is not declared in the device's access_scopes`,
-                        instancePath: `/commands/${key}/access_scope`,
-                        type: ERROR,
-                    });
-                }
+            // a command without an explicit access_scope inherits from the device default, so there is nothing to check here
+            if (scope === undefined || scope === null) return;
+
+            // R2: explicit access_scope not declared at the device level -> ERROR
+            const isDeclared = scopes.has(scope);
+            if (!isDeclared) {
+                warnings.push({
+                    message: `Command '${ctx.key}' has access_scope '${scope}' which is not declared in the device's access_scopes`,
+                    instancePath: `${ctx.path}/access_scope`,
+                    type: ERROR,
+                });
             }
         },
     };

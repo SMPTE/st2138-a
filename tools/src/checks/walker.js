@@ -29,56 +29,129 @@
 
 'use strict';
 
+const { escapeSegment } = require('../shape');
+
 /**
  * @typedef {object} WalkContext
- * @property {object} param the parameter descriptor currently being visited
- * @property {string} key the parameter's key within its parent's param map
- * @property {string} path JSON pointer to the parameter (e.g. `/params/product/params/name`)
- * @property {object|null} parent the parent parameter descriptor, or null for top-level params
- * @property {Array<{key: string, param: object}>} ancestors ancestor params from root to parent
- * @property {number} depth 0 for top-level params, incremented for each nesting level
- * @property {object} desc the root device descriptor being walked
+ * @property {object} param the descriptor at the current OID (param-, command-,
+ *   or argument-shaped) being visited
+ * @property {string} key the OID segment: the node's key within its enclosing
+ *   map; the empty string for an artifact root (a `param`/`command` descriptor
+ *   that is itself the top-level node), which has no enclosing map
+ * @property {string} path escaped JSON pointer to the node (e.g.
+ *   `/params/product/params/name`); segments are JSON-pointer escaped, so it is
+ *   safe to use directly as an `instancePath`. The empty string at an artifact
+ *   root, so its sub-params resolve to `/params/...`
+ * @property {object|null} parent the parent node's descriptor, or null at a top-level OID
+ * @property {Array<{key: string, param: object}>} ancestors ancestor nodes from root to parent
+ * @property {number} depth 0 for a top-level OID (param/command), incremented for each nesting level
+ * @property {object} desc the root descriptor being walked
  */
 
 /**
  * @typedef {object} Visitor
- * @property {function(WalkContext, Array): void} visit called once per parameter
+ * @property {function(WalkContext, Array): void} [visit] called once per OID in
+ *   the `params` tree. A visitor that omits `visit` does not trigger a traversal
+ *   of the `params` tree.
+ * @property {function(WalkContext, Array): void} [visitCmd] called once per OID
+ *   in the `commands` tree. Commands share the param schema, so they and their
+ *   nested arguments are param-shaped; `depth` distinguishes a top-level command
+ *   (0) from its nested arguments (>= 1). A visitor that omits `visitCmd` does
+ *   not trigger a traversal of the `commands` tree.
  * @property {function(Array): void} [finalize] called once after the walk completes,
- *   for checks whose per-parameter decisions depend on state gathered across the whole tree
+ *   for checks whose per-node decisions depend on state gathered across the whole tree
  */
 
 /**
- * Walk every parameter in a device descriptor depth-first (pre-order), invoking
- * each visitor once per parameter with a shared context. This lets multiple
- * checks share a single traversal of the parameter hierarchy: each visitor
- * appends its findings to the shared `warnings` list.
+ * Walk a descriptor's OID hierarchy depth-first (pre-order), invoking each
+ * visitor once per OID-addressable node with a shared context. This lets
+ * multiple checks share a single traversal: each visitor appends its findings to
+ * the shared `warnings` list.
  *
- * After every parameter has been visited, each visitor's optional `finalize`
- * hook is called so checks that need the full tree state (for example, a set of
- * template references gathered along the way) can emit their deferred findings.
+ * What gets walked depends on the descriptor's schema kind, so the traversal
+ * matches how a node may legally nest rather than assuming a device shape:
+ *
+ * - `device` — not itself a param. Its top-level `params` map is walked via
+ *   `visit` and its separate `commands` map via `visitCmd`, each rooted under
+ *   its own pointer (`/params/<key>`, `/commands/<key>`).
+ * - `param` — the descriptor IS a param-shaped root. The root node itself is
+ *   visited via `visit` (pointer ``), then its `params` are walked as sub-nodes.
+ * - `command` — like `param`, but the root and its nested arguments are visited
+ *   via `visitCmd`.
+ * - anything else — not covered at this time (only `finalize` still runs).
+ *
+ * Commands are param-shaped but reached only by visitors that declare a
+ * `visitCmd` callback; visitors without one leave the commands tree (and a
+ * `command` root) untouched.
+ *
+ * After every OID has been visited, each visitor's optional `finalize` hook is
+ * called so checks that need the full tree state (for example, a set of template
+ * references gathered along the way) can emit their deferred findings.
  * `finalize` always runs (given a descriptor and at least one visitor), even
  * when the descriptor has no params, so params-less checks are not skipped.
  *
- * @param {object} desc the root device descriptor (with a `params` map)
- * @param {Array<Visitor>} visitors the visitors to invoke for each parameter
+ * @param {object} desc the root descriptor to walk
+ * @param {Array<Visitor>} visitors the visitors to invoke at each OID
  * @param {Array<{message: string, instancePath: string, type?: string}>} warnings
  *   the shared list that visitors append their findings to
+ * @param {string} [schemaName] the descriptor's schema kind (`device`, `param`,
+ *   `command`, ...); selects which children are walked. Defaults to `device`.
  * @returns {void}
  */
-function walkParams(desc, visitors, warnings) {
+function walkDesc(desc, visitors, warnings, schemaName = 'device') {
     if (!desc || visitors.length === 0) return;
 
-    for (const [key, param] of Object.entries(desc.params || {})) {
-        walkParam(param, {
-            param,
-            key,
-            path: `/params/${key}`,
-            parent: null,
-            ancestors: [],
-            depth: 0,
-            desc,
-        }, visitors, warnings);
+    const paramVisitors = visitors.filter((v) => typeof v.visit === 'function');
+    const cmdVisitors = visitors.filter((v) => typeof v.visitCmd === 'function');
+
+    if (schemaName === 'device') {
+        if (paramVisitors.length > 0) {
+            for (const [key, param] of Object.entries(desc.params || {})) {
+                walkParam(param, {
+                    param,
+                    key,
+                    path: `/params/${escapeSegment(key)}`,
+                    parent: null,
+                    ancestors: [],
+                    depth: 0,
+                    desc,
+                }, paramVisitors, warnings, 'visit');
+            }
+        }
+
+        // Commands share the param schema but sit in their own map; only visitors
+        // that opt in via `visitCmd` trigger a traversal of the commands tree.
+        if (cmdVisitors.length > 0) {
+            for (const [key, command] of Object.entries(desc.commands || {})) {
+                walkParam(command, {
+                    param: command,
+                    key,
+                    path: `/commands/${escapeSegment(key)}`,
+                    parent: null,
+                    ancestors: [],
+                    depth: 0,
+                    desc,
+                }, cmdVisitors, warnings, 'visitCmd');
+            }
+        }
+    } else if (schemaName === 'param' || schemaName === 'command') {
+        // An artifact root is itself the param/command node, so it is visited
+        // directly (pointer ``) before its `params` are walked as sub-nodes.
+        const method = schemaName === 'command' ? 'visitCmd' : 'visit';
+        const rootVisitors = method === 'visitCmd' ? cmdVisitors : paramVisitors;
+        if (rootVisitors.length > 0) {
+            walkParam(desc, {
+                param: desc,
+                key: '',
+                path: '',
+                parent: null,
+                ancestors: [],
+                depth: 0,
+                desc,
+            }, rootVisitors, warnings, method);
+        }
     }
+    // any other schema kind carries no param-shaped children: nothing to walk
 
     for (const visitor of visitors) {
         visitor.finalize?.(warnings);
@@ -86,16 +159,20 @@ function walkParams(desc, visitors, warnings) {
 }
 
 /**
- * Recursively visit a single parameter and its sub-parameters.
- * @param {object} param the parameter descriptor to visit
+ * Recursively visit a single node and its sub-OIDs, invoking `method` (`visit`
+ * for the params tree, `visitCmd` for the commands tree) on each visitor. Child
+ * OIDs always live under `params`, whichever tree the walk started from.
+ *
+ * @param {object} param the node descriptor to visit
  * @param {WalkContext} ctx the context describing where `param` sits in the tree
  * @param {Array<Visitor>} visitors the visitors to invoke
  * @param {Array} warnings the shared findings list
+ * @param {'visit'|'visitCmd'} method the visitor callback to invoke
  * @returns {void}
  */
-function walkParam(param, ctx, visitors, warnings) {
+function walkParam(param, ctx, visitors, warnings, method) {
     for (const visitor of visitors) {
-        visitor.visit(ctx, warnings);
+        visitor[method](ctx, warnings);
     }
 
     if (!param.params) return;
@@ -105,14 +182,14 @@ function walkParam(param, ctx, visitors, warnings) {
         walkParam(child, {
             param: child,
             key,
-            path: `${ctx.path}/params/${key}`,
+            path: `${ctx.path}/params/${escapeSegment(key)}`,
             parent: param,
             ancestors: childAncestors,
             depth: ctx.depth + 1,
             desc: ctx.desc,
-        }, visitors, warnings);
+        }, visitors, warnings, method);
     }
 }
 
-module.exports = { walkParams };
+module.exports = { walkDesc };
 
