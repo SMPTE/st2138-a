@@ -33,6 +33,7 @@ const mandatory = require('./mandatory');
 const nestedValues = require('./nested-values');
 const scopes = require('./scopes');
 const digest = require('./digest');
+const clientHints = require('./client-hints');
 const { walkDesc } = require('./walker');
 const { WARNING, ERROR } = require('./constants');
 
@@ -88,6 +89,10 @@ function getChecks() {
         {
             name: 'digest',
             run: digest.validateImportDigests,
+        },
+        {
+            name: 'clientHints',
+            createVisitor: clientHints.createClientHintsVisitor,
         },
     ];
 }

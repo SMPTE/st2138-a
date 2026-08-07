@@ -30,6 +30,12 @@
 'use strict';
 
 const crypto = require('node:crypto');
+
+// Projection has its own suite (tests/projection); here it is mocked to a spy so
+// these tests assert only the wiring — that resolve calls it with the resolved
+// tree and threads its result through — not projection's structural behavior.
+jest.mock('../src/projection');
+const { project } = require('../src/projection');
 const { mergeImported, resolve } = require('../src/resolve');
 
 describe('mergeImported', () => {
@@ -77,6 +83,15 @@ describe('mergeImported', () => {
 });
 
 describe('resolve', () => {
+    // Reset project to a passthrough default before each test: the runtime model
+    // is the resolved tree, with no definitions or references, mirroring the real
+    // project's behavior for a tree with nothing to expand. A test exercising the
+    // wiring overrides this with .mockReturnValueOnce().
+    beforeEach(() => {
+        project.mockReset();
+        project.mockImplementation((data) => ({ data, definitions: {}, references: {}, diagnostics: [] }));
+    });
+
     // in-memory transport: map absolute URL href -> raw descriptor text
     const transport = (files) => (url) => {
         const raw = files.get(url.href);
@@ -569,6 +584,90 @@ describe('resolve', () => {
 
         // ../shared/param.target.yaml resolved relative to /models/nested/
         expect(seen).toContain('file:///models/shared/param.target.yaml');
+    });
+
+    test('a merged tree that fails the after pass is reported invalid and unprojected', async () => {
+        const rootUrl = new URL('file:///models/param.import.yaml');
+        const load = transport(new Map([
+            [rootUrl.href, 'type: INT32\nimport:\n  url: ./param.target.yaml\nvalue:\n  int32_value: 42\n'],
+            ['file:///models/param.target.yaml', 'type: INT32\nvalue:\n  int32_value: 0\n']
+        ]));
+        const afterDiag = { level: 'error', message: 'merged conflict', instancePath: '', lines: null };
+        const validate = spyValidate();
+        validate
+            .mockImplementationOnce((schemaName, data) => ({ valid: true, diagnostics: [], data })) // root, as authored
+            .mockImplementationOnce((schemaName, data) => ({ valid: true, diagnostics: [], data })) // imported target
+            .mockReturnValueOnce({ valid: false, diagnostics: [afterDiag], data: {} });              // merged, after
+
+        const result = await resolve(rootUrl, { validate, load });
+
+        expect(result.valid).toBe(false);
+        expect(result.definitions).toEqual({});
+        expect(result.references).toEqual({});
+        expect(result.diagnostics).toContainEqual(afterDiag);
+        // the tree that failed is not projected; the pre-projection data is returned
+        expect(result.data).toEqual({ type: 'INT32', value: { int32_value: 42 } });
+        expect(project).not.toHaveBeenCalled();
+        expect(validate).toHaveBeenCalledTimes(3);
+    });
+
+    test('projects the resolved tree, threading projection output into the result', async () => {
+        const rootUrl = new URL('file:///models/device.templated.yaml');
+        const device = [
+            'slot: 0',
+            'params:',
+            '  faders:',
+            '    type: FLOAT32_ARRAY',
+            ''
+        ].join('\n');
+        const load = transport(new Map([[rootUrl.href, device]]));
+        const validate = spyValidate();
+        // projection's structural behavior lives in tests/projection; here it is a
+        // spy returning a canned model to prove resolve threads it through verbatim
+        const projection = {
+            data: { params: { faders: { type: 'FLOAT32_ARRAY' } } },
+            definitions: { lib: { namespace: 'smpte.audio', node: {} } },
+            references: { faders: 'lib/fader' },
+            diagnostics: []
+        };
+        project.mockReturnValueOnce(projection);
+
+        const result = await resolve(rootUrl, { validate, load });
+
+        expect(result.valid).toBe(true);
+        // resolve hands project the resolved tree and the descriptor's schema kind
+        expect(project).toHaveBeenCalledTimes(1);
+        expect(project).toHaveBeenCalledWith(expect.objectContaining({ slot: 0 }), 'device');
+        // and threads projection's three views straight into the result
+        expect(result.data).toBe(projection.data);
+        expect(result.definitions).toBe(projection.definitions);
+        expect(result.references).toBe(projection.references);
+    });
+
+    test('a projection error marks the result invalid and returns the pre-projection tree', async () => {
+        const rootUrl = new URL('file:///models/device.templated.yaml');
+        const device = [
+            'params:',
+            '  faders:',
+            '    type: FLOAT32_ARRAY',
+            '    template_oid: lib/missing',
+            ''
+        ].join('\n');
+        const load = transport(new Map([[rootUrl.href, device]]));
+        const validate = spyValidate();
+        const diag = { level: 'error', message: 'template lib/missing does not resolve', instancePath: '/params/faders/template_oid', lines: null };
+        // a projection that fails must not leak its half-built views into the result
+        project.mockReturnValueOnce({ data: { bogus: true }, definitions: { x: {} }, references: { a: 'b' }, diagnostics: [diag] });
+
+        const result = await resolve(rootUrl, { validate, load });
+
+        expect(result.valid).toBe(false);
+        expect(result.diagnostics).toContainEqual(diag);
+        // a failed projection is discarded: no definitions or references survive
+        expect(result.definitions).toEqual({});
+        expect(result.references).toEqual({});
+        // and the pre-projection tree is handed back, not projection's own data
+        expect(result.data).toEqual({ params: { faders: { type: 'FLOAT32_ARRAY', template_oid: 'lib/missing' } } });
     });
 });
 

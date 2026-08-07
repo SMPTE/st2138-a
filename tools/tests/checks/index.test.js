@@ -38,7 +38,7 @@ describe('getChecks', () => {
     // lock in the expected checks
     test('returns all checks', () => {
         const result = checks.getChecks();
-        expect(result).toHaveLength(4);
+        expect(result).toHaveLength(5);
         expect(result[0].name).toBe('mandatory');
         expect(result[0].run).toBe(mandatory.validateRequiredParamsAndScopes);
         expect(result[1].name).toBe('nestedValues');
@@ -47,6 +47,8 @@ describe('getChecks', () => {
         expect(result[2].createVisitor).toBe(scopes.createScopesVisitor);
         expect(result[3].name).toBe('digest');
         expect(result[3].run).toBe(digest.validateImportDigests);
+        expect(result[4].name).toBe('clientHints');
+        expect(result[4].createVisitor).toBe(clientHints.createClientHintsVisitor);
     });
 });
 

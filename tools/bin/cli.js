@@ -109,6 +109,8 @@ program
     .option('--output <file>', 'write the descriptor to a file instead of stdout')
     .option('--json', 'emit JSON (default: YAML, or inferred from --output extension)')
     .option('--yaml', 'emit YAML (the default)')
+    .option('--definitions <file>', 'also write the definition-only subtrees to a file')
+    .option('--references <file>', 'also write the runtime-to-definition reference map to a file')
     .option('--sbom <file>', 'also write a CycloneDX SBOM of the resolved files to a file')
     .option('--disable-mandatory-enforcement', 'skip mandatory product parameter checks')
     .addHelpText('after', '\n' +
@@ -150,6 +152,15 @@ program
             fs.writeFileSync(options.output, text);
         } else {
             process.stdout.write(text);
+        }
+
+        // Projection's sidecars share the descriptor's format but, like the SBOM,
+        // each has one useful home — a file — so they never touch stdout.
+        if (options.definitions) {
+            fs.writeFileSync(options.definitions, serialize(result.definitions, format));
+        }
+        if (options.references) {
+            fs.writeFileSync(options.references, serialize(result.references, format));
         }
 
         // The SBOM is orthogonal to the descriptor output: a machine artifact

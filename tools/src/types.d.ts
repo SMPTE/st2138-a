@@ -63,10 +63,22 @@ export interface ImportRecord {
     dependencies: string[];
 }
 
+/** A definition-only param lifted out of the runtime model during projection. */
+export interface Definition {
+    /** the declared namespace of the definition, if any */
+    namespace?: string;
+    /** the definition's expanded subtree, retaining its declaration-site hints */
+    node: object;
+}
+
 /** Result of resolving a descriptor's `import` directives into a single tree. */
 export interface ResolutionResult {
-    /** the merged self-contained descriptor, or `{}` when invalid */
+    /** the runtime model: imports inlined, templates expanded, definitions removed */
     data: object;
+    /** the definition-only subtrees the runtime model was built from, keyed by FQOID */
+    definitions: Record<string, Definition>;
+    /** runtime FQOID → the source FQOID it was built from, for looking up its definition */
+    references: Record<string, string>;
     /** findings gathered during resolution */
     diagnostics: Diagnostic[];
     /** whether resolution produced a valid descriptor */
@@ -85,6 +97,7 @@ export interface CheckOptions {
     disableNestedValueChecks?: boolean;
     disableScopeChecks?: boolean;
     disableDigestChecks?: boolean;
+    disableClientHintChecks?: boolean;
 }
 
 /**

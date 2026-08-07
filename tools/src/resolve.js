@@ -68,6 +68,7 @@ const { emptySourceMap } = require('./sourcemap');
 const { schemaNameFromUrl } = require('./urls');
 const { NESTED_FIELDS, walkableFields, isPlainObject, escapeSegment } = require('./shape');
 const { ERROR } = require('./checks/constants');
+const { project } = require('./projection');
 
 /**
  * @typedef {import('./types').ValidationResult} ValidationResult
@@ -322,7 +323,8 @@ async function resolveFile(url, deps, digest, ancestors = []) {
 }
 
 /**
- * Resolve a descriptor's imports into a single self-contained tree.
+ * Resolve a descriptor's imports into a single self-contained tree, then project
+ * it into the runtime model it describes.
  *
  * Each fragment is validated "before" the merge, as authored, against its own
  * source map (real line numbers). If any import was inlined and every fragment
@@ -331,6 +333,16 @@ async function resolveFile(url, deps, digest, ancestors = []) {
  * no line info. A descriptor with no imports — or one whose fragments already
  * failed on their own — is not re-validated: there is nothing a merged pass
  * could add but duplicate, line-less diagnostics.
+ *
+ * A tree that survives validation is projected: its `template_oid` references
+ * are expanded and the definition-only params they drew from are lifted out, so
+ * `data` is the runtime model, `definitions` are the subtrees it was built from
+ * (keyed by FQOID), and `references` map each runtime FQOID back to the source
+ * it borrowed. Projection is defined over a device, so a param or command — or a
+ * device with nothing to expand — passes through with empty definitions and
+ * references. A template that does not resolve is a hard error: the model would
+ * be ill-defined, so the pre-projection tree is returned, marked invalid and
+ * definition-free.
  *
  * @param {URL} url location of the descriptor to resolve
  * @param {object} deps
@@ -345,22 +357,36 @@ async function resolve(url, { validate, load, digest = null }) {
     const imports = dedupeImports(resolved.imports);
     // The root's own edges in the dependency graph: the files it imports directly.
     const dependencies = resolved.directImports;
+    const schemaName = schemaNameFromUrl(url);
 
-    if (!resolved.imported || !resolved.valid) {
-        return { data: resolved.data, diagnostics: resolved.diagnostics, valid: resolved.valid, imports, dependencies, digest: resolved.digest };
+    // A fragment invalid as authored is not merged or projected: its shape is
+    // exactly what the schema just rejected, so there is nothing to act on.
+    if (!resolved.valid) {
+        return { data: resolved.data, definitions: {}, references: {}, diagnostics: resolved.diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
     }
 
-    const after = validate(schemaNameFromUrl(url), resolved.data, emptySourceMap);
-    // Return the tree we just checked, not `after.data`: the after-pass diagnostics
-    // point into this tree, so callers need it to resolve their paths.
-    return {
-        data: resolved.data,
-        diagnostics: [...resolved.diagnostics, ...after.diagnostics],
-        valid: after.valid,
-        imports,
-        dependencies,
-        digest: resolved.digest
-    };
+    // Re-check the merged tree only when a merge happened; a single file already
+    // had its one authoritative pass.
+    const diagnostics = [...resolved.diagnostics];
+    let valid = true;
+    if (resolved.imported) {
+        const after = validate(schemaName, resolved.data, emptySourceMap);
+        diagnostics.push(...after.diagnostics);
+        valid = after.valid;
+    }
+    // A tree that failed the merged pass is not projected either.
+    if (!valid) {
+        return { data: resolved.data, definitions: {}, references: {}, diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
+    }
+
+    const projected = project(resolved.data, schemaName);
+    diagnostics.push(...projected.diagnostics);
+    // An unresolved or cyclic template leaves the model ill-defined: report it and
+    // hand back the pre-projection tree rather than a half-expanded one.
+    if (projected.diagnostics.some((diagnostic) => diagnostic.level === ERROR)) {
+        return { data: resolved.data, definitions: {}, references: {}, diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
+    }
+    return { data: projected.data, definitions: projected.definitions, references: projected.references, diagnostics, valid: true, imports, dependencies, digest: resolved.digest };
 }
 
 module.exports = { mergeImported, resolve };
