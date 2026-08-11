@@ -123,7 +123,12 @@ async function resolve(input, options = {}) {
     // tree), so it drives the pure `validateData` path rather than the loader.
     const validate = (schemaName, data, sourceMap) =>
         engine.validateData(schemaName, data, sourceMap, checkOpts);
-    return resolveTree(url, { validate, load: options.load, digest: options.digest ?? null });
+    return resolveTree(url, {
+        validate,
+        load: options.load,
+        digest: options.digest ?? null,
+        disableTemplateExpansion: options.disableTemplateExpansion || false,
+    });
 }
 
 /**

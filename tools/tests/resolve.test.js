@@ -31,11 +31,12 @@
 
 const crypto = require('node:crypto');
 
-// Projection has its own suite (tests/projection); here it is mocked to a spy so
-// these tests assert only the wiring — that resolve calls it with the resolved
-// tree and threads its result through — not projection's structural behavior.
-jest.mock('../src/projection');
-const { project } = require('../src/projection');
+// Template expansion has its own suite (tests/templates.test.js); here it is
+// mocked to a spy so these tests assert only the wiring — that resolve calls it
+// with the resolved tree and threads its result through — not its structural
+// behavior.
+jest.mock('../src/templates');
+const { expandTemplates } = require('../src/templates');
 const { mergeImported, resolve } = require('../src/resolve');
 
 describe('mergeImported', () => {
@@ -83,13 +84,13 @@ describe('mergeImported', () => {
 });
 
 describe('resolve', () => {
-    // Reset project to a passthrough default before each test: the runtime model
-    // is the resolved tree, with no definitions or references, mirroring the real
-    // project's behavior for a tree with nothing to expand. A test exercising the
-    // wiring overrides this with .mockReturnValueOnce().
+    // Reset expandTemplates to a passthrough default before each test: the
+    // runtime model is the resolved tree, mirroring the real expander's behavior
+    // for a tree with nothing to expand. A test exercising the wiring overrides
+    // this with .mockReturnValueOnce().
     beforeEach(() => {
-        project.mockReset();
-        project.mockImplementation((data) => ({ data, definitions: {}, references: {}, diagnostics: [] }));
+        expandTemplates.mockReset();
+        expandTemplates.mockImplementation((data) => ({ data, diagnostics: [], valid: true }));
     });
 
     // in-memory transport: map absolute URL href -> raw descriptor text
@@ -586,7 +587,7 @@ describe('resolve', () => {
         expect(seen).toContain('file:///models/shared/param.target.yaml');
     });
 
-    test('a merged tree that fails the after pass is reported invalid and unprojected', async () => {
+    test('a merged tree that fails the after pass is reported invalid and unexpanded', async () => {
         const rootUrl = new URL('file:///models/param.import.yaml');
         const load = transport(new Map([
             [rootUrl.href, 'type: INT32\nimport:\n  url: ./param.target.yaml\nvalue:\n  int32_value: 42\n'],
@@ -602,16 +603,14 @@ describe('resolve', () => {
         const result = await resolve(rootUrl, { validate, load });
 
         expect(result.valid).toBe(false);
-        expect(result.definitions).toEqual({});
-        expect(result.references).toEqual({});
         expect(result.diagnostics).toContainEqual(afterDiag);
-        // the tree that failed is not projected; the pre-projection data is returned
+        // the tree that failed is not expanded; the pre-expansion data is returned
         expect(result.data).toEqual({ type: 'INT32', value: { int32_value: 42 } });
-        expect(project).not.toHaveBeenCalled();
+        expect(expandTemplates).not.toHaveBeenCalled();
         expect(validate).toHaveBeenCalledTimes(3);
     });
 
-    test('projects the resolved tree, threading projection output into the result', async () => {
+    test('expands the resolved tree, threading the expander output into the result', async () => {
         const rootUrl = new URL('file:///models/device.templated.yaml');
         const device = [
             'slot: 0',
@@ -622,29 +621,41 @@ describe('resolve', () => {
         ].join('\n');
         const load = transport(new Map([[rootUrl.href, device]]));
         const validate = spyValidate();
-        // projection's structural behavior lives in tests/projection; here it is a
-        // spy returning a canned model to prove resolve threads it through verbatim
-        const projection = {
+        // the expander's structural behavior lives in tests/templates.test.js; here
+        // it is a spy returning a canned model to prove resolve threads it through
+        const expansion = {
             data: { params: { faders: { type: 'FLOAT32_ARRAY' } } },
-            definitions: { lib: { namespace: 'smpte.audio', node: {} } },
-            references: { faders: 'lib/fader' },
-            diagnostics: []
+            diagnostics: [],
+            valid: true
         };
-        project.mockReturnValueOnce(projection);
+        expandTemplates.mockReturnValueOnce(expansion);
 
         const result = await resolve(rootUrl, { validate, load });
 
         expect(result.valid).toBe(true);
-        // resolve hands project the resolved tree and the descriptor's schema kind
-        expect(project).toHaveBeenCalledTimes(1);
-        expect(project).toHaveBeenCalledWith(expect.objectContaining({ slot: 0 }), 'device');
-        // and threads projection's three views straight into the result
-        expect(result.data).toBe(projection.data);
-        expect(result.definitions).toBe(projection.definitions);
-        expect(result.references).toBe(projection.references);
+        // resolve hands the expander the resolved tree
+        expect(expandTemplates).toHaveBeenCalledTimes(1);
+        expect(expandTemplates).toHaveBeenCalledWith(expect.objectContaining({ slot: 0 }));
+        // and threads the expander's data straight into the result
+        expect(result.data).toBe(expansion.data);
     });
 
-    test('a projection error marks the result invalid and returns the pre-projection tree', async () => {
+    test('skips expansion when disableTemplateExpansion is set', async () => {
+        const rootUrl = new URL('file:///models/param.templated.yaml');
+        const load = transport(new Map([
+            [rootUrl.href, 'type: INT32\ntemplate_oid: lib/base\n']
+        ]));
+        const validate = spyValidate();
+
+        const result = await resolve(rootUrl, { validate, load, disableTemplateExpansion: true });
+
+        expect(result.valid).toBe(true);
+        expect(expandTemplates).not.toHaveBeenCalled();
+        // the merged tree is returned with its template_oid left as authored
+        expect(result.data).toEqual({ type: 'INT32', template_oid: 'lib/base' });
+    });
+
+    test('a template error marks the result invalid and returns the pre-expansion tree', async () => {
         const rootUrl = new URL('file:///models/device.templated.yaml');
         const device = [
             'params:',
@@ -656,17 +667,14 @@ describe('resolve', () => {
         const load = transport(new Map([[rootUrl.href, device]]));
         const validate = spyValidate();
         const diag = { level: 'error', message: 'template lib/missing does not resolve', instancePath: '/params/faders/template_oid', lines: null };
-        // a projection that fails must not leak its half-built views into the result
-        project.mockReturnValueOnce({ data: { bogus: true }, definitions: { x: {} }, references: { a: 'b' }, diagnostics: [diag] });
+        // an expansion that fails must not leak its half-built data into the result
+        expandTemplates.mockReturnValueOnce({ data: { bogus: true }, diagnostics: [diag], valid: false });
 
         const result = await resolve(rootUrl, { validate, load });
 
         expect(result.valid).toBe(false);
         expect(result.diagnostics).toContainEqual(diag);
-        // a failed projection is discarded: no definitions or references survive
-        expect(result.definitions).toEqual({});
-        expect(result.references).toEqual({});
-        // and the pre-projection tree is handed back, not projection's own data
+        // the pre-expansion tree is handed back, not the expander's own data
         expect(result.data).toEqual({ params: { faders: { type: 'FLOAT32_ARRAY', template_oid: 'lib/missing' } } });
     });
 });

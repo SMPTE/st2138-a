@@ -29,7 +29,7 @@
 
 'use strict';
 
-const { expandTemplates, resolveFqoid } = require('../../src/projection/templates');
+const { expandTemplates, resolveFqoid } = require('../src/templates');
 
 describe('resolveFqoid', () => {
     const root = {
@@ -58,14 +58,44 @@ describe('resolveFqoid', () => {
 });
 
 describe('expandTemplates', () => {
-    test('does nothing when the root has no params', () => {
-        const root = { type: 'INT32' };
-        expect(expandTemplates(root)).toEqual([]);
-        expect(root).toEqual({ type: 'INT32' });
+    test('passes a non-object model through', () => {
+        const result = expandTemplates(null);
+        expect(result.data).toBeNull();
+        expect(result.diagnostics).toEqual([]);
+        expect(result.valid).toBe(true);
     });
 
-    test('fills a consumer with the fields it lacks from its template', () => {
-        const root = {
+    test('passes a descriptor with no params through by reference', () => {
+        const model = { type: 'FLOAT_RANGE', low: 0, high: 1 };
+        const result = expandTemplates(model);
+        expect(result.data).toBe(model);
+        expect(result.diagnostics).toEqual([]);
+    });
+
+    test('returns the same tree by reference when there is nothing to expand', () => {
+        const model = {
+            params: {
+                gain: { type: 'INT32', value: { int32_value: 0 } },
+                nested: { type: 'STRUCT', params: { inner: { type: 'INT32' } } },
+            },
+        };
+        const result = expandTemplates(model);
+        expect(result.data).toBe(model);
+        expect(result.diagnostics).toEqual([]);
+    });
+
+    test('leaves a root template_oid as authored', () => {
+        // A root template_oid names a source in the device the param will be
+        // embedded in; standalone expansion neither resolves nor removes it.
+        const model = { type: 'INT32', template_oid: 'lib/base' };
+        const result = expandTemplates(model);
+        expect(result.data).toBe(model);
+        expect(result.data.template_oid).toBe('lib/base');
+        expect(result.diagnostics).toEqual([]);
+    });
+
+    test('fills a consumer from its template while retaining source and template_oid', () => {
+        const model = {
             params: {
                 lib: {
                     client_hints: { st2138_namespace: 'smpte.audio' },
@@ -87,24 +117,33 @@ describe('expandTemplates', () => {
             },
         };
 
-        const diagnostics = expandTemplates(root);
-        expect(diagnostics).toEqual([]);
+        const result = expandTemplates(model);
+        expect(result.diagnostics).toEqual([]);
+        expect(result.valid).toBe(true);
+        expect(result.data).not.toBe(model); // a tree with templates is cloned
+
+        // The source and every consumer's template_oid stay in the tree.
+        expect(Object.keys(result.data.params)).toEqual(['lib', 'faders', 'single_eq']);
+        expect(result.data.params.faders.template_oid).toBe('lib/fader');
 
         // The consumer keeps its own type and gains the template's constraint.
-        expect(root.params.faders.type).toBe('FLOAT32_ARRAY');
-        expect(root.params.faders.constraint).toEqual({ type: 'FLOAT_RANGE', low: 0, high: 1 });
+        expect(result.data.params.faders.type).toBe('FLOAT32_ARRAY');
+        expect(result.data.params.faders.constraint).toEqual({ type: 'FLOAT_RANGE', low: 0, high: 1 });
         // A reserved (lexical) hint is not inherited; a free-form one is.
-        expect(root.params.faders.client_hints).toEqual({ widget: 'slider' });
+        expect(result.data.params.faders.client_hints).toEqual({ widget: 'slider' });
         // The inherited constraint is a copy, not an alias of the source's.
-        expect(root.params.faders.constraint).not.toBe(root.params.lib.params.fader.constraint);
+        expect(result.data.params.faders.constraint).not.toBe(result.data.params.lib.params.fader.constraint);
 
         // A template whose only hint is reserved contributes no client_hints.
-        expect(root.params.single_eq.params).toEqual({ freq: { type: 'FLOAT32' } });
-        expect(root.params.single_eq.client_hints).toBeUndefined();
+        expect(result.data.params.single_eq.params).toEqual({ freq: { type: 'FLOAT32' } });
+        expect(result.data.params.single_eq.client_hints).toBeUndefined();
+
+        // The input is untouched.
+        expect(model.params.faders.constraint).toBeUndefined();
     });
 
-    test('expands a chain, dropping neither the consumer fields nor the source template_oid', () => {
-        const root = {
+    test('expands a chain, filling through each link', () => {
+        const model = {
             params: {
                 lib: {
                     params: {
@@ -116,17 +155,18 @@ describe('expandTemplates', () => {
             },
         };
 
-        expect(expandTemplates(root)).toEqual([]);
+        const result = expandTemplates(model);
+        expect(result.diagnostics).toEqual([]);
         // The chain resolved fully: faders picked up base's constraint through fader.
-        expect(root.params.faders.constraint).toEqual({ type: 'FLOAT_RANGE', low: -1, high: 1 });
-        // fader's own template_oid is not copied into faders; the strip pass removes it.
-        expect(root.params.faders.template_oid).toBe('lib/fader');
+        expect(result.data.params.faders.constraint).toEqual({ type: 'FLOAT_RANGE', low: -1, high: 1 });
+        // fader's own template_oid is not copied into faders; faders keeps its own.
+        expect(result.data.params.faders.template_oid).toBe('lib/fader');
     });
 
     test('reports a template_oid that does not resolve', () => {
-        const root = { params: { x: { type: 'INT32', template_oid: 'nope/gone' } } };
-        const diagnostics = expandTemplates(root);
-        expect(diagnostics).toEqual([
+        const model = { params: { x: { type: 'INT32', template_oid: 'nope/gone' } } };
+        const result = expandTemplates(model);
+        expect(result.diagnostics).toEqual([
             {
                 level: 'error',
                 message: "template_oid 'nope/gone' does not resolve to a parameter",
@@ -134,49 +174,56 @@ describe('expandTemplates', () => {
                 lines: null,
             },
         ]);
+        expect(result.valid).toBe(false);
     });
 
     test('reports a mutual cycle', () => {
-        const root = {
+        const model = {
             params: {
                 a: { type: 'INT32', template_oid: 'b' },
                 b: { type: 'INT32', template_oid: 'a' },
             },
         };
-        const diagnostics = expandTemplates(root);
-        expect(diagnostics).toHaveLength(1);
-        expect(diagnostics[0].message).toMatch(/forms a cycle/);
+        const result = expandTemplates(model);
+        expect(result.diagnostics).toHaveLength(1);
+        expect(result.diagnostics[0].message).toMatch(/forms a cycle/);
     });
 
     test('reports a self-reference as a cycle', () => {
-        const root = { params: { s: { type: 'INT32', template_oid: 's' } } };
-        const diagnostics = expandTemplates(root);
-        expect(diagnostics).toHaveLength(1);
-        expect(diagnostics[0].message).toBe("template_oid 's' forms a cycle");
+        const model = { params: { s: { type: 'INT32', template_oid: 's' } } };
+        const result = expandTemplates(model);
+        expect(result.diagnostics).toHaveLength(1);
+        expect(result.diagnostics[0].message).toBe("template_oid 's' forms a cycle");
     });
 
-    test('ignores a non-mapping param value', () => {
-        const root = { params: { scalar: 5 } };
-        expect(expandTemplates(root)).toEqual([]);
-        expect(root.params.scalar).toBe(5);
+    test('skips a non-mapping param value alongside a template', () => {
+        const model = {
+            params: {
+                scalar: 5,
+                x: { type: 'INT32', template_oid: 'y' },
+                y: { type: 'INT32', constraint: { type: 'INT_RANGE', low: 0, high: 10 } },
+            },
+        };
+        const result = expandTemplates(model);
+        expect(result.diagnostics).toEqual([]);
+        expect(result.data.params.scalar).toBe(5);
+        expect(result.data.params.x.constraint).toEqual({ type: 'INT_RANGE', low: 0, high: 10 });
     });
 
-    test('omits client_hints entirely when a non-mapping is offered by the source', () => {
-        // A template source whose client_hints is not a map contributes none.
-        const root = {
+    test('omits client_hints entirely when the source offers a non-mapping', () => {
+        const model = {
             params: {
                 lib: { params: { src: { type: 'INT32', client_hints: 'oops' } } },
                 consumer: { type: 'INT32', template_oid: 'lib/src' },
             },
         };
-        expect(expandTemplates(root)).toEqual([]);
-        expect(root.params.consumer.client_hints).toBeUndefined();
+        const result = expandTemplates(model);
+        expect(result.diagnostics).toEqual([]);
+        expect(result.data.params.consumer.client_hints).toBeUndefined();
     });
 
-    test('inherits every non-reserved client_hint untouched, dropping only the reserved ones', () => {
-        // The source mixes reserved lexical hints with free-form ones of varied
-        // shapes; only the reserved keys are stripped, the rest pass through as-is.
-        const root = {
+    test('inherits every non-reserved client_hint, dropping only the reserved ones', () => {
+        const model = {
             params: {
                 lib: {
                     params: {
@@ -193,11 +240,8 @@ describe('expandTemplates', () => {
                 consumer: { type: 'INT32', template_oid: 'lib/src' },
             },
         };
-        expect(expandTemplates(root)).toEqual([]);
-        expect(root.params.consumer.client_hints).toEqual({
-            widget: 'slider',
-        });
-        // Nested values are copied, not aliased back to the source.
-        expect(root.params.consumer.client_hints.widget).toBe('slider');
+        const result = expandTemplates(model);
+        expect(result.diagnostics).toEqual([]);
+        expect(result.data.params.consumer.client_hints).toEqual({ widget: 'slider' });
     });
 });

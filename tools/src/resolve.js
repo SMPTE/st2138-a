@@ -68,7 +68,7 @@ const { emptySourceMap } = require('./sourcemap');
 const { schemaNameFromUrl } = require('./urls');
 const { NESTED_FIELDS, walkableFields, isPlainObject, escapeSegment } = require('./shape');
 const { ERROR } = require('./checks/constants');
-const { project } = require('./projection');
+const { expandTemplates } = require('./templates');
 
 /**
  * @typedef {import('./types').ValidationResult} ValidationResult
@@ -323,8 +323,8 @@ async function resolveFile(url, deps, digest, ancestors = []) {
 }
 
 /**
- * Resolve a descriptor's imports into a single self-contained tree, then project
- * it into the runtime model it describes.
+ * Resolve a descriptor's imports into a single self-contained tree, then expand
+ * its templates into the runtime model it describes.
  *
  * Each fragment is validated "before" the merge, as authored, against its own
  * source map (real line numbers). If any import was inlined and every fragment
@@ -334,24 +334,26 @@ async function resolveFile(url, deps, digest, ancestors = []) {
  * failed on their own — is not re-validated: there is nothing a merged pass
  * could add but duplicate, line-less diagnostics.
  *
- * A tree that survives validation is projected: its `template_oid` references
- * are expanded and the definition-only params they drew from are lifted out, so
- * `data` is the runtime model, `definitions` are the subtrees it was built from
- * (keyed by FQOID), and `references` map each runtime FQOID back to the source
- * it borrowed. Projection is defined over a device, so a param or command — or a
- * device with nothing to expand — passes through with empty definitions and
- * references. A template that does not resolve is a hard error: the model would
- * be ill-defined, so the pre-projection tree is returned, marked invalid and
- * definition-free.
+ * A tree that survives validation has its `template_oid` references expanded, so
+ * each consumer carries the shape it borrowed and `data` is the runtime model.
+ * The template sources and the `template_oid` provenance stay in the tree.
+ * Expansion acts on whatever `params` a descriptor carries, so a device, a
+ * `param`, or a `command` all expand; a descriptor with no params, or a param
+ * tree with nothing to expand, passes through unchanged. A template that does
+ * not resolve is a hard error: the model would be ill-defined, so the
+ * pre-expansion tree is returned, marked invalid. Passing
+ * `disableTemplateExpansion` skips this step and returns the merged tree with
+ * its `template_oid` references left as authored.
  *
  * @param {URL} url location of the descriptor to resolve
  * @param {object} deps
  * @param {ValidateFn} deps.validate validates data against a named schema
  * @param {Loader} [deps.load] custom transport, forwarded to the loader
  * @param {string|null} [deps.digest] base64 sha256 to pin the root file against
+ * @param {boolean} [deps.disableTemplateExpansion] return the merged tree without expanding templates
  * @returns {Promise<ResolutionResult>}
  */
-async function resolve(url, { validate, load, digest = null }) {
+async function resolve(url, { validate, load, digest = null, disableTemplateExpansion = false }) {
     const deps = { validate, load };
     const resolved = await resolveFile(url, deps, digest);
     const imports = dedupeImports(resolved.imports);
@@ -359,10 +361,10 @@ async function resolve(url, { validate, load, digest = null }) {
     const dependencies = resolved.directImports;
     const schemaName = schemaNameFromUrl(url);
 
-    // A fragment invalid as authored is not merged or projected: its shape is
+    // A fragment invalid as authored is not merged or expanded: its shape is
     // exactly what the schema just rejected, so there is nothing to act on.
     if (!resolved.valid) {
-        return { data: resolved.data, definitions: {}, references: {}, diagnostics: resolved.diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
+        return { data: resolved.data, diagnostics: resolved.diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
     }
 
     // Re-check the merged tree only when a merge happened; a single file already
@@ -374,19 +376,25 @@ async function resolve(url, { validate, load, digest = null }) {
         diagnostics.push(...after.diagnostics);
         valid = after.valid;
     }
-    // A tree that failed the merged pass is not projected either.
+    // A tree that failed the merged pass is not expanded either.
     if (!valid) {
-        return { data: resolved.data, definitions: {}, references: {}, diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
+        return { data: resolved.data, diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
     }
 
-    const projected = project(resolved.data, schemaName);
-    diagnostics.push(...projected.diagnostics);
-    // An unresolved or cyclic template leaves the model ill-defined: report it and
-    // hand back the pre-projection tree rather than a half-expanded one.
-    if (projected.diagnostics.some((diagnostic) => diagnostic.level === ERROR)) {
-        return { data: resolved.data, definitions: {}, references: {}, diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
+    // Eager expansion by default; a caller can opt out to keep the merged tree's
+    // `template_oid` references unresolved.
+    if (disableTemplateExpansion) {
+        return { data: resolved.data, diagnostics, valid: true, imports, dependencies, digest: resolved.digest };
     }
-    return { data: projected.data, definitions: projected.definitions, references: projected.references, diagnostics, valid: true, imports, dependencies, digest: resolved.digest };
+
+    const expanded = expandTemplates(resolved.data);
+    diagnostics.push(...expanded.diagnostics);
+    // An unresolved or cyclic template leaves the model ill-defined: report it and
+    // hand back the pre-expansion tree rather than a half-expanded one.
+    if (!expanded.valid) {
+        return { data: resolved.data, diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
+    }
+    return { data: expanded.data, diagnostics, valid: true, imports, dependencies, digest: resolved.digest };
 }
 
 module.exports = { mergeImported, resolve };

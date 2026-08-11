@@ -63,22 +63,10 @@ export interface ImportRecord {
     dependencies: string[];
 }
 
-/** A definition-only param lifted out of the runtime model during projection. */
-export interface Definition {
-    /** the declared namespace of the definition, if any */
-    namespace?: string;
-    /** the definition's expanded subtree, retaining its declaration-site hints */
-    node: object;
-}
-
 /** Result of resolving a descriptor's `import` directives into a single tree. */
 export interface ResolutionResult {
-    /** the runtime model: imports inlined, templates expanded, definitions removed */
+    /** the runtime model: imports inlined and `template_oid` consumers expanded */
     data: object;
-    /** the definition-only subtrees the runtime model was built from, keyed by FQOID */
-    definitions: Record<string, Definition>;
-    /** runtime FQOID → the source FQOID it was built from, for looking up its definition */
-    references: Record<string, string>;
     /** findings gathered during resolution */
     diagnostics: Diagnostic[];
     /** whether resolution produced a valid descriptor */
@@ -125,12 +113,17 @@ export interface DescriptorOptions extends CheckOptions {
 export interface ValidateOptions extends DescriptorOptions {}
 
 /**
- * Options accepted by the functional `resolve` entry point. Identical to
- * {@link DescriptorOptions} today, but kept as its own name so the two entry
- * points can diverge without churning callers. Each file's schema is derived
- * from its own name as the tree is walked.
+ * Options accepted by the functional `resolve` entry point. Each file's schema
+ * is derived from its own name as the tree is walked.
  */
-export interface ResolveOptions extends DescriptorOptions {}
+export interface ResolveOptions extends DescriptorOptions {
+    /**
+     * Skip template expansion, returning the merged tree with its `template_oid`
+     * references left as authored. By default templates are expanded eagerly, so
+     * each consumer carries the shape it borrowed.
+     */
+    disableTemplateExpansion?: boolean;
+}
 
 /**
  * Options accepted by the `digest` entry point. It only reads bytes, so it

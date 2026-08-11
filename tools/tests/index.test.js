@@ -178,7 +178,7 @@ describe('resolve', () => {
         await resolve('examples/device.example.yaml');
         expect(mockResolveTree).toHaveBeenCalledWith(
             expect.any(URL),
-            { validate: expect.any(Function), load: undefined, digest: null }
+            { validate: expect.any(Function), load: undefined, digest: null, disableTemplateExpansion: false }
         );
     });
 
@@ -203,10 +203,11 @@ describe('resolve', () => {
             disableMandatoryParams: true,
             disableNestedValueChecks: true,
             disableScopeChecks: true,
+            disableTemplateExpansion: true,
         });
         expect(mockResolveTree).toHaveBeenCalledWith(
             expect.any(URL),
-            { validate: expect.any(Function), load, digest }
+            { validate: expect.any(Function), load, digest, disableTemplateExpansion: true }
         );
         const { validate: injected } = mockResolveTree.mock.calls[0][1];
         injected('param', {}, { linesFor: () => null });

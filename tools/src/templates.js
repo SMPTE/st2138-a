@@ -28,40 +28,97 @@
  */
 
 /*
- * Template expansion pass.
+ * Template expansion.
  *
  * A param with `template_oid` borrows the shape of another param — the template
  * source named by a fully qualified OID. Expansion materializes that shape into
  * the consumer: every field the source defines and the consumer does not is
- * copied in, so the consumer that says only "I am `template_oid X`" ends up with
- * X's `constraint`, `params`, and any other defining fields. The consumer's own
- * fields always win, and its `type` and `value` are its own.
+ * copied in, so a consumer that says only "I am `template_oid X`" ends up
+ * carrying X's `constraint`, `params`, and any other defining fields, ready for
+ * a runtime that resolves nothing itself. The consumer's own fields always win,
+ * and its `type` and `value` are its own.
  *
- * Two fields are never copied, per the lexical-metadata rule: `template_oid`
- * itself (the strip pass drops it from the runtime model) and the source's
- * reserved `st2138_` hints, which describe the source's declaration site — its
- * namespace and definition-only status — not the shape a consumer inherits.
+ * Nothing is removed: the `template_oid` stays on the consumer as provenance of
+ * where its shape came from, and the template sources stay in the tree. Two
+ * fields are simply never *inherited*, per the lexical-metadata rule:
+ * `template_oid` itself (a consumer keeps its own, not the source's) and the
+ * source's reserved `st2138_` hints, which describe the source's declaration
+ * site — its namespace and definition-only status — not the shape a consumer
+ * takes on.
  *
  * A source may itself be a consumer, so a source is fully expanded before it is
  * copied from; a template that points back onto one already being expanded is a
- * cycle, reported and not followed. Expansion mutates the tree in place; the
- * caller clones first.
+ * cycle, reported and not followed. Expansion reads a `params` map wherever a
+ * descriptor carries one — a device at its root, a `param` or `command` its
+ * nested params — so the schema kind never has to be named: validation has
+ * already proven the tree's shape, and only a param tree carries `params`. A
+ * descriptor with no templates to expand passes through by reference, untouched,
+ * so the common case adds neither a copy nor a diff.
  */
 
 'use strict';
 
-const { ERROR } = require('../checks/constants');
-const { isPlainObject, escapeSegment } = require('../shape');
-const { NAMESPACE_KEY, DEFINITION_ONLY_KEY } = require('../hints');
+const { ERROR } = require('./checks/constants');
+const { isPlainObject, escapeSegment } = require('./shape');
+const { NAMESPACE_KEY, DEFINITION_ONLY_KEY } = require('./hints');
+
+/**
+ * @typedef {object} Expansion
+ * @property {object} data the model with every `template_oid` consumer filled in
+ * @property {import('./types').Diagnostic[]} diagnostics unresolved or cyclic templates
+ * @property {boolean} valid false when any diagnostic is error-level
+ */
 
 /** Fields never inherited through a template (lexical to the source's site). */
 const LEXICAL_HINTS = new Set([NAMESPACE_KEY, DEFINITION_ONLY_KEY]);
 
 /**
- * Resolve a template's fully qualified OID against the device root, walking
+ * Expand a resolved descriptor's `template_oid` references into their consumers.
+ * A tree with nothing to expand is returned by reference; otherwise a private
+ * clone is expanded in place so the caller's input is never mutated.
+ * @param {object} model the resolved (import-free) descriptor
+ * @returns {Expansion}
+ */
+function expandTemplates(model) {
+    // Only a param tree carries templates; anything else has nothing to expand.
+    if (!isPlainObject(model) || !hasTemplates(model)) {
+        return { data: model, diagnostics: [], valid: true };
+    }
+    const working = structuredClone(model);
+    const diagnostics = expandInPlace(working);
+    const valid = !diagnostics.some((diagnostic) => diagnostic.level === ERROR);
+    return { data: working, diagnostics, valid };
+}
+
+/**
+ * True when a descriptor's param tree carries any `template_oid` to expand.
+ * @param {object} model the descriptor
+ * @returns {boolean}
+ */
+function hasTemplates(model) {
+    return scanParams(model.params);
+}
+
+/**
+ * @param {unknown} params a param map (or non-map)
+ * @returns {boolean}
+ */
+function scanParams(params) {
+    if (!isPlainObject(params)) return false;
+    for (const key of Object.keys(params)) {
+        const node = params[key];
+        if (!isPlainObject(node)) continue;
+        if (typeof node.template_oid === 'string') return true;
+        if (scanParams(node.params)) return true;
+    }
+    return false;
+}
+
+/**
+ * Resolve a template's fully qualified OID against the tree root, walking
  * `params` segment by segment. Returns the target param, or undefined when any
  * segment is missing or the target is not a mapping.
- * @param {object} root the device descriptor
+ * @param {object} root the descriptor root (a device, or an artifact param)
  * @param {string} fqoid a `/`-separated param path (no leading slash)
  * @returns {object|undefined}
  */
@@ -116,11 +173,13 @@ function withoutLexicalHints(hints) {
 }
 
 /**
- * Expand every `template_oid` in a device descriptor's param tree in place.
- * @param {object} root the device descriptor (mutated)
- * @returns {import('../types').Diagnostic[]} errors for unresolved or cyclic templates
+ * Expand every `template_oid` in a descriptor's param tree in place. The caller
+ * has already established, via {@link hasTemplates}, that `root.params` is a
+ * mapping.
+ * @param {object} root the descriptor (mutated)
+ * @returns {import('./types').Diagnostic[]} errors for unresolved or cyclic templates
  */
-function expandTemplates(root) {
+function expandInPlace(root) {
     const diagnostics = [];
     const expanded = new Set(); // nodes whose templates are fully materialized
     const active = new Set();   // nodes on the current expansion path (cycle guard)
@@ -133,8 +192,8 @@ function expandTemplates(root) {
         if (!isPlainObject(node) || expanded.has(node)) return;
         active.add(node);
 
-        // if template_oid is present, we know its a string because it passed schema validation
-        // expand the source first, then copy its fields into the consumer
+        // template_oid is a string here: it passed schema validation. Expand the
+        // source first, then copy its fields into the consumer.
         if (typeof node.template_oid === 'string') {
             const source = resolveFqoid(root, node.template_oid);
             const at = `${pointer}/template_oid`;
@@ -160,10 +219,8 @@ function expandTemplates(root) {
         expanded.add(node);
     }
 
-    if (isPlainObject(root.params)) {
-        for (const key of Object.keys(root.params)) {
-            expand(root.params[key], `/params/${escapeSegment(key)}`);
-        }
+    for (const key of Object.keys(root.params)) {
+        expand(root.params[key], `/params/${escapeSegment(key)}`);
     }
     return diagnostics;
 }
