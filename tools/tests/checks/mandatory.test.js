@@ -133,6 +133,22 @@ describe("Mandatory", () => {
         ]);
     });
 
+    test('warns rather than fails when product is deferred to an import', () => {
+        // deferring the product to an import is legitimate; plain validation
+        // cannot check it, so it warns instead of cascading type/field errors
+        const errors = validateRequiredParamsAndScopes(
+            { params: { product: { import: { url: './product.yaml' } } } },
+            DEVICE_OPTS
+        );
+        expect(errors).toEqual([
+            {
+                type: 'warning',
+                message: 'Product struct is deferred to an import and cannot be checked here; validate with imports resolved',
+                instancePath: '/params/product/import'
+            }
+        ]);
+    });
+
     test('returns error when product is missing params', () => {
         // mutate the device to remove the product.params object entirely
         delete device.params.product.params;

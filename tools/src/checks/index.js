@@ -73,25 +73,34 @@ const { WARNING, ERROR } = require('./constants');
  * @returns {Array<{name: string, run?: function(object, object): RawError[], createVisitor?: function(object, object): (Visitor|null)}>}
  */
 function getChecks() {
+    // `phase` is when a check runs relative to import resolution: `gate` checks
+    // are preconditions the resolver consumes on every fragment before it
+    // descends or loads; `report` checks describe the fully resolved model and
+    // run once at the end. Gating is opt-in — an unmarked check is `report`.
     return [
         {
             name: 'mandatory',
+            phase: 'report',
             run: mandatory.validateRequiredParamsAndScopes,
         },
         {
             name: 'nestedValues',
+            phase: 'report',
             createVisitor: nestedValues.createNestedValuesVisitor,
         },
         {
             name: 'scopes',
+            phase: 'report',
             createVisitor: scopes.createScopesVisitor,
         },
         {
             name: 'digest',
+            phase: 'gate',
             run: digest.validateImportDigests,
         },
         {
             name: 'clientHints',
+            phase: 'report',
             createVisitor: clientHints.createClientHintsVisitor,
         },
     ];
@@ -105,14 +114,18 @@ function getChecks() {
  *
  * @param {object} data the parsed descriptor to validate
  * @param {RunCheckOptions} opts the options for the checks
+ * @param {('all'|'gate'|'report')} [phase] which phase of checks to run; `all`
+ *   (the default) runs every check, as the single-file `validate` path needs.
  * @returns {RawError[]} aggregated errors from all checks
  */
-function runChecks(data, opts) {
+function runChecks(data, opts, phase = 'all') {
     const errors = [];
     const visitors = [];
 
     const checks = module.exports.getChecks();
     for (const check of checks) {
+        // report is the default phase
+        if (phase !== 'all' && (check.phase ?? 'report') !== phase) continue;
         if (typeof check.run === 'function') {
             errors.push(...check.run(data, opts));
         } else if (typeof check.createVisitor === 'function') {

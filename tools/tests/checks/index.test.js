@@ -41,14 +41,19 @@ describe('getChecks', () => {
         expect(result).toHaveLength(5);
         expect(result[0].name).toBe('mandatory');
         expect(result[0].run).toBe(mandatory.validateRequiredParamsAndScopes);
+        expect(result[0].phase).toBe('report');
         expect(result[1].name).toBe('nestedValues');
         expect(result[1].createVisitor).toBe(nestedValues.createNestedValuesVisitor);
+        expect(result[1].phase).toBe('report');
         expect(result[2].name).toBe('scopes');
         expect(result[2].createVisitor).toBe(scopes.createScopesVisitor);
+        expect(result[2].phase).toBe('report');
         expect(result[3].name).toBe('digest');
         expect(result[3].run).toBe(digest.validateImportDigests);
+        expect(result[3].phase).toBe('gate');
         expect(result[4].name).toBe('clientHints');
         expect(result[4].createVisitor).toBe(clientHints.createClientHintsVisitor);
+        expect(result[4].phase).toBe('report');
     });
 });
 
@@ -104,6 +109,49 @@ describe('runChecks', () => {
 
         checks.runChecks(testData, opts);
         expect(check1Run).toHaveBeenCalledWith(testData, opts);
+    });
+
+    // the phase argument selects which checks run
+    test('runs only the checks matching the requested phase', () => {
+        const gateRun = jest.fn(() => []);
+        const reportRun = jest.fn(() => []);
+        const unmarkedRun = jest.fn(() => []);
+
+        getChecksSpy.mockReturnValue([
+            { name: 'gateCheck', run: gateRun, phase: 'gate' },
+            { name: 'reportCheck', run: reportRun, phase: 'report' },
+            { name: 'unmarkedCheck', run: unmarkedRun },
+        ]);
+
+        checks.runChecks({}, { schemaName: 'device' }, 'gate');
+        expect(gateRun).toHaveBeenCalled();
+        expect(reportRun).not.toHaveBeenCalled();
+        // an unmarked check defaults to the report phase, so gate skips it
+        expect(unmarkedRun).not.toHaveBeenCalled();
+
+        gateRun.mockClear();
+        reportRun.mockClear();
+        unmarkedRun.mockClear();
+
+        checks.runChecks({}, { schemaName: 'device' }, 'report');
+        expect(gateRun).not.toHaveBeenCalled();
+        expect(reportRun).toHaveBeenCalled();
+        expect(unmarkedRun).toHaveBeenCalled();
+    });
+
+    // the default phase 'all' runs every check regardless of its phase
+    test('runs every check when phase is all', () => {
+        const gateRun = jest.fn(() => []);
+        const reportRun = jest.fn(() => []);
+
+        getChecksSpy.mockReturnValue([
+            { name: 'gateCheck', run: gateRun, phase: 'gate' },
+            { name: 'reportCheck', run: reportRun, phase: 'report' },
+        ]);
+
+        checks.runChecks({}, { schemaName: 'device' });
+        expect(gateRun).toHaveBeenCalled();
+        expect(reportRun).toHaveBeenCalled();
     });
 
     // enforces that getChecks is called with no arguments

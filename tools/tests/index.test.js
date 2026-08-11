@@ -174,15 +174,15 @@ describe('resolve', () => {
         jest.dontMock('../src/resolve');
     });
 
-    test('drives the resolver with the digest and a validate closure', async () => {
+    test('drives the resolver with the digest and gate/report validate closures', async () => {
         await resolve('examples/device.example.yaml');
         expect(mockResolveTree).toHaveBeenCalledWith(
             expect.any(URL),
-            { validate: expect.any(Function), load: undefined, digest: null, disableTemplateExpansion: false }
+            { validate: expect.any(Function), validateFinal: expect.any(Function), load: undefined, digest: null, disableTemplateExpansion: false }
         );
     });
 
-    test('the injected validate applies default check options through validateData', async () => {
+    test('the injected gate closure applies default check options for the gate phase', async () => {
         await resolve('examples/device.example.yaml');
         const { validate: injected } = mockResolveTree.mock.calls[0][1];
         const sourceMap = { linesFor: () => null };
@@ -191,7 +191,19 @@ describe('resolve', () => {
             disableMandatoryParams: false,
             disableNestedValueChecks: false,
             disableScopeChecks: false,
-        });
+        }, 'gate');
+    });
+
+    test('the injected final closure applies default check options for the report phase', async () => {
+        await resolve('examples/device.example.yaml');
+        const { validateFinal: injected } = mockResolveTree.mock.calls[0][1];
+        const sourceMap = { linesFor: () => null };
+        injected('param', { a: 1 }, sourceMap);
+        expect(mockValidateData).toHaveBeenCalledWith('param', { a: 1 }, sourceMap, {
+            disableMandatoryParams: false,
+            disableNestedValueChecks: false,
+            disableScopeChecks: false,
+        }, 'report');
     });
 
     test('honours digest, custom load, and disable flags', async () => {
@@ -207,7 +219,7 @@ describe('resolve', () => {
         });
         expect(mockResolveTree).toHaveBeenCalledWith(
             expect.any(URL),
-            { validate: expect.any(Function), load, digest, disableTemplateExpansion: true }
+            { validate: expect.any(Function), validateFinal: expect.any(Function), load, digest, disableTemplateExpansion: true }
         );
         const { validate: injected } = mockResolveTree.mock.calls[0][1];
         injected('param', {}, { linesFor: () => null });
@@ -215,7 +227,7 @@ describe('resolve', () => {
             disableMandatoryParams: true,
             disableNestedValueChecks: true,
             disableScopeChecks: true,
-        });
+        }, 'gate');
     });
 
     test('returns the resolver result unchanged', async () => {

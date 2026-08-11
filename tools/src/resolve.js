@@ -36,12 +36,14 @@
  * module owns the merge policy; transport, integrity, and parsing stay in the
  * loader, and validation stays in the engine.
  *
- * Every fragment is validated twice: once "before" the merge, as authored,
- * against its own source map (so its errors carry real line numbers), and once
- * "after", when the fully merged tree is checked as a whole to catch problems
- * that only emerge from the merge. Because an import stub is itself a valid
- * param, each file validates cleanly on its own terms, and this holds at every
- * level of an import chain. A descriptor with no imports is validated once.
+ * Each fragment is validated as authored, against its own source map (so its
+ * errors carry real line numbers), running only the gate-phase checks (schema,
+ * digest) the resolver depends on to descend and load safely. Because an import
+ * stub is itself a valid param, each file validates cleanly on its own terms,
+ * and this holds at every level of an import chain. Once the tree is fully
+ * inlined and its templates expanded, the report-phase checks run once over the
+ * whole model against the root file's line map — nodes pulled in from imported
+ * files resolve to no line, everything authored in the root keeps its lines.
  *
  * A fragment that is invalid as authored is never descended: its structure is
  * exactly what the schema just rejected — an `import` may lack its `url`, a
@@ -64,7 +66,6 @@
 'use strict';
 
 const loader = require('./loader');
-const { emptySourceMap } = require('./sourcemap');
 const { schemaNameFromUrl } = require('./urls');
 const { NESTED_FIELDS, walkableFields, isPlainObject, escapeSegment } = require('./shape');
 const { ERROR } = require('./checks/constants');
@@ -96,11 +97,11 @@ const { expandTemplates } = require('./templates');
  * @property {object} data the resolved, import-free data
  * @property {Diagnostic[]} diagnostics accumulated "before" (as-authored) diagnostics
  * @property {boolean} valid whether every as-authored validation passed
- * @property {boolean} imported whether any import directive was inlined
  * @property {ImportRecord[]} imports every file inlined in this subtree, in DFS order
  * @property {string[]} directImports resolved URLs the current file imports directly,
  *   its own edges in the dependency graph (reset at each file boundary)
  * @property {string} [digest] base64 sha256 of this file's loaded bytes; set only by resolveFile
+ * @property {SourceMap} [sourceMap] this file's line map; set only by resolveFile, used for the final pass
  */
 
 /**
@@ -137,7 +138,7 @@ function dedupeImports(imports) {
  */
 function importFailure(sourceMap, pointer, message) {
     const diagnostic = { level: ERROR, message, instancePath: pointer, lines: sourceMap.linesFor(pointer) };
-    return { data: {}, diagnostics: [diagnostic], valid: false, imported: true, imports: [], directImports: [] };
+    return { data: {}, diagnostics: [diagnostic], valid: false, imports: [], directImports: [] };
 }
 
 /**
@@ -183,7 +184,6 @@ async function resolveChildren(node, source, deps, fields, pointer) {
     const imports = [];
     const directImports = [];
     let valid = true;
-    let imported = false;
 
     for (const field of fields) {
         if (!isPlainObject(result[field])) {
@@ -198,12 +198,11 @@ async function resolveChildren(node, source, deps, fields, pointer) {
             imports.push(...child.imports);
             directImports.push(...child.directImports);
             valid = valid && child.valid;
-            imported = imported || child.imported;
         }
         result[field] = map;
     }
 
-    return { data: result, diagnostics, valid, imported, imports, directImports };
+    return { data: result, diagnostics, valid, imports, directImports };
 }
 
 /**
@@ -271,7 +270,6 @@ async function resolveNode(node, source, deps, fields, pointer) {
         data: mergeImported(imported.data, overrides.data),
         diagnostics: [...imported.diagnostics, ...overrides.diagnostics],
         valid: imported.valid && overrides.valid,
-        imported: true,
         imports: [record, ...imported.imports, ...overrides.imports],
         directImports: [importUrl.href, ...overrides.directImports]
     };
@@ -303,7 +301,7 @@ async function resolveFile(url, deps, digest, ancestors = []) {
     if (!before.valid) {
         // Hand back the validation result's data ({} on failure), never the raw
         // parse, so an invalid fragment splices nothing unvalidated into a merge.
-        return { data: before.data, diagnostics: before.diagnostics, valid: false, imported: false, imports: [], directImports: [], digest: loadedDigest };
+        return { data: before.data, diagnostics: before.diagnostics, valid: false, imports: [], directImports: [], digest: loadedDigest, sourceMap };
     }
     // Past the gate `before.data` is the validated model — a plain object, not
     // the scalar/array/null a well-formed file could still parse to — so descend
@@ -315,10 +313,10 @@ async function resolveFile(url, deps, digest, ancestors = []) {
         data: resolved.data,
         diagnostics: [...before.diagnostics, ...resolved.diagnostics],
         valid: resolved.valid,
-        imported: resolved.imported,
         imports: resolved.imports,
         directImports: resolved.directImports,
-        digest: loadedDigest
+        digest: loadedDigest,
+        sourceMap
     };
 }
 
@@ -326,15 +324,15 @@ async function resolveFile(url, deps, digest, ancestors = []) {
  * Resolve a descriptor's imports into a single self-contained tree, then expand
  * its templates into the runtime model it describes.
  *
- * Each fragment is validated "before" the merge, as authored, against its own
- * source map (real line numbers). If any import was inlined and every fragment
- * was individually sound, the merged tree gets one final "after" pass to catch
- * problems that only emerge from the merge; this pass spans files, so it carries
- * no line info. A descriptor with no imports — or one whose fragments already
- * failed on their own — is not re-validated: there is nothing a merged pass
- * could add but duplicate, line-less diagnostics.
+ * Each fragment is validated as authored, against its own source map (real line
+ * numbers), running only the gate-phase checks the resolver depends on. Once the
+ * tree is fully inlined and its templates expanded, the report-phase checks run
+ * once over the whole model via `validateFinal`, against the root file's line
+ * map: nodes authored in the root keep their lines, nodes pulled in from imported
+ * files resolve to none. This final pass also re-checks the assembled structure,
+ * catching problems that only emerge from the merge or from expansion.
  *
- * A tree that survives validation has its `template_oid` references expanded, so
+ * A tree that survives resolution has its `template_oid` references expanded, so
  * each consumer carries the shape it borrowed and `data` is the runtime model.
  * The template sources and the `template_oid` provenance stay in the tree.
  * Expansion acts on whatever `params` a descriptor carries, so a device, a
@@ -342,59 +340,52 @@ async function resolveFile(url, deps, digest, ancestors = []) {
  * tree with nothing to expand, passes through unchanged. A template that does
  * not resolve is a hard error: the model would be ill-defined, so the
  * pre-expansion tree is returned, marked invalid. Passing
- * `disableTemplateExpansion` skips this step and returns the merged tree with
- * its `template_oid` references left as authored.
+ * `disableTemplateExpansion` skips this step and runs the final pass over the
+ * merged tree with its `template_oid` references left as authored.
  *
  * @param {URL} url location of the descriptor to resolve
  * @param {object} deps
- * @param {ValidateFn} deps.validate validates data against a named schema
+ * @param {ValidateFn} deps.validate validates a fragment (gate-phase checks)
+ * @param {ValidateFn} [deps.validateFinal] validates the resolved model (report-phase
+ *   checks); defaults to `validate` when a caller does not distinguish the phases
  * @param {Loader} [deps.load] custom transport, forwarded to the loader
  * @param {string|null} [deps.digest] base64 sha256 to pin the root file against
  * @param {boolean} [deps.disableTemplateExpansion] return the merged tree without expanding templates
  * @returns {Promise<ResolutionResult>}
  */
-async function resolve(url, { validate, load, digest = null, disableTemplateExpansion = false }) {
+async function resolve(url, { validate, validateFinal = validate, load, digest = null, disableTemplateExpansion = false }) {
     const deps = { validate, load };
     const resolved = await resolveFile(url, deps, digest);
     const imports = dedupeImports(resolved.imports);
     // The root's own edges in the dependency graph: the files it imports directly.
     const dependencies = resolved.directImports;
     const schemaName = schemaNameFromUrl(url);
+    const diagnostics = [...resolved.diagnostics];
 
     // A fragment invalid as authored is not merged or expanded: its shape is
     // exactly what the schema just rejected, so there is nothing to act on.
     if (!resolved.valid) {
-        return { data: resolved.data, diagnostics: resolved.diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
-    }
-
-    // Re-check the merged tree only when a merge happened; a single file already
-    // had its one authoritative pass.
-    const diagnostics = [...resolved.diagnostics];
-    let valid = true;
-    if (resolved.imported) {
-        const after = validate(schemaName, resolved.data, emptySourceMap);
-        diagnostics.push(...after.diagnostics);
-        valid = after.valid;
-    }
-    // A tree that failed the merged pass is not expanded either.
-    if (!valid) {
         return { data: resolved.data, diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
     }
 
-    // Eager expansion by default; a caller can opt out to keep the merged tree's
-    // `template_oid` references unresolved.
-    if (disableTemplateExpansion) {
-        return { data: resolved.data, diagnostics, valid: true, imports, dependencies, digest: resolved.digest };
+    // Expand before the final pass, so the report checks see the runtime model.
+    let tree = resolved.data;
+    if (!disableTemplateExpansion) {
+        const expanded = expandTemplates(tree);
+        diagnostics.push(...expanded.diagnostics);
+        // An unresolved or cyclic template leaves the model ill-defined: report it
+        // and hand back the pre-expansion tree rather than a half-expanded one.
+        if (!expanded.valid) {
+            return { data: tree, diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
+        }
+        tree = expanded.data;
     }
 
-    const expanded = expandTemplates(resolved.data);
-    diagnostics.push(...expanded.diagnostics);
-    // An unresolved or cyclic template leaves the model ill-defined: report it and
-    // hand back the pre-expansion tree rather than a half-expanded one.
-    if (!expanded.valid) {
-        return { data: resolved.data, diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
-    }
-    return { data: expanded.data, diagnostics, valid: true, imports, dependencies, digest: resolved.digest };
+    // The report-phase checks (and a whole-tree structural re-check) run once
+    // here, on the fully resolved and expanded model, against the root's lines.
+    const final = validateFinal(schemaName, tree, resolved.sourceMap);
+    diagnostics.push(...final.diagnostics);
+    return { data: tree, diagnostics, valid: final.valid, imports, dependencies, digest: resolved.digest };
 }
 
 module.exports = { mergeImported, resolve };

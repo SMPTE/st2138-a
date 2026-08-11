@@ -113,9 +113,10 @@ class Validator {
      * @param {unknown} data the parsed descriptor to validate
      * @param {SourceMap} sourceMap resolves diagnostic pointers to source lines
      * @param {CheckOptions} [checkOpts] flags to disable individual post-schema checks
+     * @param {('all'|'gate'|'report')} [phase] which phase of post-schema checks to run
      * @returns {ValidationResult}
      */
-    validateData(schemaName, data, sourceMap, checkOpts = {}) {
+    validateData(schemaName, data, sourceMap, checkOpts = {}, phase = 'all') {
         const isDeviceSchema = schemaName === 'device';
         if (!isDeviceSchema && !(schemaName in schema.$defs)) {
             throw { error: 2, message: `Could not find ${schemaName} in schema definition file.` };
@@ -138,7 +139,7 @@ class Validator {
             return { valid: false, diagnostics: Validator.toDiagnostics(errors, sourceMap), data: {} };
         }
 
-        const checkErrors = checks.runChecks(data, { ...checkOpts, schemaName });
+        const checkErrors = checks.runChecks(data, { ...checkOpts, schemaName }, phase);
         const diagnostics = Validator.toDiagnostics(checkErrors, sourceMap);
         valid = !checkErrors.some(err => err.type === undefined || err.type === checks.ERROR);
 

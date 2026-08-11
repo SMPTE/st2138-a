@@ -119,12 +119,16 @@ async function resolve(input, options = {}) {
         disableScopeChecks: options.disableScopeChecks || false,
     };
     const engine = getEngine();
-    // The resolver validates in-memory data (each fragment, then the merged
-    // tree), so it drives the pure `validateData` path rather than the loader.
+    // The resolver validates in-memory data. Per fragment it runs only the
+    // gate-phase checks (schema, digest) it depends on to descend and load
+    // safely; the report-phase checks run once, on the fully resolved model.
     const validate = (schemaName, data, sourceMap) =>
-        engine.validateData(schemaName, data, sourceMap, checkOpts);
+        engine.validateData(schemaName, data, sourceMap, checkOpts, 'gate');
+    const validateFinal = (schemaName, data, sourceMap) =>
+        engine.validateData(schemaName, data, sourceMap, checkOpts, 'report');
     return resolveTree(url, {
         validate,
+        validateFinal,
         load: options.load,
         digest: options.digest ?? null,
         disableTemplateExpansion: options.disableTemplateExpansion || false,

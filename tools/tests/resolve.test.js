@@ -127,9 +127,13 @@ describe('resolve', () => {
         // and the root has no dependency-graph edges
         expect(result.dependencies).toEqual([]);
         // schema derived from filename, and a real source map (resolves lines)
-        expect(validate).toHaveBeenCalledTimes(1);
+        // gate pass on the fragment, then the report pass on the resolved tree;
+        // with no distinct validateFinal supplied, the same spy sees both
+        expect(validate).toHaveBeenCalledTimes(2);
         expect(callArgs(validate, 0).schemaName).toBe('param');
         expect(callArgs(validate, 0).sourceMap.linesFor('/type')).toEqual({ start: 1, end: 1 });
+        // the report pass runs against the root's line map too
+        expect(callArgs(validate, 1).sourceMap.linesFor('/type')).toEqual({ start: 1, end: 1 });
     });
 
     test('resolves a root import: target is the base, local overrides win, import dropped', async () => {
@@ -492,7 +496,8 @@ describe('resolve', () => {
         expect(result.data.params.gain).not.toHaveProperty('import');
         expect(result.data.params.mute).toEqual({ type: 'INT32', value: { int32_value: 0 } });
 
-        // device as authored, the imported param on its own, then merged device
+        // device as authored, the imported param on its own, then the report
+        // pass on the resolved tree
         expect(validate).toHaveBeenCalledTimes(3);
         expect(callArgs(validate, 0).schemaName).toBe('device');
         const param = callArgs(validate, 1);
@@ -501,7 +506,9 @@ describe('resolve', () => {
         const merged = callArgs(validate, 2);
         expect(merged.schemaName).toBe('device');
         expect(merged.data).toBe(result.data);
-        expect(merged.sourceMap.linesFor('/slot')).toBeNull();
+        // the report pass runs against the root's line map, so root-authored
+        // nodes keep their lines
+        expect(merged.sourceMap.linesFor('/slot')).toEqual({ start: 1, end: 1 });
     });
 
     test('descends the commands map to resolve a nested command import', async () => {
@@ -587,27 +594,26 @@ describe('resolve', () => {
         expect(seen).toContain('file:///models/shared/param.target.yaml');
     });
 
-    test('a merged tree that fails the after pass is reported invalid and unexpanded', async () => {
+    test('a resolved tree that fails the report pass is reported invalid', async () => {
         const rootUrl = new URL('file:///models/param.import.yaml');
         const load = transport(new Map([
             [rootUrl.href, 'type: INT32\nimport:\n  url: ./param.target.yaml\nvalue:\n  int32_value: 42\n'],
             ['file:///models/param.target.yaml', 'type: INT32\nvalue:\n  int32_value: 0\n']
         ]));
-        const afterDiag = { level: 'error', message: 'merged conflict', instancePath: '', lines: null };
+        const reportDiag = { level: 'error', message: 'merged conflict', instancePath: '', lines: null };
         const validate = spyValidate();
-        validate
-            .mockImplementationOnce((schemaName, data) => ({ valid: true, diagnostics: [], data })) // root, as authored
-            .mockImplementationOnce((schemaName, data) => ({ valid: true, diagnostics: [], data })) // imported target
-            .mockReturnValueOnce({ valid: false, diagnostics: [afterDiag], data: {} });              // merged, after
+        const validateFinal = spyValidate().mockReturnValueOnce({ valid: false, diagnostics: [reportDiag], data: {} });             // report pass
 
-        const result = await resolve(rootUrl, { validate, load });
+        const result = await resolve(rootUrl, { validate, validateFinal, load });
 
         expect(result.valid).toBe(false);
-        expect(result.diagnostics).toContainEqual(afterDiag);
-        // the tree that failed is not expanded; the pre-expansion data is returned
+        expect(result.diagnostics).toContainEqual(reportDiag);
+        // expansion runs before the report pass; the resolved (passthrough-expanded)
+        // tree is what gets returned
         expect(result.data).toEqual({ type: 'INT32', value: { int32_value: 42 } });
-        expect(expandTemplates).not.toHaveBeenCalled();
-        expect(validate).toHaveBeenCalledTimes(3);
+        expect(expandTemplates).toHaveBeenCalledTimes(1);
+        expect(validate).toHaveBeenCalledTimes(2);
+        expect(validateFinal).toHaveBeenCalledTimes(1);
     });
 
     test('expands the resolved tree, threading the expander output into the result', async () => {

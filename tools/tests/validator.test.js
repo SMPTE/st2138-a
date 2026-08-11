@@ -103,7 +103,8 @@ describe('Validator', () => {
         expect(compileSpy).toHaveBeenCalled();
         expect(runChecksSpy).toHaveBeenCalledWith(
             { params: {} },
-            expect.objectContaining({ schemaName: 'device' })
+            expect.objectContaining({ schemaName: 'device' }),
+            'all'
         );
     });
 
@@ -187,7 +188,8 @@ describe('Validator', () => {
                 disableMandatoryParams: false,
                 disableNestedValueChecks: false,
                 disableScopeChecks: false,
-            }
+            },
+            'all'
         );
     });
 
@@ -218,7 +220,8 @@ describe('Validator', () => {
                 disableMandatoryParams: true,
                 disableNestedValueChecks: true,
                 disableScopeChecks: true,
-            }
+            },
+            'all'
         );
     });
 
