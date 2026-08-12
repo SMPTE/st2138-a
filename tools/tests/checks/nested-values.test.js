@@ -142,6 +142,22 @@ describe('checkNestedValues', () => {
         });
     });
 
+    // a namespace root has no value but is definition-only, so R1 is exempt
+    test('does not warn when a valueless top-level param is a namespace root', () => {
+        delete device.params.parent.value;
+        device.params.parent.client_hints = { st2138_namespace: 'smpte.audio' };
+        const result = checkNestedValues(device, ENABLED_OPTS);
+        expect(result).toEqual([]);
+    });
+
+    // an explicit definition-only param has no value but R1 is exempt
+    test('does not warn when a valueless top-level param is explicitly definition-only', () => {
+        delete device.params.parent.value;
+        device.params.parent.client_hints = { st2138_definition_only: 'true' };
+        const result = checkNestedValues(device, ENABLED_OPTS);
+        expect(result).toEqual([]);
+    });
+
     // check that it does not flag top-level param values, only nested values
     test('does not flag top-level param values', () => {
         // top-level params are expected to have values
@@ -182,6 +198,40 @@ describe('checkNestedValues', () => {
         device.params.deep_parent.params.mid.params.leaf.value = { int32_value: 99 };
         // add a new param with a template_oid reference to the deep leaf
         device.params.referrer_leaf = { template_oid: 'deep_parent/mid/leaf' };
+        const result = checkNestedValues(device, ENABLED_OPTS);
+        expect(result).toEqual([]);
+    });
+
+    // a value on a param under a namespace root is a definition, not a stray
+    // runtime value, so R2 is exempt even without a template_oid referencing it
+    test('does not flag a nested value under a namespace root', () => {
+        device.params.parent.client_hints = { st2138_namespace: 'smpte.audio' };
+        device.params.parent.params.sibling.value = { int32_value: 1 };
+        const result = checkNestedValues(device, ENABLED_OPTS);
+        expect(result).toEqual([]);
+    });
+
+    // the exemption inherits down the whole subtree, not just the first level
+    test('does not flag a deeply nested value under a namespace root', () => {
+        device.params.deep_parent.client_hints = { st2138_namespace: 'smpte.audio' };
+        device.params.deep_parent.params.mid.params.leaf.value = { int32_value: 99 };
+        const result = checkNestedValues(device, ENABLED_OPTS);
+        expect(result).toEqual([]);
+    });
+
+    // an explicit definition_only ancestor exempts its subtree too
+    test('does not flag a nested value under an explicit definition-only param', () => {
+        device.params.parent.client_hints = { st2138_definition_only: 'true' };
+        device.params.parent.params.sibling.value = { int32_value: 1 };
+        const result = checkNestedValues(device, ENABLED_OPTS);
+        expect(result).toEqual([]);
+    });
+
+    // a definition-only node that itself carries a value is exempt (self, not ancestor)
+    test('does not flag a nested definition-only param that carries a value', () => {
+        device.params.parent.params.child.client_hints = { st2138_definition_only: 'true' };
+        // child already has a value; without the hint it would warn (unreferenced)
+        delete device.params.referrer_child;
         const result = checkNestedValues(device, ENABLED_OPTS);
         expect(result).toEqual([]);
     });
