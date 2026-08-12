@@ -29,7 +29,7 @@
 
 'use strict';
 
-const { walkableFields, isPlainObject, escapeSegment, NESTED_FIELDS, ROOT_FIELDS, toPointer, collectImports } = require('../src/shape');
+const { walkableFields, isPlainObject, fillGaps, shallowMerge, escapeSegment, NESTED_FIELDS, ROOT_FIELDS, toPointer, collectImports } = require('../src/shape');
 
 describe('walkableFields', () => {
     test('descends params and commands at a device root', () => {
@@ -55,6 +55,86 @@ describe('isPlainObject', () => {
         expect(isPlainObject([1, 2])).toBe(false);
         expect(isPlainObject('text')).toBe(false);
         expect(isPlainObject(undefined)).toBe(false);
+    });
+});
+
+describe('fillGaps', () => {
+    test('adds only the keys the target lacks and returns the target', () => {
+        const target = { value: 42 };
+        const result = fillGaps(target, { oid: '0x01', value: 0 });
+        expect(result).toBe(target); // mutated in place, and handed back
+        expect(target).toEqual({ oid: '0x01', value: 42 }); // target's own key wins
+    });
+
+    test('links filled values by reference, not by copy', () => {
+        // the caller that must not alias the source clones it first; fillGaps itself
+        // shares, so the resolver's one-shot trees pay no needless copy
+        const source = { help: { en: 'hi' } };
+        const target = fillGaps({}, source);
+        expect(target.help).toBe(source.help);
+    });
+});
+
+describe('shallowMerge', () => {
+    test('local scalars override imported scalars', () => {
+        // an import may carry a placeholder default; the local value is real
+        expect(shallowMerge({ value: 0 }, { value: 42 })).toEqual({ value: 42 });
+    });
+
+    test('keys present in only one side both survive', () => {
+        const base = { oid: '0x01', type: 'INT32' };
+        const local = { value: 42 };
+        expect(shallowMerge(base, local)).toEqual({ oid: '0x01', type: 'INT32', value: 42 });
+    });
+
+    test('a local mapping replaces an imported mapping wholesale, not key-by-key', () => {
+        // overriding `name` restates it in full: a language the local omits is
+        // dropped, not inherited from the base — override means override
+        const base = { name: { display_strings: { en: 'Gain', fr: 'Gain' } } };
+        const local = { name: { display_strings: { en: 'Level' } } };
+        expect(shallowMerge(base, local)).toEqual({
+            name: { display_strings: { en: 'Level' } }
+        });
+    });
+
+    test('a local scalar replaces an imported mapping wholesale', () => {
+        expect(shallowMerge({ a: { deep: 1 } }, { a: 5 })).toEqual({ a: 5 });
+    });
+
+    test('a local mapping replaces an imported scalar wholesale', () => {
+        expect(shallowMerge({ a: 5 }, { a: { deep: 1 } })).toEqual({ a: { deep: 1 } });
+    });
+
+    test('a differently typed value replaces the base whole, not blended', () => {
+        // a base INT32 specialized to INT32_ARRAY: the array value stands alone,
+        // never merged with the scalar into an invalid two-branch union
+        const base = { type: 'INT32', value: { int32_value: 4 } };
+        const local = { type: 'INT32_ARRAY', value: { int32_array_values: { ints: [1, 2, 3] } } };
+        expect(shallowMerge(base, local)).toEqual({
+            type: 'INT32_ARRAY',
+            value: { int32_array_values: { ints: [1, 2, 3] } }
+        });
+    });
+
+    test('arrays are replaced wholesale, not merged by index', () => {
+        expect(shallowMerge({ items: ['a', 'b', 'c'] }, { items: ['x'] })).toEqual({
+            items: ['x']
+        });
+    });
+
+    test('a non-mapping on either side yields the local value', () => {
+        expect(shallowMerge(5, { a: 1 })).toEqual({ a: 1 });
+        expect(shallowMerge({ a: 1 }, 5)).toBe(5);
+        expect(shallowMerge({ a: 1 }, null)).toBe(null);
+        expect(shallowMerge([1], { a: 1 })).toEqual({ a: 1 });
+    });
+
+    test('does not mutate either input', () => {
+        const base = { help: { en: 'imported', fr: 'aide' } };
+        const local = { value: 42 };
+        shallowMerge(base, local);
+        expect(base).toEqual({ help: { en: 'imported', fr: 'aide' } });
+        expect(local).toEqual({ value: 42 });
     });
 });
 

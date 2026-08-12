@@ -59,7 +59,7 @@
 'use strict';
 
 const { ERROR } = require('./checks/constants');
-const { isPlainObject, escapeSegment } = require('./shape');
+const { isPlainObject, fillGaps, escapeSegment } = require('./shape');
 const { NAMESPACE_KEY, DEFINITION_ONLY_KEY } = require('./hints');
 
 /**
@@ -138,22 +138,26 @@ function fqoidToPointer(fqoid) {
 }
 
 /**
- * Copy every field the source defines and the consumer lacks into the consumer,
- * skipping `template_oid` and the source's reserved hints. `client_hints` is
- * copied only after its reserved keys are removed, and only if anything remains.
+ * Fill a consumer with every field its template source defines and it lacks, so
+ * a consumer that says only "I am `template_oid X`" ends up carrying X's shape
+ * while its own fields still win. Two rules run before the generic gap-fill:
+ * `client_hints` is inherited only after its reserved lexical keys are stripped,
+ * and only if anything remains; `template_oid` is never inherited (a consumer
+ * keeps its own). The rest defers to {@link fillGaps} — the same shallow rule
+ * the resolver merges imports with — over a private clone, so each consumer owns
+ * its copy of a shared source.
  * @param {object} node the consumer to fill (mutated)
  * @param {object} source the fully expanded template source
  */
 function fillFromTemplate(node, source) {
-    for (const key of Object.keys(source)) {
-        if (key === 'template_oid' || key in node) continue;
-        if (key === 'client_hints') {
-            const hints = withoutLexicalHints(source.client_hints);
-            if (hints) node.client_hints = hints;
-            continue;
-        }
-        node[key] = structuredClone(source[key]);
+    if (!('client_hints' in node)) {
+        const hints = withoutLexicalHints(source.client_hints);
+        if (hints) node.client_hints = hints;
     }
+    const inheritable = { ...source };
+    delete inheritable.template_oid; // a consumer keeps its own, never the source's
+    delete inheritable.client_hints; // handled above, with its lexical filtering
+    fillGaps(node, structuredClone(inheritable));
 }
 
 /**

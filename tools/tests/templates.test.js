@@ -244,4 +244,19 @@ describe('expandTemplates', () => {
         expect(result.diagnostics).toEqual([]);
         expect(result.data.params.consumer.client_hints).toEqual({ widget: 'slider' });
     });
+
+    test('a consumer with its own client_hints keeps them, ignoring the source', () => {
+        // the consumer wins wholesale: its client_hints are neither merged with
+        // nor stripped against the source's — the special filter runs only when
+        // the consumer offers none of its own
+        const model = {
+            params: {
+                lib: { params: { src: { type: 'INT32', client_hints: { widget: 'slider' } } } },
+                consumer: { type: 'INT32', template_oid: 'lib/src', client_hints: { widget: 'knob' } },
+            },
+        };
+        const result = expandTemplates(model);
+        expect(result.diagnostics).toEqual([]);
+        expect(result.data.params.consumer.client_hints).toEqual({ widget: 'knob' });
+    });
 });

@@ -32,9 +32,10 @@
  *
  * Builds a single self-contained descriptor from one that uses `import`
  * directives to pull in parameter definitions from other files. The importing
- * node supplies local overrides; the imported file supplies the base. This
- * module owns the merge policy; transport, integrity, and parsing stay in the
- * loader, and validation stays in the engine.
+ * node supplies local overrides; the imported file supplies the base, combined
+ * by the shared shallow merge rule (`shape.shallowMerge`) so an import and a
+ * template specialize a node the same way; transport, integrity, and parsing
+ * stay in the loader, and validation stays in the engine.
  *
  * Each fragment is validated as authored, against its own source map (so its
  * errors carry real line numbers), running only the gate-phase checks (schema,
@@ -67,7 +68,7 @@
 
 const loader = require('./loader');
 const { schemaNameFromUrl } = require('./urls');
-const { NESTED_FIELDS, walkableFields, isPlainObject, escapeSegment } = require('./shape');
+const { NESTED_FIELDS, walkableFields, isPlainObject, shallowMerge, escapeSegment } = require('./shape');
 const { ERROR } = require('./checks/constants');
 const { expandTemplates } = require('./templates');
 
@@ -142,28 +143,6 @@ function importFailure(sourceMap, pointer, message) {
 }
 
 /**
- * Deep-merge an imported base with a local override, local winning on
- * collisions. Mappings (e.g. `help`, nested `params`) merge key-by-key so keys
- * present in only one side survive; scalars and arrays are replaced wholesale
- * by the local value. Neither input is mutated.
- *
- * @param {unknown} base value supplied by the imported file
- * @param {unknown} local value supplied by the importing node (wins)
- * @returns {unknown} merged result
- */
-function mergeImported(base, local) {
-    if (!isPlainObject(base) || !isPlainObject(local)) {
-        return local;
-    }
-
-    const result = { ...base };
-    for (const key of Object.keys(local)) {
-        result[key] = mergeImported(base[key], local[key]);
-    }
-    return result;
-}
-
-/**
  * Recurse into a node's param-bearing maps, resolving each child in place. The
  * child maps to descend are given by `fields`: the device root passes
  * `ROOT_FIELDS` (`params` + `commands`); every deeper level passes
@@ -210,7 +189,7 @@ async function resolveChildren(node, source, deps, fields, pointer) {
  * its param-bearing children.
  *
  * When the node carries `import: { url, digest? }`, the referenced file is the
- * base and the node's other keys are local overrides (deep merge, local wins,
+ * base and the node's other keys are local overrides (shallow merge, local wins,
  * `import` dropped). Each side is resolved against its own location first — the
  * imported file relative to its own URL, the overrides relative to this file —
  * so relative imports nested within either side resolve correctly, and only
@@ -267,7 +246,7 @@ async function resolveNode(node, source, deps, fields, pointer) {
     const record = { url: importUrl.href, digest: imported.digest, dependencies: imported.directImports };
 
     return {
-        data: mergeImported(imported.data, overrides.data),
+        data: shallowMerge(imported.data, overrides.data),
         diagnostics: [...imported.diagnostics, ...overrides.diagnostics],
         valid: imported.valid && overrides.valid,
         imports: [record, ...imported.imports, ...overrides.imports],
@@ -388,4 +367,4 @@ async function resolve(url, { validate, validateFinal = validate, load, digest =
     return { data: tree, diagnostics, valid: final.valid, imports, dependencies, digest: resolved.digest };
 }
 
-module.exports = { mergeImported, resolve };
+module.exports = { resolve };

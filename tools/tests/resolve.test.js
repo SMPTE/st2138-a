@@ -37,51 +37,7 @@ const crypto = require('node:crypto');
 // behavior.
 jest.mock('../src/templates');
 const { expandTemplates } = require('../src/templates');
-const { mergeImported, resolve } = require('../src/resolve');
-
-describe('mergeImported', () => {
-    test('local scalars override imported scalars', () => {
-        // an import may carry a placeholder default; the local value is real
-        expect(mergeImported({ value: 0 }, { value: 42 })).toEqual({ value: 42 });
-    });
-
-    test('keys present in only one side both survive', () => {
-        const base = { oid: '0x01', type: 'INT32' };
-        const local = { value: 42 };
-        expect(mergeImported(base, local)).toEqual({ oid: '0x01', type: 'INT32', value: 42 });
-    });
-
-    test('nested mappings merge key-by-key (e.g. per-language help)', () => {
-        // en is overridden locally; fr exists only in the import and must survive
-        const base = { help: { en: 'imported', fr: 'aide' } };
-        const local = { help: { en: 'overridden' } };
-        expect(mergeImported(base, local)).toEqual({
-            help: { en: 'overridden', fr: 'aide' }
-        });
-    });
-
-    test('a local scalar replaces an imported mapping wholesale', () => {
-        expect(mergeImported({ a: { deep: 1 } }, { a: 5 })).toEqual({ a: 5 });
-    });
-
-    test('a local mapping replaces an imported scalar wholesale', () => {
-        expect(mergeImported({ a: 5 }, { a: { deep: 1 } })).toEqual({ a: { deep: 1 } });
-    });
-
-    test('arrays are replaced wholesale, not merged by index', () => {
-        expect(mergeImported({ items: ['a', 'b', 'c'] }, { items: ['x'] })).toEqual({
-            items: ['x']
-        });
-    });
-
-    test('does not mutate either input', () => {
-        const base = { help: { en: 'imported', fr: 'aide' } };
-        const local = { help: { en: 'overridden' } };
-        mergeImported(base, local);
-        expect(base).toEqual({ help: { en: 'imported', fr: 'aide' } });
-        expect(local).toEqual({ help: { en: 'overridden' } });
-    });
-});
+const { resolve } = require('../src/resolve');
 
 describe('resolve', () => {
     // Reset expandTemplates to a passthrough default before each test: the
@@ -170,8 +126,8 @@ describe('resolve', () => {
         expect(result.data).toEqual({
             read_only: true,                   // import-only field survives the merge
             type: 'INT32',
-            value: { int32_value: 42 },       // local scalar-ish subtree wins
-            help: { en: 'local', fr: 'aide' }  // maps merge; import-only fr survives
+            value: { int32_value: 42 },        // local value replaces the import's whole
+            help: { en: 'local' }              // local restates help; import-only fr is dropped
         });
         expect(result.data).not.toHaveProperty('import');
 
@@ -556,7 +512,7 @@ describe('resolve', () => {
         expect(result.data).toEqual({
             type: 'INT32',                       // from b
             value: { int32_value: 7 },           // from c
-            help: { en: 'a', fr: 'cfr' }         // a overrides c's en; c's fr survives
+            help: { en: 'a' }                    // a restates help wholesale; c's fr is dropped
         });
         expect(result.data).not.toHaveProperty('import');
 

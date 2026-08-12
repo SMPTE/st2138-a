@@ -75,6 +75,50 @@ function isPlainObject(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+/**
+ * The shared core of the model's merge: copy into `target`, in place, every key
+ * `source` defines that `target` lacks. Keys already on `target` are left alone,
+ * so `target` wins every collision. Copied values are linked by reference, not
+ * cloned — a caller that fans one `source` out to many targets, or that must not
+ * alias `source`, clones the source first (`fillGaps(t, structuredClone(s))`).
+ * @param {object} target the mapping to fill (mutated, and returned)
+ * @param {object} source the mapping to draw absent keys from
+ * @returns {object} `target`
+ */
+function fillGaps(target, source) {
+    for (const key of Object.keys(source)) {
+        if (!(key in target)) {
+            target[key] = source[key];
+        }
+    }
+    return target;
+}
+
+/**
+ * The model's single merge rule: combine a base mapping with an overriding one,
+ * one level deep. Every key `local` defines replaces `base`'s counterpart
+ * wholesale, and keys present on only one side survive. When either input is not
+ * a mapping the `local` value wins outright — the override stands in for the
+ * base rather than blending into it. Neither input is mutated, and values are
+ * shared by reference, not cloned, so a caller that fans one `base` out to many
+ * locals must clone what it keeps.
+ *
+ * A specialization that changes a node's `type` therefore replaces its `value`
+ * whole rather than deep-merging two variants of a union into an invalid shape,
+ * and an importing override combines with its imported base exactly as a
+ * template consumer does with its source — {@link fillGaps} is the shared core
+ * at both sites, here wrapped pure over a private copy of `local`.
+ * @param {unknown} base the underlying value (imported file / template source)
+ * @param {unknown} local the overriding value (importing node / consumer)
+ * @returns {unknown} the merged mapping, or `local` when either side is atomic
+ */
+function shallowMerge(base, local) {
+    if (!isPlainObject(base) || !isPlainObject(local)) {
+        return local;
+    }
+    return fillGaps({ ...local }, base);
+}
+
 /** Escape a raw key into a JSON pointer segment (RFC 6901): `~`->`~0`, `/`->`~1`. */
 function escapeSegment(segment) {
     return String(segment).replace(/~/g, '~0').replace(/\//g, '~1');
@@ -127,4 +171,4 @@ function collect(node, fields, path, out) {
     }
 }
 
-module.exports = { NESTED_FIELDS, ROOT_FIELDS, walkableFields, isPlainObject, escapeSegment, toPointer, collectImports };
+module.exports = { NESTED_FIELDS, ROOT_FIELDS, walkableFields, isPlainObject, fillGaps, shallowMerge, escapeSegment, toPointer, collectImports };
