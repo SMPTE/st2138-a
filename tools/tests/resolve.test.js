@@ -36,7 +36,7 @@ const crypto = require('node:crypto');
 // with the resolved tree and threads its result through — not its structural
 // behavior.
 jest.mock('../src/templates');
-const { expandTemplates } = require('../src/templates');
+const { expandTemplates, rebaseTemplates } = require('../src/templates');
 const { resolve } = require('../src/resolve');
 
 describe('resolve', () => {
@@ -47,6 +47,10 @@ describe('resolve', () => {
     beforeEach(() => {
         expandTemplates.mockReset();
         expandTemplates.mockImplementation((data) => ({ data, diagnostics: [], valid: true }));
+        // rebaseTemplates has its own suite; here it is a passthrough spy so the
+        // import wiring can assert it is called with the mount path.
+        rebaseTemplates.mockReset();
+        rebaseTemplates.mockImplementation((data) => data);
     });
 
     // in-memory transport: map absolute URL href -> raw descriptor text
@@ -90,6 +94,41 @@ describe('resolve', () => {
         expect(callArgs(validate, 0).sourceMap.linesFor('/type')).toEqual({ start: 1, end: 1 });
         // the report pass runs against the root's line map too
         expect(callArgs(validate, 1).sourceMap.linesFor('/type')).toEqual({ start: 1, end: 1 });
+    });
+
+    test('rebases an imported fragment\'s templates by its mount path', async () => {
+        const rootUrl = new URL('file:///models/param.host.yaml');
+        const root = [
+            'type: STRUCT',
+            'params:',
+            '  lib:',
+            '    import:',
+            '      url: ./param.lib.yaml',
+            ''
+        ].join('\n');
+        const lib = [
+            'type: STRUCT',
+            'params:',
+            '  base:',
+            '    type: INT32',
+            ''
+        ].join('\n');
+        const load = transport(new Map([
+            [rootUrl.href, root],
+            ['file:///models/param.lib.yaml', lib]
+        ]));
+        const validate = spyValidate();
+
+        await resolve(rootUrl, { validate, load });
+
+        // wiring only: rebaseTemplates is mocked to a passthrough, so this asserts
+        // resolve hands it the imported fragment and the FQOID of its mount node
+        // (/params/lib -> 'lib') — the actual shifting of template_oids is covered
+        // in tests/templates.test.js, which is why the fixture carries none here
+        expect(rebaseTemplates).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'STRUCT', params: { base: { type: 'INT32' } } }),
+            'lib'
+        );
     });
 
     test('resolves a root import: target is the base, local overrides win, import dropped', async () => {

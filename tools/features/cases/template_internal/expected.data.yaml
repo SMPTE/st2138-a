@@ -1,0 +1,145 @@
+type: STRUCT
+params:
+  import_geo:
+    type: STRUCT
+    client_hints:
+      st2138_namespace: shared.geo
+    params:
+      point:
+        type: STRUCT
+        client_hints:
+          st2138_definition_only: "true"
+        name:
+          display_strings:
+            en: Point
+        params:
+          latitude:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float_range:
+                min_value: -90.0
+                max_value: 90.0
+          longitude:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float_range:
+                min_value: -180.0
+                max_value: 180.0
+      segment:
+        type: STRUCT
+        client_hints:
+          st2138_definition_only: "true"
+        name:
+          display_strings:
+            en: Segment
+        params:
+          start:
+            type: STRUCT
+            template_oid: import_geo/point
+            name:
+              display_strings:
+                en: Point
+            params:
+              latitude:
+                type: FLOAT32
+                constraint:
+                  type: FLOAT_RANGE
+                  float_range:
+                    min_value: -90.0
+                    max_value: 90.0
+              longitude:
+                type: FLOAT32
+                constraint:
+                  type: FLOAT_RANGE
+                  float_range:
+                    min_value: -180.0
+                    max_value: 180.0
+          end:
+            type: STRUCT
+            template_oid: import_geo/point
+            name:
+              display_strings:
+                en: Point
+            params:
+              latitude:
+                type: FLOAT32
+                constraint:
+                  type: FLOAT_RANGE
+                  float_range:
+                    min_value: -90.0
+                    max_value: 90.0
+              longitude:
+                type: FLOAT32
+                constraint:
+                  type: FLOAT_RANGE
+                  float_range:
+                    min_value: -180.0
+                    max_value: 180.0
+  flight_path:
+    type: STRUCT
+    name:
+      display_strings:
+        en: Flight Path
+    template_oid: import_geo/segment
+    value:
+      struct_value:
+        fields:
+          start:
+            struct_value:
+              fields:
+                latitude:
+                  float32_value: 45.4215
+                longitude:
+                  float32_value: -75.6972
+          end:
+            struct_value:
+              fields:
+                latitude:
+                  float32_value: 43.6532
+                longitude:
+                  float32_value: -79.3832
+    params:
+      start:
+        type: STRUCT
+        template_oid: import_geo/point
+        name:
+          display_strings:
+            en: Point
+        params:
+          latitude:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float_range:
+                min_value: -90.0
+                max_value: 90.0
+          longitude:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float_range:
+                min_value: -180.0
+                max_value: 180.0
+      end:
+        type: STRUCT
+        template_oid: import_geo/point
+        name:
+          display_strings:
+            en: Point
+        params:
+          latitude:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float_range:
+                min_value: -90.0
+                max_value: 90.0
+          longitude:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float_range:
+                min_value: -180.0
+                max_value: 180.0

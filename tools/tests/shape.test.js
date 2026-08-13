@@ -29,7 +29,7 @@
 
 'use strict';
 
-const { walkableFields, isPlainObject, fillGaps, shallowMerge, escapeSegment, NESTED_FIELDS, ROOT_FIELDS, toPointer, collectImports } = require('../src/shape');
+const { walkableFields, isPlainObject, fillGaps, shallowMerge, escapeSegment, unescapeSegment, NESTED_FIELDS, ROOT_FIELDS, toPointer, collectImports } = require('../src/shape');
 
 describe('walkableFields', () => {
     test('descends params and commands at a device root', () => {
@@ -147,6 +147,19 @@ describe('escapeSegment', () => {
 
     test('leaves an ordinary key untouched', () => {
         expect(escapeSegment('gain')).toBe('gain');
+    });
+});
+
+describe('unescapeSegment', () => {
+    test('reverses the RFC 6901 escapes, ~1 before ~0', () => {
+        expect(unescapeSegment('a~0b')).toBe('a~b');
+        expect(unescapeSegment('a~1b')).toBe('a/b');
+        expect(unescapeSegment('~0~1')).toBe('~/');
+        expect(unescapeSegment('~01')).toBe('~1'); // ~0 -> ~ leaves a literal 1, not re-escaped
+    });
+
+    test('leaves an ordinary segment untouched', () => {
+        expect(unescapeSegment('gain')).toBe('gain');
     });
 });
 

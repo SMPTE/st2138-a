@@ -68,9 +68,9 @@
 
 const loader = require('./loader');
 const { schemaNameFromUrl } = require('./urls');
-const { NESTED_FIELDS, walkableFields, isPlainObject, shallowMerge, escapeSegment } = require('./shape');
+const { NESTED_FIELDS, walkableFields, isPlainObject, shallowMerge, escapeSegment, unescapeSegment } = require('./shape');
 const { ERROR } = require('./checks/constants');
-const { expandTemplates } = require('./templates');
+const { expandTemplates, rebaseTemplates } = require('./templates');
 
 /**
  * @typedef {import('./types').ValidationResult} ValidationResult
@@ -140,6 +140,25 @@ function dedupeImports(imports) {
 function importFailure(sourceMap, pointer, message) {
     const diagnostic = { level: ERROR, message, instancePath: pointer, lines: sourceMap.linesFor(pointer) };
     return { data: {}, diagnostics: [diagnostic], valid: false, imports: [], directImports: [] };
+}
+
+/**
+ * The FQOID of the node at `pointer` — its param path from the file root, the
+ * prefix an imported fragment's internal template references shift by when
+ * mounted here. The pointer alternates field and key segments
+ * (`/params/a/params/b`); its keys, unescaped and rejoined, are the FQOID
+ * (`a/b`). An import at the file root has pointer '' and thus no prefix — the
+ * outer import that pulls this file in supplies the shift.
+ * @param {string} pointer JSON pointer to the mount node within its file
+ * @returns {string}
+ */
+function mountFqoid(pointer) {
+    const segments = pointer.split('/').slice(1);
+    const keys = [];
+    for (let i = 1; i < segments.length; i += 2) {
+        keys.push(unescapeSegment(segments[i]));
+    }
+    return keys.join('/');
 }
 
 /**
@@ -237,6 +256,11 @@ async function resolveNode(node, source, deps, fields, pointer) {
         }
         throw err;
     }
+
+    // The imported fragment writes its template references relative to its own
+    // root; mounting it at this node shifts them all by this node's path, so a
+    // shared library's internal references resolve wherever the library lands.
+    rebaseTemplates(imported.data, mountFqoid(pointer));
 
     const overrides = await resolveChildren(local, source, deps, NESTED_FIELDS, pointer);
 

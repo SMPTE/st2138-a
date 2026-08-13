@@ -124,6 +124,11 @@ function escapeSegment(segment) {
     return String(segment).replace(/~/g, '~0').replace(/\//g, '~1');
 }
 
+/** Inverse of {@link escapeSegment} (RFC 6901): `~1`->`/`, then `~0`->`~`. */
+function unescapeSegment(segment) {
+    return segment.replace(/~1/g, '/').replace(/~0/g, '~');
+}
+
 /** Render a key path as an RFC 6901 JSON pointer. */
 function toPointer(path) {
     return path.map((segment) => `/${escapeSegment(segment)}`).join('');
@@ -171,4 +176,4 @@ function collect(node, fields, path, out) {
     }
 }
 
-module.exports = { NESTED_FIELDS, ROOT_FIELDS, walkableFields, isPlainObject, fillGaps, shallowMerge, escapeSegment, toPointer, collectImports };
+module.exports = { NESTED_FIELDS, ROOT_FIELDS, walkableFields, isPlainObject, fillGaps, shallowMerge, escapeSegment, unescapeSegment, toPointer, collectImports };

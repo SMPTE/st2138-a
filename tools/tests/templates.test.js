@@ -29,7 +29,7 @@
 
 'use strict';
 
-const { expandTemplates, resolveFqoid } = require('../src/templates');
+const { expandTemplates, resolveFqoid, rebaseTemplates } = require('../src/templates');
 
 describe('resolveFqoid', () => {
     const root = {
@@ -258,5 +258,65 @@ describe('expandTemplates', () => {
         const result = expandTemplates(model);
         expect(result.diagnostics).toEqual([]);
         expect(result.data.params.consumer.client_hints).toEqual({ widget: 'knob' });
+    });
+});
+
+describe('rebaseTemplates', () => {
+    test('prefixes nested template_oids by the mount path, in place', () => {
+        const data = {
+            type: 'STRUCT',
+            params: {
+                point: { type: 'STRUCT' },
+                segment: {
+                    type: 'STRUCT',
+                    params: {
+                        start: { type: 'STRUCT', template_oid: 'point' },
+                        end: { type: 'STRUCT', template_oid: 'point' },
+                    },
+                },
+            },
+        };
+        const result = rebaseTemplates(data, 'import_geo');
+        expect(result).toBe(data); // mutated in place, same reference returned
+        expect(data.params.segment.params.start.template_oid).toBe('import_geo/point');
+        expect(data.params.segment.params.end.template_oid).toBe('import_geo/point');
+    });
+
+    test('prefixes a direct child template_oid', () => {
+        const data = { params: { a: { type: 'INT32', template_oid: 'base' } } };
+        rebaseTemplates(data, 'x');
+        expect(data.params.a.template_oid).toBe('x/base');
+    });
+
+    test("leaves the fragment root's own template_oid alone", () => {
+        // the root maps to the mount node itself; only descendants shift
+        const data = { template_oid: 'self', params: { a: { template_oid: 'base' } } };
+        rebaseTemplates(data, 'x');
+        expect(data.template_oid).toBe('self');
+        expect(data.params.a.template_oid).toBe('x/base');
+    });
+
+    test('an empty prefix is a no-op', () => {
+        const data = { params: { a: { template_oid: 'base' } } };
+        expect(rebaseTemplates(data, '')).toBe(data);
+        expect(data.params.a.template_oid).toBe('base');
+    });
+
+    test('ignores non-mapping params and non-template nodes', () => {
+        const data = {
+            params: {
+                scalar: 5,
+                plain: { type: 'INT32' },
+                grouped: { type: 'STRUCT', params: 'not-a-map' },
+            },
+        };
+        expect(() => rebaseTemplates(data, 'x')).not.toThrow();
+        expect(data.params.plain).toEqual({ type: 'INT32' });
+    });
+
+    test('passes through data without a params map', () => {
+        const data = { type: 'INT32', template_oid: 'base' };
+        expect(rebaseTemplates(data, 'x')).toBe(data);
+        expect(data.template_oid).toBe('base');
     });
 });

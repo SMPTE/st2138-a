@@ -234,4 +234,45 @@ function templateError(pointer, message) {
     return { level: ERROR, message, instancePath: pointer, lines: null };
 }
 
-module.exports = { expandTemplates, resolveFqoid };
+/**
+ * Prefix every `template_oid` in a fragment's param tree with a mount FQOID, in
+ * place. A shared library writes its internal references relative to its own
+ * root; mounting the library under a consumer at `prefix` shifts them all by
+ * that path — `point` becomes `import_geo/point` — so they keep resolving from
+ * the assembled descriptor's root wherever the library lands. The fragment's own
+ * root maps to the mount node itself, so a top-level `template_oid` on it is left
+ * alone; only its descendants shift. An empty prefix — a fragment mounted at a
+ * file's own root — is a no-op: the outer import that pulls the file in supplies
+ * the shift.
+ * @param {object} data a resolved fragment (mutated)
+ * @param {string} prefix the FQOID of the node the fragment is mounted at
+ * @returns {object} `data`
+ */
+function rebaseTemplates(data, prefix) {
+    if (prefix && isPlainObject(data.params)) {
+        for (const key of Object.keys(data.params)) {
+            rebaseNode(data.params[key], prefix);
+        }
+    }
+    return data;
+}
+
+/**
+ * Prefix a node's `template_oid` and recurse its params. `prefix` is non-empty:
+ * its only caller guards that, so every reference the walk reaches shifts.
+ * @param {unknown} node
+ * @param {string} prefix
+ */
+function rebaseNode(node, prefix) {
+    if (!isPlainObject(node)) return;
+    if (typeof node.template_oid === 'string') {
+        node.template_oid = `${prefix}/${node.template_oid}`;
+    }
+    if (isPlainObject(node.params)) {
+        for (const key of Object.keys(node.params)) {
+            rebaseNode(node.params[key], prefix);
+        }
+    }
+}
+
+module.exports = { expandTemplates, resolveFqoid, rebaseTemplates };
