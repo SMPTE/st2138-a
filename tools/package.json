@@ -11,7 +11,9 @@
   },
   "scripts": {
     "test": "jest --coverage",
-    "typecheck": "tsc -p tsconfig.json"
+    "integration": "cucumber-js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:all": "npm run typecheck && npm run test && npm run integration"
   },
   "name": "smpte-st2138-a-tools",
   "version": "1.0.0",
@@ -42,6 +44,7 @@
     "st2138": "./bin/cli.js"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "^13.2.1",
     "jest": "^30.4.2",
     "typescript": "^7.0.2"
   }

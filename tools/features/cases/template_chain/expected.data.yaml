@@ -1,0 +1,35 @@
+type: STRUCT
+params:
+  bounded:
+    type: INT32
+    constraint:
+      type: INT_RANGE
+      int32_range:
+        min_value: 0
+        max_value: 100
+    client_hints:
+      st2138_definition_only: "true"
+
+  bounded_ro:
+    type: INT32
+    template_oid: bounded
+    read_only: true
+    client_hints:
+      st2138_definition_only: "true"
+    constraint:
+      type: INT_RANGE
+      int32_range:
+        min_value: 0
+        max_value: 100
+
+  level:
+    type: INT32
+    template_oid: bounded_ro
+    value:
+      int32_value: 42
+    read_only: true
+    constraint:
+      type: INT_RANGE
+      int32_range:
+        min_value: 0
+        max_value: 100

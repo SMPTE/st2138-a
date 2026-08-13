@@ -1,0 +1,34 @@
+# Import target for the import-merge integration case: a byte-faithful copy of
+# examples/param.on_off.yaml, kept local so the resolver never reaches the network.
+name:
+  display_strings:
+    en: On/Off
+    fr: Marche/Arrêt
+    es: Encendido/Apagado
+type: INT32
+value:
+  int32_value: 0
+constraint:
+  type: INT_CHOICE
+  int32_choice:
+    choices:
+      - value: 0
+        name:
+          display_strings:
+            en: Off
+            fr: Arrêt
+            es: Apagado
+      - value: 1
+        name:
+          display_strings:
+            en: On
+            fr: Marche
+            es: Encendido
+widget: checkbox
+access_scope: st2138:op
+minimal_set: true
+help:
+  display_strings:
+    en: Turn the device on or off
+    fr: Mettre le dispositif en marche ou en arrêt
+    es: Encender o apagar el dispositivo
