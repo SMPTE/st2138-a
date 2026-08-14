@@ -1,15 +1,13 @@
 const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 const { Given, When, Then } = require('@cucumber/cucumber');
-const { stringify, parse } = require('yaml');
+const { parse } = require('yaml');
 const st2138 = require('../../src/index');
+const { computeDigest } = require('../../src/digest');
 
 const casesDir = path.join(__dirname, '..', 'cases');
-
-// Serialize a resolved view exactly as the CLI writes it, so the expected file
-// is the real artifact a user would see, not a test-only encoding.
-const serialize = (view) => stringify(view);
 
 Given('the test case {word}', function (name) {
     this.dir = path.join(casesDir, name);
@@ -38,4 +36,25 @@ Then(/^the output "(.+?)" (?:is|are)( not)? there$/, function (name, not) {
     }
     assert.ok(this.result[name], `missing "${name}" in result`);
     assert.deepStrictEqual(this.result[name], parse(fs.readFileSync(expected, 'utf8')));
+});
+
+// The imports record carries two content-derived fields that don't compare
+// cleanly by value: the url (an absolute file:// path, machine-specific) and
+// the digest (brittle to pin literally). This step normalizes urls to the case
+// dir and verifies each digest by rehashing the bytes on disk, so the expected
+// artifact holds only the stable shape (relative urls, edges, provenance).
+Then('the resolved imports match', function () {
+    assert.ok(this.result.imports, 'missing "imports" in result');
+    const base = `${pathToFileURL(this.dir).href}/`;
+    const rel = (url) => (url.startsWith(base) ? url.slice(base.length) : url);
+    const expected = parse(fs.readFileSync(path.join(this.dir, 'expected.imports.yaml'), 'utf8'));
+
+    const actual = this.result.imports.map((record) => {
+        const url = rel(record.url);
+        const onDisk = fs.readFileSync(path.join(this.dir, url), 'utf8');
+        assert.strictEqual(record.digest, computeDigest(onDisk), `digest mismatch for ${url}`);
+        return { url, dependencies: record.dependencies.map(rel), provenance: record.provenance };
+    });
+
+    assert.deepStrictEqual(actual, expected);
 });

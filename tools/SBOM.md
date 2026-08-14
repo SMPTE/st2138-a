@@ -46,14 +46,14 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
 
 | Element | Status | Where / Evidence |
 | --- | --- | --- |
-| Component Producer | 🚧 | `component.supplier` (local default / `Unknown`; remote provenance TODO) |
+| Component Producer | ✅ | `component.supplier` (descriptor provenance / local default / `Unknown`) |
 | Component Dependency Relationship | ✅ | `dependencies[]` |
 | Component Hash Value | ✅ | `components[].hashes[].content` |
 | Component Hash Algorithm | ✅ | `components[].hashes[].alg` |
 | Component Identifiers | 🚧 | `bom-ref` content hash; no CPE/PURL |
-| Component License | 🚧 | `component.licenses` (local default / `NOASSERTION`; remote provenance TODO) |
+| Component License | ✅ | `component.licenses` (typed SPDX id/expression; descriptor provenance / local default / `NOASSERTION`) |
 | Component Name | ✅ | `components[].name` |
-| Component Version | 🚧 | `component.version` (local default / `Unknown`; remote provenance TODO) |
+| Component Version | ✅ | `component.version` (descriptor provenance / local default / `Unknown`) |
 
 ### Practices and Processes
 
@@ -190,7 +190,7 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
 
 ## Component Data
 
-### Component Producer — 🚧 partial
+### Component Producer — ✅ implemented
 
 > The name of an entity that creates, defines, and identifies components.
 
@@ -203,10 +203,12 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
   unknown provenance.
 - This element is distinct from SBOM Author and replaces the 2021
   `Supplier Name` element.
-- **Implementation:** `component.supplier.name`. Local (`file:`) components take
-  `ST2138_SBOM_PRODUCER`, since they share this repo's origin; remote imports
-  cannot be spoken for. Anything unset is an explicit `Unknown`, never guessed
-  from the fetch URL. TODO: let descriptor-declared provenance override this.
+- **Implementation:** `component.supplier.name`. A descriptor's own declared
+  provenance (`st2138-supplier` in its leading comment block) wins for any file,
+  local or remote. Failing that, local (`file:`) components take
+  `ST2138_SBOM_PRODUCER`, since they share this repo's origin; a remote import the
+  pipeline cannot vouch for falls back to an explicit `Unknown`. Anything still
+  unset is an explicit `Unknown`, never guessed from the fetch URL.
 
 ### Component Dependency Relationship — ✅ implemented
 
@@ -267,7 +269,7 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
     is an *intrinsic* identifier the element permits, but it's not a shared,
     searchable vuln-DB key — hence 🚧 rather than ✅.
 
-### Component License — 🚧 partial
+### Component License — ✅ implemented
 
 > The identifier(s) for the license(s) under which the software component is
 > available.
@@ -280,10 +282,14 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
   terms, such as a URL.
 - Include information about proprietary license conditions.
 - If the license information is not known, explicitly identify it as unknown.
-- **Implementation:** `component.licenses`. Local components take
-  `ST2138_SBOM_LICENSE` (an SPDX id such as `BSD-3-Clause`); when unset, or for a
-  remote import, the license is an explicit `NOASSERTION`. TODO: let
-  descriptor-declared provenance override this, and emit a typed SPDX license.
+- **Implementation:** `component.licenses`. A descriptor's own
+  `SPDX-License-Identifier` comment tag wins for any file, local or remote;
+  failing that, local components take `ST2138_SBOM_LICENSE`, and an unset or
+  unvouched-for remote license is an explicit `NOASSERTION`. The value is typed
+  via CycloneDX's `LicenseFactory`: a supported SPDX id emits a machine-readable
+  `license.id` (case-normalized), an SPDX expression (`AND`/`OR`/`WITH`) emits
+  `license.expression`, and any other string falls back to a free-text
+  `license.name`.
 
 ### Component Name — ✅ implemented
 
@@ -296,7 +302,7 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
   component name.
 - **Implementation:** `components[].name` — the descriptor's filename.
 
-### Component Version — 🚧 partial
+### Component Version — ✅ implemented
 
 > Identifier used by the component producer to specify a change in a software
 > component from a previously identified version or to indicate that it is the
@@ -306,9 +312,10 @@ The tool emits a CycloneDX 1.6 JSON SBOM via `st2138 resolve --sbom <file>`.
   delivery.
 - If the component producer does not provide a version, explicitly state that
   the information is unknown.
-- **Implementation:** `component.version`. Local components take
-  `ST2138_SBOM_VERSION`; when unset, or for a remote import, the version is an
-  explicit `Unknown`. TODO: let descriptor-declared provenance override this.
+- **Implementation:** `component.version`. A descriptor's own `st2138-version`
+  comment tag wins for any file, local or remote; failing that, local components
+  take `ST2138_SBOM_VERSION`, and an unset or unvouched-for remote version is an
+  explicit `Unknown`.
 
 ## Practices and Processes
 
@@ -377,9 +384,10 @@ the data fields.
   is withheld.
 - **Implementation:** No required field is silently omitted. A missing SBOM
   author is recorded as an explicit `Unknown` (with a stderr warning); component
-  producer, version, and license likewise fall back to explicit
-  `Unknown`/`NOASSERTION` when the pipeline supplies no value and for remote
-  imports that cannot be spoken for.
+  producer, version, and license take the file's own declared provenance where
+  present (local or remote) and otherwise fall back to explicit
+  `Unknown`/`NOASSERTION` when the pipeline supplies no value and a remote import
+  cannot be spoken for.
 
 ### Frequency — 🚧 partial
 

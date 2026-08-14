@@ -58,10 +58,11 @@
  * whole resolution.
  *
  * Every file actually inlined is recorded as provenance — its resolved URL, the
- * sha256 of the bytes actually loaded, and the URLs it imports directly — and
- * returned as a list deduped by URL, so a file reached along two branches counts
- * once while its edges are preserved. This is the raw material for a later SBOM
- * and its dependency graph.
+ * sha256 of the bytes actually loaded, the URLs it imports directly, and the
+ * provenance it declares about itself (producer, license, version, copyright) —
+ * and returned as a list deduped by URL, so a file reached along two branches
+ * counts once while its edges are preserved. This is the raw material for a
+ * later SBOM and its dependency graph.
  */
 
 'use strict';
@@ -78,6 +79,7 @@ const { expandTemplates, rebaseTemplates } = require('./templates');
  * @typedef {import('./types').ImportRecord} ImportRecord
  * @typedef {import('./types').Diagnostic} Diagnostic
  * @typedef {import('./types').Loader} Loader
+ * @typedef {import('./types').Provenance} Provenance
  * @typedef {import('./sourcemap').SourceMap} SourceMap
  *
  * @callback ValidateFn
@@ -102,6 +104,7 @@ const { expandTemplates, rebaseTemplates } = require('./templates');
  * @property {string[]} directImports resolved URLs the current file imports directly,
  *   its own edges in the dependency graph (reset at each file boundary)
  * @property {string} [digest] base64 sha256 of this file's loaded bytes; set only by resolveFile
+ * @property {Provenance} [provenance] this file's self-declared provenance; set only by resolveFile
  * @property {SourceMap} [sourceMap] this file's line map; set only by resolveFile, used for the final pass
  */
 
@@ -266,8 +269,9 @@ async function resolveNode(node, source, deps, fields, pointer) {
 
     // This import, then the files it pulled in, then those the overrides pull in.
     // The digest is the hash of what was actually loaded, from the imported file;
-    // the record's dependencies are the files that imported file itself imports.
-    const record = { url: importUrl.href, digest: imported.digest, dependencies: imported.directImports };
+    // the record's dependencies are the files that imported file itself imports;
+    // the provenance is what the imported file declares about itself.
+    const record = { url: importUrl.href, digest: imported.digest, dependencies: imported.directImports, provenance: imported.provenance };
 
     return {
         data: shallowMerge(imported.data, overrides.data),
@@ -298,13 +302,13 @@ async function resolveNode(node, source, deps, fields, pointer) {
  * @returns {Promise<ResolvedTree>}
  */
 async function resolveFile(url, deps, digest, ancestors = []) {
-    const { data, sourceMap, digest: loadedDigest } = await loader.loadDescriptor(url, { digest, load: deps.load });
+    const { data, sourceMap, digest: loadedDigest, provenance } = await loader.loadDescriptor(url, { digest, load: deps.load });
     const schemaName = schemaNameFromUrl(url);
     const before = deps.validate(schemaName, data, sourceMap);
     if (!before.valid) {
         // Hand back the validation result's data ({} on failure), never the raw
         // parse, so an invalid fragment splices nothing unvalidated into a merge.
-        return { data: before.data, diagnostics: before.diagnostics, valid: false, imports: [], directImports: [], digest: loadedDigest, sourceMap };
+        return { data: before.data, diagnostics: before.diagnostics, valid: false, imports: [], directImports: [], digest: loadedDigest, provenance, sourceMap };
     }
     // Past the gate `before.data` is the validated model — a plain object, not
     // the scalar/array/null a well-formed file could still parse to — so descend
@@ -319,6 +323,7 @@ async function resolveFile(url, deps, digest, ancestors = []) {
         imports: resolved.imports,
         directImports: resolved.directImports,
         digest: loadedDigest,
+        provenance,
         sourceMap
     };
 }
@@ -368,7 +373,7 @@ async function resolve(url, { validate, validateFinal = validate, load, digest =
     // A fragment invalid as authored is not merged or expanded: its shape is
     // exactly what the schema just rejected, so there is nothing to act on.
     if (!resolved.valid) {
-        return { data: resolved.data, diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
+        return { data: resolved.data, diagnostics, valid: false, imports, dependencies, digest: resolved.digest, provenance: resolved.provenance };
     }
 
     // Expand before the final pass, so the report checks see the runtime model.
@@ -379,7 +384,7 @@ async function resolve(url, { validate, validateFinal = validate, load, digest =
         // An unresolved or cyclic template leaves the model ill-defined: report it
         // and hand back the pre-expansion tree rather than a half-expanded one.
         if (!expanded.valid) {
-            return { data: tree, diagnostics, valid: false, imports, dependencies, digest: resolved.digest };
+            return { data: tree, diagnostics, valid: false, imports, dependencies, digest: resolved.digest, provenance: resolved.provenance };
         }
         tree = expanded.data;
     }
@@ -388,7 +393,7 @@ async function resolve(url, { validate, validateFinal = validate, load, digest =
     // here, on the fully resolved and expanded model, against the root's lines.
     const final = validateFinal(schemaName, tree, resolved.sourceMap);
     diagnostics.push(...final.diagnostics);
-    return { data: tree, diagnostics, valid: final.valid, imports, dependencies, digest: resolved.digest };
+    return { data: tree, diagnostics, valid: final.valid, imports, dependencies, digest: resolved.digest, provenance: resolved.provenance };
 }
 
 module.exports = { resolve };

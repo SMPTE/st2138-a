@@ -171,9 +171,10 @@ describe('resolve', () => {
         expect(result.data).not.toHaveProperty('import');
 
         // the inlined file is recorded as provenance; the digest is the sha256
-        // of the bytes actually loaded, computed even when the import is unpinned
+        // of the bytes actually loaded, computed even when the import is unpinned.
+        // The fixture declares no provenance comments, so its provenance is empty.
         expect(result.imports).toEqual([
-            { url: 'file:///models/param.target.yaml', digest: crypto.createHash('sha256').update(target).digest('base64'), dependencies: [] }
+            { url: 'file:///models/param.target.yaml', digest: crypto.createHash('sha256').update(target).digest('base64'), dependencies: [], provenance: {} }
         ]);
         // the root imports the target directly: one dependency-graph edge
         expect(result.dependencies).toEqual(['file:///models/param.target.yaml']);
@@ -193,6 +194,46 @@ describe('resolve', () => {
         expect(merged.schemaName).toBe('param');
         expect(merged.data).toBe(result.data);
         expect(merged.sourceMap.linesFor('/oid')).toBeNull();
+    });
+
+    test('threads each file\'s declared provenance from its leading comments', async () => {
+        const rootUrl = new URL('file:///models/param.import.yaml');
+        const root = [
+            '# SPDX-License-Identifier: BSD-3-Clause',
+            '# st2138-supplier: SMPTE',
+            '# st2138-version: 1.2.0',
+            'type: INT32',
+            'import:',
+            '  url: ./param.target.yaml',
+            ''
+        ].join('\n');
+        const target = [
+            '# SPDX-License-Identifier: MIT',
+            '# st2138-supplier: Vendor Inc',
+            'type: INT32',
+            'value:',
+            '  int32_value: 0',
+            ''
+        ].join('\n');
+        const load = transport(new Map([
+            [rootUrl.href, root],
+            ['file:///models/param.target.yaml', target]
+        ]));
+        const validate = spyValidate();
+
+        const result = await resolve(rootUrl, { validate, load });
+
+        // the root's own declaration rides on the result
+        expect(result.provenance).toEqual({ license: 'BSD-3-Clause', producer: 'SMPTE', version: '1.2.0' });
+        // and each imported file carries its own onto its record
+        expect(result.imports).toEqual([
+            {
+                url: 'file:///models/param.target.yaml',
+                digest: crypto.createHash('sha256').update(target).digest('base64'),
+                dependencies: [],
+                provenance: { license: 'MIT', producer: 'Vendor Inc' }
+            }
+        ]);
     });
 
     test('each file is validated against its own declared type (command shares the param shape)', async () => {
@@ -280,7 +321,7 @@ describe('resolve', () => {
         // provenance carries the digest computed over the bytes loaded, which here
         // matches the declared one exactly
         expect(result.imports).toEqual([
-            { url: 'file:///models/param.target.yaml', digest, dependencies: [] }
+            { url: 'file:///models/param.target.yaml', digest, dependencies: [], provenance: {} }
         ]);
         // the result also reports the root file's own computed digest
         expect(result.digest).toBe(crypto.createHash('sha256').update(rootText).digest('base64'));
@@ -454,7 +495,7 @@ describe('resolve', () => {
         });
         // the shared file is reached along both branches but recorded once
         expect(result.imports).toEqual([
-            { url: 'file:///models/param.shared.yaml', digest: crypto.createHash('sha256').update(shared).digest('base64'), dependencies: [] }
+            { url: 'file:///models/param.shared.yaml', digest: crypto.createHash('sha256').update(shared).digest('base64'), dependencies: [], provenance: {} }
         ]);
         // both branches import shared directly, so the root has an edge to it per
         // branch; the SBOM collapses these into one dependency
@@ -559,8 +600,8 @@ describe('resolve', () => {
         // then c (imported by b); a itself is the root, never an import. Each
         // record carries its own direct edges: b imports c, c imports nothing.
         expect(result.imports).toEqual([
-            { url: 'file:///models/param.b.yaml', digest: crypto.createHash('sha256').update(bText).digest('base64'), dependencies: ['file:///models/param.c.yaml'] },
-            { url: 'file:///models/param.c.yaml', digest: crypto.createHash('sha256').update(cText).digest('base64'), dependencies: [] }
+            { url: 'file:///models/param.b.yaml', digest: crypto.createHash('sha256').update(bText).digest('base64'), dependencies: ['file:///models/param.c.yaml'], provenance: {} },
+            { url: 'file:///models/param.c.yaml', digest: crypto.createHash('sha256').update(cText).digest('base64'), dependencies: [], provenance: {} }
         ]);
         // the root imports only b directly
         expect(result.dependencies).toEqual(['file:///models/param.b.yaml']);

@@ -53,6 +53,22 @@ export interface ValidationResult {
     data: object;
 }
 
+/**
+ * A component's self-asserted provenance, declared in its descriptor's leading
+ * comments. Each field is optional: a field the descriptor does not declare is
+ * recorded as an explicit Unknown downstream rather than guessed.
+ */
+export interface Provenance {
+    /** component producer / supplier (CycloneDX `component.supplier`) */
+    producer?: string;
+    /** SPDX license id or expression (CycloneDX `component.licenses`) */
+    license?: string;
+    /** component version (CycloneDX `component.version`) */
+    version?: string;
+    /** copyright text (CycloneDX `component.copyright`) */
+    copyright?: string;
+}
+
 /** A file that was inlined during resolution — provenance for an SBOM. */
 export interface ImportRecord {
     /** the resolved absolute URL the import was fetched from */
@@ -61,6 +77,8 @@ export interface ImportRecord {
     digest: string;
     /** resolved URLs this file imports directly — its edges in the dependency graph */
     dependencies: string[];
+    /** the provenance the imported file declares about itself */
+    provenance: Provenance;
 }
 
 /** Result of resolving a descriptor's `import` directives into a single tree. */
@@ -77,6 +95,8 @@ export interface ResolutionResult {
     dependencies: string[];
     /** base64-encoded sha256 of the bytes loaded for the root descriptor */
     digest: string;
+    /** the provenance the root descriptor declares about itself */
+    provenance: Provenance;
 }
 
 /** Flags to disable individual post-schema checks. */
@@ -182,8 +202,8 @@ export interface CycloneDxOptions {
      * Provenance defaults applied to local (`file:`) components only, since they
      * share this repo's origin. A remote component is never spoken for. Any field
      * left unset is recorded as an explicit "Unknown"/"NOASSERTION" rather than
-     * omitted. These are pipeline-wide defaults; once descriptors declare their
-     * own provenance it should override them.
+     * omitted. These are pipeline-wide defaults; a descriptor's own declared
+     * provenance (read from its leading comments) takes precedence over them.
      */
     localProvenance?: {
         /** component producer (CycloneDX `component.supplier`) */

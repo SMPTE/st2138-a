@@ -45,6 +45,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const sourcemap = require('./sourcemap');
 const { computeDigest, digestsMatch } = require('./digest');
+const { parseProvenance } = require('./provenance');
 
 /**
  * @typedef {import('./types').Loader} Loader
@@ -104,8 +105,9 @@ async function defaultLoad(url) {
  * @param {object} [opts]
  * @param {string} [opts.digest] base64 sha256 digest to verify the loaded bytes against
  * @param {Loader} [opts.load] custom transport; defaults to {@link defaultLoad}
- * @returns {Promise<{data: unknown, sourceMap: SourceMap, digest: string}>} parsed
- *   data, its source map, and the base64 sha256 of the bytes actually loaded
+ * @returns {Promise<{data: unknown, sourceMap: SourceMap, digest: string, provenance: object}>}
+ *   parsed data, its source map, the base64 sha256 of the bytes actually loaded,
+ *   and the provenance the descriptor declares about itself in its leading comments
  * @throws {LoadError} if loading fails, the digest does not match, or the text is malformed
  */
 async function loadDescriptor(url, { digest = null, load = defaultLoad } = {}) {
@@ -137,7 +139,7 @@ async function loadDescriptor(url, { digest = null, load = defaultLoad } = {}) {
     }
 
     try {
-        return { ...sourcemap.parse(raw), digest: computed };
+        return { ...sourcemap.parse(raw), digest: computed, provenance: parseProvenance(raw) };
     } catch (err) {
         throw new LoadError(`Invalid YAML in ${url.pathname}: ${err.message}`);
     }

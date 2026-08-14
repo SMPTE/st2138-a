@@ -89,6 +89,16 @@ describe('loader', () => {
         expect(digest).toBe(expected);
     });
 
+    test('loadDescriptor reads the descriptor-declared provenance from its leading comments', async () => {
+        // provenance is self-asserted in the file's comments, not the model
+        const raw = '# SPDX-License-Identifier: BSD-3-Clause\n# st2138-version: 4.1.0\nname: gain\n';
+        const url = new URL('memory://fixtures/param.gain.yaml');
+
+        const { provenance } = await loadDescriptor(url, { load: () => Promise.resolve(raw) });
+
+        expect(provenance).toEqual({ license: 'BSD-3-Clause', version: '4.1.0' });
+    });
+
     test('loadDescriptor enforces SHA-256 digest when provided', async () => {
         // path to the good example
         const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');

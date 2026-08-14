@@ -4,6 +4,7 @@
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "commander": "^12.1.0",
+    "spdx-expression-parse": "^5.0.0",
     "yaml": "^2.9.0"
   },
   "engines": {

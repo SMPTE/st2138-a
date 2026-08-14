@@ -35,7 +35,8 @@
 
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
-const { Models, Enums, Spec, Serialize } = require('@cyclonedx/cyclonedx-library');
+const { Models, Enums, Spec, Serialize, Contrib } = require('@cyclonedx/cyclonedx-library');
+const spdxExpressionParse = require('spdx-expression-parse');
 const { decodeDigest } = require('./digest');
 const { isRemote } = require('./urls');
 const pkg = require('../package.json');
@@ -43,9 +44,15 @@ const pkg = require('../package.json');
 /**
  * @typedef {import('./types').ResolutionResult} ResolutionResult
  * @typedef {import('./types').CycloneDxOptions} CycloneDxOptions
+ * @typedef {import('./types').Provenance} Provenance
  */
 
 const SHA256 = Enums.HashAlgorithm['SHA-256'];
+
+// Maps a license string to the right CycloneDX shape: a supported SPDX id becomes
+// a typed `id` (case-fixed), a valid SPDX expression (AND/OR/WITH) becomes an
+// `expression`, and anything else falls back to a free-text `name`.
+const licenseFactory = new Contrib.License.Factories.LicenseFactory(spdxExpressionParse);
 
 /**
  * Build a CycloneDX component for one loaded descriptor file. The sha256 is the
@@ -56,18 +63,24 @@ const SHA256 = Enums.HashAlgorithm['SHA-256'];
  * point, whereas a `file:` path is machine-specific and would leak a home
  * directory while resolving nowhere off the authoring machine.
  *
- * Producer, license, and version are self-assertions about the file. Local files
- * inherit the pipeline's env-supplied defaults, since they share this repo's
- * origin; a remote file cannot be spoken for here. Anything unset is recorded as
- * an explicit `Unknown` / `NOASSERTION` rather than omitted, per CISA guidance.
+ * Producer, license, version, and copyright are self-assertions about the file.
+ * A file's own descriptor-declared provenance wins; failing that, a local file
+ * inherits the pipeline's env-supplied defaults, since it shares this repo's
+ * origin, while a remote file cannot be spoken for by the pipeline. Anything
+ * still unset is recorded as an explicit `Unknown` / `NOASSERTION` rather than
+ * omitted, per CISA guidance; copyright, which has no default, is omitted when
+ * undeclared.
  *
  * @param {string} href resolved URL the file was loaded from
  * @param {string} digest base64 sha256 of the file's loaded bytes
  * @param {{ producer?: string, license?: string, version?: string }} localProvenance
  *   provenance defaults applied only to local (`file:`) components
+ * @param {Provenance} [declared] provenance the file declares about itself, which
+ *   overrides the pipeline defaults; applies to remote files too, as it is the
+ *   file's own assertion
  * @returns {Models.Component} a CycloneDX component
  */
-function component(href, digest, localProvenance) {
+function component(href, digest, localProvenance, declared = {}) {
     const url = new URL(href);
     const name = path.basename(url.pathname);
     const hex = decodeDigest(digest).toString('hex');
@@ -78,14 +91,16 @@ function component(href, digest, localProvenance) {
         comp.externalReferences.add(new Models.ExternalReference(href, Enums.ExternalReferenceType.Distribution));
     }
 
-    // TODO: read producer/license/version from descriptor-declared provenance,
-    // which should override these defaults once descriptors carry it.
-    const provenance = remote ? {} : localProvenance;
-    comp.supplier = new Models.OrganizationalEntity({ name: provenance.producer || 'Unknown' });
-    comp.version = provenance.version || 'Unknown';
-    comp.licenses.add(provenance.license
-        ? new Models.NamedLicense(provenance.license)
-        : new Models.NamedLicense('NOASSERTION'));
+    // A file speaks for itself; the pipeline defaults only fill in local files it
+    // has not spoken for. A remote file the pipeline cannot vouch for falls back
+    // to explicit Unknown unless the file itself declared its provenance.
+    const base = remote ? {} : localProvenance;
+    comp.supplier = new Models.OrganizationalEntity({ name: declared.producer || base.producer || 'Unknown' });
+    comp.version = declared.version || base.version || 'Unknown';
+    comp.licenses.add(licenseFactory.makeFromString(declared.license || base.license || 'NOASSERTION'));
+    if (declared.copyright) {
+        comp.copyright = declared.copyright;
+    }
 
     return comp;
 }
@@ -110,12 +125,12 @@ function component(href, digest, localProvenance) {
 function toCycloneDx(result, subject, options = {}) {
     const localProvenance = options.localProvenance || {};
     const rootHref = new URL(subject).href;
-    const root = component(rootHref, result.digest, localProvenance);
+    const root = component(rootHref, result.digest, localProvenance, result.provenance);
 
     // Index every file's component by URL so edges can reference them by bom-ref.
     const byUrl = new Map([[rootHref, root]]);
     const components = result.imports.map((record) => {
-        const comp = component(record.url, record.digest, localProvenance);
+        const comp = component(record.url, record.digest, localProvenance, record.provenance);
         byUrl.set(record.url, comp);
         return comp;
     });

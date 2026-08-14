@@ -1,5 +1,11 @@
 # Import target for the import-merge integration case: a byte-faithful copy of
 # examples/param.on_off.yaml, kept local so the resolver never reaches the network.
+# It also declares its own provenance so the case proves the imports record
+# carries what the file asserts about itself.
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: 2026 SMPTE
+# st2138-supplier: SMPTE
+# st2138-version: 1.0.0
 name:
   display_strings:
     en: On/Off

@@ -180,10 +180,66 @@ describe('toCycloneDx', () => {
 
         expect(local.supplier).toEqual({ name: 'SMPTE' });
         expect(local.version).toBe('1.2.0');
-        expect(local.licenses).toEqual([{ license: { name: 'BSD-3-Clause' } }]);
+        expect(local.licenses).toEqual([{ license: { id: 'BSD-3-Clause' } }]);
         expect(remote.supplier).toEqual({ name: 'Unknown' });
         expect(remote.version).toBe('Unknown');
         expect(remote.licenses).toEqual([{ license: { name: 'NOASSERTION' } }]);
+    });
+
+    test('descriptor-declared provenance overrides the defaults and speaks for remote files', () => {
+        // a file self-asserts its provenance in its comments; that wins over the
+        // pipeline default for a local file, and is the only authority for a
+        // remote one, which the pipeline cannot speak for
+        const result = {
+            provenance: { producer: 'SMPTE', license: 'BSD-3-Clause', version: '2.0.0', copyright: '2026 SMPTE' },
+            imports: [
+                {
+                    url: 'https://models.example.com/param.remote.yaml',
+                    digest: b64('remote'),
+                    dependencies: [],
+                    provenance: { producer: 'Vendor Inc', license: 'MIT', version: '9.9', copyright: '2025 Vendor' }
+                }
+            ],
+            dependencies: [],
+            digest: b64('root')
+        };
+
+        const bom = bomOf(result, 'file:///models/device.yaml', {
+            localProvenance: { producer: 'Pipeline Co', license: 'Apache-2.0', version: '0.0.1' }
+        });
+        const root = bom.metadata.component;
+        const [remote] = bom.components;
+
+        // the local root's own declaration beats the pipeline default
+        expect(root.supplier).toEqual({ name: 'SMPTE' });
+        expect(root.version).toBe('2.0.0');
+        expect(root.licenses).toEqual([{ license: { id: 'BSD-3-Clause' } }]);
+        expect(root.copyright).toBe('2026 SMPTE');
+        // the remote file speaks for itself through its own declaration
+        expect(remote.supplier).toEqual({ name: 'Vendor Inc' });
+        expect(remote.version).toBe('9.9');
+        expect(remote.licenses).toEqual([{ license: { id: 'MIT' } }]);
+        expect(remote.copyright).toBe('2025 Vendor');
+    });
+
+    test('types a declared license as an SPDX id, an expression, or a free-text name', () => {
+        // a supported SPDX id becomes a typed `id`; an AND/OR/WITH expression
+        // becomes an `expression`; anything else falls back to a free-text `name`
+        const result = {
+            imports: [
+                { url: 'file:///models/id.yaml', digest: b64('id'), dependencies: [], provenance: { license: 'BSD-3-Clause' } },
+                { url: 'file:///models/expr.yaml', digest: b64('expr'), dependencies: [], provenance: { license: 'MIT OR CC0-1.0' } },
+                { url: 'file:///models/named.yaml', digest: b64('named'), dependencies: [], provenance: { license: 'Totally Custom' } }
+            ],
+            dependencies: [],
+            digest: b64('root')
+        };
+
+        const [id, expr, named] = bomOf(result, 'file:///models/device.yaml').components;
+
+        expect(id.licenses).toEqual([{ license: { id: 'BSD-3-Clause' } }]);
+        expect(expr.licenses).toEqual([{ expression: 'MIT OR CC0-1.0' }]);
+        expect(named.licenses).toEqual([{ license: { name: 'Totally Custom' } }]);
     });
 
     test('emits a dependency graph, with a diamond target referenced once', () => {
