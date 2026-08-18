@@ -60,6 +60,10 @@ const GAIN_URL = `${BASE}param.gain.yaml`;
 const REBOOT_URL = `${BASE}command.reboot.yaml`;
 const DEVICE_URL = `${BASE}device.example.yaml`;
 
+// JSON descriptors: pinned through the CST so they stay strict JSON.
+const JSON_ROOT = `${BASE}param.root.json`;
+const JSON_DEVICE_URL = `${BASE}device.example.json`;
+
 // A local descriptor whose relative imports resolve to file: URLs.
 const LOCAL_ROOT = 'file:///models/param.root.yaml';
 const LOCAL_GAIN_URL = 'file:///models/param.gain.yaml';
@@ -329,6 +333,129 @@ describe('pin', () => {
         expect(result.ok).toBe(true);
         const onoff = result.changes.find((c) => c.url.endsWith('param.on_off.yaml'));
         expect(onoff.digest).toBe('U0R1rCOixZhOa/PPQ88NHzWcyEkxfppToo+n4GOT85I=');
+    });
+});
+
+describe('pin (json)', () => {
+    test('adds a digest to a JSON import, keeping strict JSON and the authored layout', async () => {
+        const parent = [
+            '{',
+            '  "params": {',
+            '    "gain": {',
+            '      "import": {',
+            '        "url": "./param.gain.yaml"',
+            '      }',
+            '    }',
+            '  }',
+            '}',
+            '',
+        ].join('\n');
+        const load = mapLoad({ [JSON_ROOT]: parent, [GAIN_URL]: GAIN });
+
+        const result = await pin(new URL(JSON_ROOT), { load });
+
+        expect(result.ok).toBe(true);
+        expect(result.changed).toBe(true);
+        expect(result.changes[0]).toMatchObject({
+            pointer: '/params/gain/import/digest',
+            url: GAIN_URL,
+            digest: GAIN_DIGEST,
+            changed: true,
+        });
+        // Output is still strict JSON, with the digest at the right place and in
+        // double-quoted (not YAML plain) style.
+        expect(() => JSON.parse(result.text)).not.toThrow();
+        expect(JSON.parse(result.text).params.gain.import.digest).toBe(GAIN_DIGEST);
+        expect(result.text).toContain(`"digest": "${GAIN_DIGEST}"`);
+        // Untouched lines survive byte-for-byte around the edit.
+        expect(result.text).toContain('        "url": "./param.gain.yaml",\n');
+        expect(result.text.startsWith('{\n')).toBe(true);
+        expect(result.text.endsWith('}\n')).toBe(true);
+    });
+
+    test('refreshes a stale digest in a JSON descriptor', async () => {
+        const stale = Buffer.alloc(32).toString('base64');
+        const parent = [
+            '{',
+            '  "params": {',
+            '    "gain": {',
+            '      "import": {',
+            '        "url": "./param.gain.yaml",',
+            `        "digest": "${stale}"`,
+            '      }',
+            '    }',
+            '  }',
+            '}',
+            '',
+        ].join('\n');
+        const load = mapLoad({ [JSON_ROOT]: parent, [GAIN_URL]: GAIN });
+
+        const result = await pin(new URL(JSON_ROOT), { load });
+
+        expect(result.changed).toBe(true);
+        expect(result.changes[0]).toMatchObject({ previous: stale, digest: GAIN_DIGEST, changed: true });
+        expect(() => JSON.parse(result.text)).not.toThrow();
+        expect(JSON.parse(result.text).params.gain.import.digest).toBe(GAIN_DIGEST);
+        expect(result.text).not.toContain(stale);
+    });
+
+    test('leaves an already-pinned JSON descriptor byte-for-byte', async () => {
+        const parent = [
+            '{',
+            '  "params": {',
+            '    "gain": {',
+            '      "import": {',
+            '        "url": "./param.gain.yaml",',
+            `        "digest": "${GAIN_DIGEST}"`,
+            '      }',
+            '    }',
+            '  }',
+            '}',
+            '',
+        ].join('\n');
+        const load = mapLoad({ [JSON_ROOT]: parent, [GAIN_URL]: GAIN });
+
+        const result = await pin(new URL(JSON_ROOT), { load });
+
+        expect(result.changed).toBe(false);
+        expect(result.changes[0].changed).toBe(false);
+        expect(result.text).toBe(parent);
+    });
+
+    test('adds a digest to a single-line (inline) JSON import', async () => {
+        const parent = '{ "import": { "url": "./param.gain.yaml" } }\n';
+        const load = mapLoad({ [JSON_ROOT]: parent, [GAIN_URL]: GAIN });
+
+        const result = await pin(new URL(JSON_ROOT), { load });
+
+        expect(result.changed).toBe(true);
+        expect(result.changes[0].pointer).toBe('/import/digest');
+        expect(() => JSON.parse(result.text)).not.toThrow();
+        expect(JSON.parse(result.text).import.digest).toBe(GAIN_DIGEST);
+    });
+
+    test('pins multiple imports across a JSON device root', async () => {
+        const parent = [
+            '{',
+            '  "params": {',
+            '    "gain": { "import": { "url": "./param.gain.yaml" } }',
+            '  },',
+            '  "commands": {',
+            '    "reboot": { "import": { "url": "./command.reboot.yaml" } }',
+            '  }',
+            '}',
+            '',
+        ].join('\n');
+        const load = mapLoad({ [JSON_DEVICE_URL]: parent, [GAIN_URL]: GAIN, [REBOOT_URL]: REBOOT });
+
+        const result = await pin(new URL(JSON_DEVICE_URL), { load });
+
+        expect(result.ok).toBe(true);
+        expect(result.changed).toBe(true);
+        expect(() => JSON.parse(result.text)).not.toThrow();
+        const parsed = JSON.parse(result.text);
+        expect(parsed.params.gain.import.digest).toBe(GAIN_DIGEST);
+        expect(parsed.commands.reboot.import.digest).toBe(REBOOT_DIGEST);
     });
 });
 

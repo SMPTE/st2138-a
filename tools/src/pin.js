@@ -38,17 +38,21 @@
  * be loaded — missing, malformed — cannot be pinned, so a pin always names real
  * bytes; whether those bytes are a *correct* descriptor is `validate`'s job.
  *
- * The descriptor is edited through its YAML document, not re-serialized from
- * data, so comments, anchors, and key order survive. Pinning is all-or-nothing:
- * if any import fails to load, the file is left untouched and the failures are
- * reported, so a run never leaves a half-pinned file behind. The digest is over
- * each target's own raw bytes (a shallow, per-file hash); a target's own imports
- * are pinned by running on that file in turn.
+ * The descriptor is edited through its concrete syntax tree (CST), rewriting
+ * only the `import.digest` tokens and leaving every other byte — comments,
+ * anchors, key order, indentation, and quoting — exactly as written. Because
+ * nothing is re-serialized from the data model, a JSON descriptor stays JSON
+ * (and stays formatted the way its author left it) rather than being reflowed
+ * as YAML. Pinning is all-or-nothing: if any import fails to load, the file is
+ * left untouched and the failures are reported, so a run never leaves a
+ * half-pinned file behind. The digest is over each target's own raw bytes (a
+ * shallow, per-file hash); a target's own imports are pinned by running on that
+ * file in turn.
  */
 
 'use strict';
 
-const { parseDocument } = require('yaml');
+const { Parser, Composer, CST } = require('yaml');
 const loader = require('./loader');
 const { schemaNameFromUrl, isRemote } = require('./urls');
 const { collectImports, toPointer } = require('./shape');
@@ -86,6 +90,87 @@ function assertWritable(url) {
 }
 
 /**
+ * Record `digest` into the `import.digest` at `importPath`, editing the CST in
+ * place. An existing digest scalar is overwritten while keeping its own token
+ * type (a JSON descriptor's stays double-quoted, a YAML one's stays plain); a
+ * missing one is inserted as a new entry into the import map. Both touch only
+ * the affected tokens, so the rest of the file survives byte-for-byte.
+ *
+ * @param {import('yaml').Document} doc the composed descriptor (source tokens kept)
+ * @param {(string|number)[]} importPath path to the import map holding the digest
+ * @param {string} digest base64 sha256 to record
+ */
+function writeDigest(doc, importPath, digest) {
+    const existing = doc.getIn([...importPath, 'digest'], true);
+    if (existing && existing.srcToken && CST.isScalar(existing.srcToken)) {
+        CST.setScalarValue(existing.srcToken, digest);
+        return;
+    }
+    insertDigest(doc.getIn(importPath, true).srcToken, digest);
+}
+
+/**
+ * Append a `digest: <value>` entry to an import map's CST collection token,
+ * mirroring the separators of the entry already present (the import's `url`, which
+ * a missing-url import never reaches here). Flow collections (JSON) get a
+ * comma-led, double-quoted entry; block maps (YAML) get an indented plain entry.
+ * Whitespace tokens are cloned from the map's existing entry so indentation and
+ * line style match, whether the source is multi-line or a single line.
+ *
+ * @param {object} collection the `flow-collection` or `block-map` CST token
+ * @param {string} digest the value to store
+ */
+function insertDigest(collection, digest) {
+    const inFlow = collection.type === 'flow-collection';
+    const items = collection.items;
+    let prevIdx = -1;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].key) {
+            prevIdx = i;
+        }
+    }
+    const prev = items[prevIdx];
+    const indent = prev.key.indent;
+    const scalarType = inFlow ? 'double-quoted-scalar' : 'scalar';
+    const clone = (token) => ({ ...token });
+
+    const entry = {
+        key: { type: scalarType, indent, source: inFlow ? '"digest"' : 'digest' },
+        sep: [
+            { type: 'map-value-ind', indent, source: ':' },
+            { type: 'space', indent, source: ' ' },
+        ],
+        value: { type: scalarType, indent, source: inFlow ? JSON.stringify(digest) : digest },
+    };
+
+    if (inFlow) {
+        // The whitespace before the closing bracket becomes the whitespace
+        // before the closing bracket again — just after the new entry now.
+        const preClose = [...(prev.value.end ?? []), ...items.slice(prevIdx + 1).flatMap((item) => item.start ?? [])];
+        const newline = preClose.find((token) => token.type === 'newline');
+        const entryIndent = (prev.start ?? []).find((token) => token.type === 'space');
+        const separator = newline
+            ? [clone(newline), entryIndent ? clone(entryIndent) : { type: 'space', indent, source: ' '.repeat(indent) }]
+            : [{ type: 'space', indent, source: ' ' }];
+        entry.start = [{ type: 'comma', indent, source: ',' }, ...separator];
+        entry.value.end = preClose.map(clone);
+        prev.value.end = [];
+        items.splice(prevIdx + 1, items.length - (prevIdx + 1), entry);
+    } else {
+        // A block entry sits on its own line: the previous value must end in a
+        // newline, and the new value carries one only if the file was newline-terminated.
+        const prevEnd = prev.value.end ?? [];
+        const terminated = prevEnd.some((token) => token.type === 'newline');
+        if (!terminated) {
+            prev.value.end = [...prevEnd, { type: 'newline', indent, source: '\n' }];
+        }
+        entry.start = [{ type: 'space', indent, source: ' '.repeat(indent) }];
+        entry.value.end = terminated ? [{ type: 'newline', indent, source: '\n' }] : [];
+        items.push(entry);
+    }
+}
+
+/**
  * Compute the digest of every import target in a descriptor and write it into
  * the descriptor's `import.digest` fields.
  *
@@ -109,9 +194,16 @@ async function pin(url, { load = loader.defaultLoad, includeLocal = false } = {}
     // unchanged. `toString('utf8')` keeps a leading BOM intact so the untouched
     // passthrough stays byte-faithful.
     const text = raw.toString('utf8');
-    const doc = parseDocument(text);
-    if (doc.errors.length > 0) {
-        throw new loader.LoadError(`Invalid YAML in ${url.pathname}: ${doc.errors[0].message}`, { cause: doc.errors[0] });
+
+    // Parse to the CST token stream (kept for a byte-faithful re-stringify) and
+    // compose it into a Document (navigated to locate each digest node). The two
+    // share their source tokens, so an edit made through the Document's
+    // `srcToken` shows up when the tokens are stringified back out.
+    const tokens = [...new Parser().parse(text)];
+    const doc = [...new Composer({ keepSourceTokens: true }).compose(tokens)][0];
+    if (!doc || doc.errors.length > 0) {
+        const cause = doc && doc.errors[0];
+        throw new loader.LoadError(`Invalid YAML in ${url.pathname}: ${cause ? cause.message : 'empty document'}`, { cause });
     }
 
     const imports = collectImports(doc.toJS(), schemaNameFromUrl(url));
@@ -150,13 +242,13 @@ async function pin(url, { load = loader.defaultLoad, includeLocal = false } = {}
             if (!change.changed) {
                 continue;
             }
-            doc.setIn([...change.path, 'import', 'digest'], change.digest);
+            writeDigest(doc, [...change.path, 'import'], change.digest);
             changed = true;
         }
     }
 
     return {
-        text: changed ? doc.toString() : text,
+        text: changed ? tokens.map((token) => CST.stringify(token)).join('') : text,
         changes: changes.map(({ path: _path, ...change }) => change),
         changed,
         ok,
