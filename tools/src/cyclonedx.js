@@ -34,7 +34,7 @@
 'use strict';
 
 const path = require('node:path');
-const { randomUUID } = require('node:crypto');
+const { createHash, randomUUID } = require('node:crypto');
 const { Models, Enums, Spec, Serialize, Contrib } = require('@cyclonedx/cyclonedx-library');
 const spdxExpressionParse = require('spdx-expression-parse');
 const { decodeDigest } = require('./digest');
@@ -55,13 +55,17 @@ const SHA256 = Enums.HashAlgorithm['SHA-256'];
 const licenseFactory = new Contrib.License.Factories.LicenseFactory(spdxExpressionParse);
 
 /**
- * Build a CycloneDX component for one loaded descriptor file. The sha256 is the
- * durable identity, so it lands in `hashes` (as the hex CycloneDX expects) and
- * also forms the `bom-ref` — a document-internal id — as `name@sha256:<hex>`,
- * which stays unique without leaking the author's local filesystem path. Only a
- * remote URL is recorded as an external reference: it is a real distribution
- * point, whereas a `file:` path is machine-specific and would leak a home
- * directory while resolving nowhere off the authoring machine.
+ * Build a CycloneDX component for one loaded descriptor file. The content sha256
+ * is the durable identity and lands in `hashes` (as the hex CycloneDX expects).
+ * The `bom-ref` — a document-internal id — must be unique per component, so it is
+ * keyed on the file's resolved URL, the value that actually distinguishes them:
+ * two byte-identical files at different paths are distinct components here yet
+ * share a content hash, so the content sha256 cannot serve as the ref. The URL is
+ * hashed rather than embedded, so the ref stays unique without leaking the
+ * author's local filesystem path, and rendered as `name@<sha256(url)>` to stay
+ * legible. Only a remote URL is recorded as an external reference: it is a real
+ * distribution point, whereas a `file:` path is machine-specific and would leak a
+ * home directory while resolving nowhere off the authoring machine.
  *
  * Producer, license, version, and copyright are self-assertions about the file.
  * A file's own descriptor-declared provenance wins; failing that, a local file
@@ -83,9 +87,10 @@ const licenseFactory = new Contrib.License.Factories.LicenseFactory(spdxExpressi
 function component(href, digest, localProvenance, declared = {}) {
     const url = new URL(href);
     const name = path.basename(url.pathname);
-    const hex = decodeDigest(digest).toString('hex');
-    const comp = new Models.Component(Enums.ComponentType.File, name, { bomRef: `${name}@sha256:${hex}` });
-    comp.hashes.set(SHA256, hex);
+    const hrefHash = createHash('sha256').update(url.href).digest('hex');
+    const comp = new Models.Component(Enums.ComponentType.File, name, { bomRef: `${name}@${hrefHash}` });
+    const digestHex = decodeDigest(digest).toString('hex');
+    comp.hashes.set(SHA256, digestHex);
     const remote = isRemote(url);
     if (remote) {
         comp.externalReferences.add(new Models.ExternalReference(href, Enums.ExternalReferenceType.Distribution));

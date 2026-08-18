@@ -36,8 +36,8 @@ const pkg = require('../package.json');
 // The provenance carries base64 digests; the BOM records the same hash as hex.
 const b64 = (text) => crypto.createHash('sha256').update(text).digest('base64');
 const hex = (text) => crypto.createHash('sha256').update(text).digest('hex');
-// A component's bom-ref is its name plus the content hash, not its path.
-const ref = (name, text) => `${name}@sha256:${hex(text)}`;
+// A component's bom-ref is its name plus the hex of its url
+const ref = (name, href) => `${name}@${hex(href)}`;
 // With no pipeline defaults, a component's provenance is explicitly Unknown.
 const UNKNOWN = { supplier: { name: 'Unknown' }, version: 'Unknown', licenses: [{ license: { name: 'NOASSERTION' } }] };
 
@@ -56,7 +56,7 @@ describe('toCycloneDx', () => {
         expect(bom.metadata.component).toEqual({
             type: 'file',
             name: 'device.example.yaml',
-            'bom-ref': ref('device.example.yaml', 'root'),
+            'bom-ref': ref('device.example.yaml', 'file:///models/device.example.yaml'),
             hashes: [{ alg: 'SHA-256', content: hex('root') }],
             ...UNKNOWN
         });
@@ -126,14 +126,14 @@ describe('toCycloneDx', () => {
             {
                 type: 'file',
                 name: 'param.on_off.yaml',
-                'bom-ref': ref('param.on_off.yaml', 'onoff'),
+                'bom-ref': ref('param.on_off.yaml', 'file:///models/param.on_off.yaml'),
                 hashes: [{ alg: 'SHA-256', content: hex('onoff') }],
                 ...UNKNOWN
             },
             {
                 type: 'file',
                 name: 'param.shared.yaml',
-                'bom-ref': ref('param.shared.yaml', 'shared'),
+                'bom-ref': ref('param.shared.yaml', 'file:///models/param.shared.yaml'),
                 hashes: [{ alg: 'SHA-256', content: hex('shared') }],
                 ...UNKNOWN
             }
@@ -257,10 +257,36 @@ describe('toCycloneDx', () => {
         const bom = bomOf(result, 'file:///models/device.yaml');
 
         expect(bom.dependencies).toEqual([
-            { ref: ref('device.yaml', 'root'), dependsOn: [ref('a.yaml', 'a'), ref('b.yaml', 'b')] },
-            { ref: ref('a.yaml', 'a'), dependsOn: [ref('shared.yaml', 'shared')] },
-            { ref: ref('shared.yaml', 'shared') },
-            { ref: ref('b.yaml', 'b'), dependsOn: [ref('shared.yaml', 'shared')] }
+            { ref: ref('device.yaml', 'file:///models/device.yaml'), dependsOn: [ref('a.yaml', 'file:///models/a.yaml'), ref('b.yaml', 'file:///models/b.yaml')] },
+            { ref: ref('a.yaml', 'file:///models/a.yaml'), dependsOn: [ref('shared.yaml', 'file:///models/shared.yaml')] },
+            { ref: ref('shared.yaml', 'file:///models/shared.yaml') },
+            { ref: ref('b.yaml', 'file:///models/b.yaml'), dependsOn: [ref('shared.yaml', 'file:///models/shared.yaml')] }
+        ]);
+    });
+
+    test('gives distinct bom-refs to same-name, same-content files at different paths', () => {
+        // identical bytes (same digest) and basename at different URLs are still
+        // distinct components; the ref is keyed on the URL so they cannot collide
+        const result = {
+            imports: [
+                { url: 'file:///models/a/param.on_off.yaml', digest: b64('same'), dependencies: [] },
+                { url: 'file:///models/b/param.on_off.yaml', digest: b64('same'), dependencies: [] }
+            ],
+            dependencies: ['file:///models/a/param.on_off.yaml', 'file:///models/b/param.on_off.yaml'],
+            digest: b64('root')
+        };
+
+        const bom = bomOf(result, 'file:///models/device.yaml');
+
+        const refA = ref('param.on_off.yaml', 'file:///models/a/param.on_off.yaml');
+        const refB = ref('param.on_off.yaml', 'file:///models/b/param.on_off.yaml');
+        expect(refA).not.toBe(refB);
+        expect(bom.components.map((c) => c['bom-ref'])).toEqual([refA, refB]);
+        // each edge resolves to the right instance despite identical content
+        expect(bom.dependencies).toEqual([
+            { ref: ref('device.yaml', 'file:///models/device.yaml'), dependsOn: [refA, refB] },
+            { ref: refA },
+            { ref: refB }
         ]);
     });
 });
