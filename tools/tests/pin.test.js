@@ -103,6 +103,26 @@ describe('pin', () => {
         expect(result.text).toContain('# top level comment');
     });
 
+    test('adds a digest to a block import that has no trailing newline', async () => {
+        const parent = [
+            'params:',
+            '  gain:',
+            '    import:',
+            '      url: ./param.gain.yaml',
+        ].join('\n');
+        const load = mapLoad({ [ROOT]: parent, [GAIN_URL]: GAIN });
+
+        const result = await pin(new URL(ROOT), { load });
+
+        expect(result.changed).toBe(true);
+        expect(result.text).toBe(`${parent}\n      digest: ${GAIN_DIGEST}`);
+    });
+
+    test('rejects an empty document', async () => {
+        const load = mapLoad({ [ROOT]: '' });
+        await expect(pin(new URL(ROOT), { load })).rejects.toThrow(/Invalid YAML.*empty document/);
+    });
+
     test('reports an unchanged import and leaves the text byte-for-byte', async () => {
         const parent = [
             'params:',
@@ -430,6 +450,35 @@ describe('pin (json)', () => {
 
         expect(result.changed).toBe(true);
         expect(result.changes[0].pointer).toBe('/import/digest');
+        expect(() => JSON.parse(result.text)).not.toThrow();
+        expect(JSON.parse(result.text).import.digest).toBe(GAIN_DIGEST);
+    });
+
+    test('adds a digest to an unindented multi-line JSON import', async () => {
+        const parent = [
+            '{',
+            '"import": {',
+            '"url": "./param.gain.yaml"',
+            '}',
+            '}',
+            '',
+        ].join('\n');
+        const load = mapLoad({ [JSON_ROOT]: parent, [GAIN_URL]: GAIN });
+
+        const result = await pin(new URL(JSON_ROOT), { load });
+
+        expect(result.changed).toBe(true);
+        expect(() => JSON.parse(result.text)).not.toThrow();
+        expect(JSON.parse(result.text).import.digest).toBe(GAIN_DIGEST);
+    });
+
+    test('adds a digest to a compact (space-free) JSON import', async () => {
+        const parent = '{"import":{"url":"./param.gain.yaml"}}\n';
+        const load = mapLoad({ [JSON_ROOT]: parent, [GAIN_URL]: GAIN });
+
+        const result = await pin(new URL(JSON_ROOT), { load });
+
+        expect(result.changed).toBe(true);
         expect(() => JSON.parse(result.text)).not.toThrow();
         expect(JSON.parse(result.text).import.digest).toBe(GAIN_DIGEST);
     });

@@ -146,9 +146,9 @@ function insertDigest(collection, digest) {
     if (inFlow) {
         // The whitespace before the closing bracket becomes the whitespace
         // before the closing bracket again — just after the new entry now.
-        const preClose = [...(prev.value.end ?? []), ...items.slice(prevIdx + 1).flatMap((item) => item.start ?? [])];
+        const preClose = [...(prev.value.end ?? []), ...items.slice(prevIdx + 1).flatMap((item) => item.start)];
         const newline = preClose.find((token) => token.type === 'newline');
-        const entryIndent = (prev.start ?? []).find((token) => token.type === 'space');
+        const entryIndent = prev.start.find((token) => token.type === 'space');
         const separator = newline
             ? [clone(newline), entryIndent ? clone(entryIndent) : { type: 'space', indent, source: ' '.repeat(indent) }]
             : [{ type: 'space', indent, source: ' ' }];
