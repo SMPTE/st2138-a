@@ -61,6 +61,9 @@ class Validator {
         addFormats(this.ajv);
 
         this.addSchemas('$defs');
+        // Compile the device root once and reuse it; the param/command sub-schemas
+        // are already cached by addSchemas, but the root has no id to reference.
+        this.deviceValidate = this.ajv.compile(schema);
     }
 
     addSchemas(genus) {
@@ -124,9 +127,8 @@ class Validator {
 
         let valid, errors;
         if (isDeviceSchema) {
-            const validate = this.ajv.compile(schema);
-            valid = validate(data);
-            errors = validate.errors;
+            valid = this.deviceValidate(data);
+            errors = this.deviceValidate.errors;
         } else {
             valid = this.ajv.validate(schema.$defs[schemaName], data);
             errors = this.ajv.errors;

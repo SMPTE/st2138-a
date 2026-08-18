@@ -87,11 +87,9 @@ describe('Validator', () => {
             sourceMap: { linesFor: () => null }
         });
 
-        const compileSpy = jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
-            const validateFn = () => true;
-            validateFn.errors = null;
-            return validateFn;
-        });
+        // the device root is compiled once in the constructor; stub the cached
+        // validator so validateData runs without the real schema.
+        validator.deviceValidate = Object.assign(jest.fn(() => true), { errors: null });
 
         const result = await validator.validate('device', pathToFileURL(fixturePath));
         expect(result).toEqual({
@@ -100,7 +98,7 @@ describe('Validator', () => {
             diagnostics: []
         });
         expect(loadSpy).toHaveBeenCalled();
-        expect(compileSpy).toHaveBeenCalled();
+        expect(validator.deviceValidate).toHaveBeenCalled();
         expect(runChecksSpy).toHaveBeenCalledWith(
             { params: {} },
             expect.objectContaining({ schemaName: 'device' }),
@@ -118,12 +116,9 @@ describe('Validator', () => {
         // mock loadDescriptor return an empty object with a mocked sourceMap
         jest.spyOn(loader, 'loadDescriptor').mockResolvedValueOnce({ data: {}, sourceMap: mockSourceMap });
 
-        // mock AJV compile to return a validate function that always fails with our errors
-        jest.spyOn(validator.ajv, 'compile').mockImplementationOnce(() => {
-            const validateFn = () => false;
-            validateFn.errors = mockErrors;
-            return validateFn;
-        });
+        // the device root is compiled once in the constructor; stub the cached
+        // validator to fail with our errors so the diagnostics path is exercised.
+        validator.deviceValidate = Object.assign(() => false, { errors: mockErrors });
 
         // AJV errors should be surfaced as structured diagnostics with line info
         const result = await validator.validate('device', new URL('file:///tmp/device.invalid.yaml'));
@@ -169,11 +164,7 @@ describe('Validator', () => {
             data: { params: {} },
             sourceMap: mockSourceMap
         });
-        jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
-            const validateFn = () => true;
-            validateFn.errors = null;
-            return validateFn;
-        });
+        validator.deviceValidate = Object.assign(() => true, { errors: null });
 
         const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'), null, {
             disableMandatoryParams: false,
@@ -201,11 +192,7 @@ describe('Validator', () => {
             data: { params: {} },
             sourceMap: mockSourceMap
         });
-        jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
-            const validateFn = () => true;
-            validateFn.errors = null;
-            return validateFn;
-        });
+        validator.deviceValidate = Object.assign(() => true, { errors: null });
 
         const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'), null, {
             disableMandatoryParams: true,
@@ -234,11 +221,7 @@ describe('Validator', () => {
             data: { params: {} },
             sourceMap: mockSourceMap
         });
-        jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
-            const validateFn = () => true;
-            validateFn.errors = null;
-            return validateFn;
-        });
+        validator.deviceValidate = Object.assign(() => true, { errors: null });
         runChecksSpy.mockReturnValue(mockWarnings);
 
         const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
@@ -257,11 +240,7 @@ describe('Validator', () => {
             data: { params: {} },
             sourceMap: mockSourceMap
         });
-        jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
-            const validateFn = () => true;
-            validateFn.errors = null;
-            return validateFn;
-        });
+        validator.deviceValidate = Object.assign(() => true, { errors: null });
         runChecksSpy.mockReturnValue(mockErrors);
 
         const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));

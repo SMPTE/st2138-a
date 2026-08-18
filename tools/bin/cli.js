@@ -37,6 +37,8 @@
  * it can be reused by consumers that import the package directly.
  */
 
+'use strict';
+
 const { program } = require('commander');
 const { stringify } = require('yaml');
 const fs = require('node:fs');
@@ -45,8 +47,6 @@ const pkg = require('../package.json');
 const { validate, resolve, digest, toCycloneDx, printDiagnostics, formatDiagnostic } = require('../src');
 const { pin, assertWritable } = require('../src/pin');
 const { toUrl, schemaNameFromUrl } = require('../src/urls');
-
-'use strict';
 
 /**
  * Decide the serialization format for `resolve` output. An explicit `--json` or
