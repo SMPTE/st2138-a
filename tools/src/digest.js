@@ -44,23 +44,34 @@ const crypto = require('node:crypto');
 /** Byte length of a sha256 digest. */
 const SHA256_BYTES = 32;
 
+/** Length of a base64-encoded sha256: 44 characters padded, 43 without the `=`. */
+const SHA256_BASE64_PADDED = 44;
+const SHA256_BASE64_UNPADDED = 43;
+
 /**
  * Decode a base64 sha256 digest into the raw bytes the loader compares against.
- * A null/absent digest passes through as null ("do not verify"). Base64 decoding
- * is lenient (it silently drops out-of-alphabet characters), so the length is
- * checked here to reject a malformed or truncated digest with a clear error
- * rather than let garbage bytes surface later as a confusing content mismatch.
+ * A null/absent digest passes through as null ("do not verify").
+ *
+ * `Buffer.from(..., 'base64')` is lenient: it silently drops any character
+ * outside the alphabet, so a malformed value (e.g. an appended `!`) can still
+ * decode to 32 bytes. Dropping a character can only shorten the output, so
+ * checking the length on both sides of the decode closes that gap — an input of
+ * the right size that still yields a full 32 bytes cannot have had any character
+ * ignored.
  * @param {string|null} [digest] base64-encoded sha256 digest, or null
  * @returns {Buffer|null} the decoded 32 bytes, or null when no digest was given
- * @throws {Error} if the value does not decode to a sha256's 32 bytes
+ * @throws {Error} if the value is not a base64-encoded sha256
  */
 function decodeDigest(digest) {
     if (!digest) {
         return null;
     }
-    const bytes = Buffer.from(digest, 'base64');
-    if (bytes.length !== SHA256_BYTES) {
-        throw new Error(`Invalid digest: expected a base64-encoded sha256 (${SHA256_BYTES} bytes), got ${bytes.length}`);
+    const sized =
+        digest.length === SHA256_BASE64_UNPADDED ||
+        (digest.length === SHA256_BASE64_PADDED && digest.endsWith('='));
+    const bytes = sized ? Buffer.from(digest, 'base64') : null;
+    if (!bytes || bytes.length !== SHA256_BYTES) {
+        throw new Error(`Invalid digest: expected a base64-encoded sha256 (${SHA256_BYTES} bytes)`);
     }
     return bytes;
 }

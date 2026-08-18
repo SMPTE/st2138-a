@@ -358,6 +358,13 @@ A `ValidationResult`/`ResolutionResult` carries `valid`, `diagnostics`, and
 
 Deferred by design — the shape of each is settled, but none is built yet.
 
+
+- **Template expansion inside commands.** Template expansion walks a
+  descriptor's `params` tree only, so a `template_oid` on a command's argument
+  param is left as authored rather than filled in, and an FQOID cannot address a
+  param under `commands` to name it as a source. Extending the expansion walk to
+  descend `commands` would let a command's params borrow shapes exactly as
+  top-level params do.
 - **Recursive and CI pinning.** `pin --recursive` would pin a whole local
   subtree bottom-up (a leaf's digest changes its parent's), for locking a
   reusable library at its pre-publish freeze; `pin --check` would report whether

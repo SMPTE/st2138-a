@@ -70,17 +70,18 @@ class LoadError extends Error {
 
 /**
  * Default transport: read `file:` URLs from disk, otherwise fetch over the
- * network. Returns the raw text; verification and parsing happen in
- * {@link loadDescriptor}.
+ * network. Returns the raw bytes verbatim — no decoding — so {@link
+ * loadDescriptor} can hash exactly what was fetched; verification and parsing
+ * happen there.
  * @type {Loader}
  * @param {URL} url location to read
- * @returns {Promise<string>} raw descriptor text
+ * @returns {Promise<Buffer>} raw descriptor bytes
  * @throws {Error} if the file cannot be opened or the fetch fails
  */
 async function defaultLoad(url) {
     if (url.protocol === 'file:') {
         try {
-            return await fs.readFile(url, 'utf8');
+            return await fs.readFile(url);
         } catch {
             throw new Error(`Cannot open file at ${url.pathname}`);
         }
@@ -90,7 +91,7 @@ async function defaultLoad(url) {
     if (!response.ok) {
         throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
     }
-    return response.text();
+    return Buffer.from(await response.arrayBuffer());
 }
 
 /**
@@ -111,35 +112,40 @@ async function defaultLoad(url) {
  * @throws {LoadError} if loading fails, the digest does not match, or the text is malformed
  */
 async function loadDescriptor(url, { digest = null, load = defaultLoad } = {}) {
-    let raw;
+    let bytes;
     try {
-        raw = await load(url);
+        bytes = await load(url);
     } catch (err) {
         // Transport failure (missing file, failed fetch): normalize whatever the
         // loader threw so the resolver sees one recognizable load-failure type.
         throw new LoadError(err.message, { cause: err });
     }
 
-    // Hash the loaded bytes once: to verify a supplied digest, and to report
-    // what was actually loaded regardless of whether the caller pinned it.
-    const computed = computeDigest(raw);
+    // Hash the bytes exactly as loaded — never a decoded copy — so the digest is
+    // the sha256 of what was actually fetched, matching openssl/sha256sum and the
+    // value an `import` pins against. Reported for every load, pinned or not.
+    const computed = computeDigest(bytes);
     if (digest && !digestsMatch(digest, computed)) {
         throw new LoadError(`Digest mismatch for ${url}: expected ${digest}, got ${computed}`);
     }
+
+    // Decode only now, to parse. TextDecoder drops a leading UTF-8 BOM (which
+    // stays in the hashed bytes above) so a BOM-prefixed descriptor still parses.
+    const text = new TextDecoder().decode(bytes);
 
     const ext = path.extname(url.pathname).toLowerCase();
     if (ext === '.json') {
         // JSON descriptors must be strict JSON; reject YAML-isms (comments,
         // unquoted keys, ...) that other JSON tools would refuse.
         try {
-            JSON.parse(raw);
+            JSON.parse(text);
         } catch (err) {
             throw new LoadError(`Invalid JSON in ${url.pathname}: ${err.message}`);
         }
     }
 
     try {
-        return { ...sourcemap.parse(raw), digest: computed, provenance: parseProvenance(raw) };
+        return { ...sourcemap.parse(text), digest: computed, provenance: parseProvenance(text) };
     } catch (err) {
         throw new LoadError(`Invalid YAML in ${url.pathname}: ${err.message}`);
     }

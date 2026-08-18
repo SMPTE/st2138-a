@@ -41,6 +41,18 @@ describe('decodeDigest', () => {
         expect(() => decodeDigest('invalid_base64')).toThrow(/sha256/i);
     });
 
+    test('rejects a valid digest with an appended out-of-alphabet character', () => {
+        // the extra '!' makes the input too long, before any decoding happens
+        const digest = computeDigest('payload');
+        expect(() => decodeDigest(`${digest}!`)).toThrow(/sha256/i);
+    });
+
+    test('rejects an out-of-alphabet character that keeps the input length', () => {
+        // Buffer.from silently drops the '!', so the decode falls short of 32 bytes
+        const digest = computeDigest('payload');
+        expect(() => decodeDigest(`!${digest.slice(1)}`)).toThrow(/sha256/i);
+    });
+
     test('returns null when the digest is absent', () => {
         expect(decodeDigest(null)).toBeNull();
         expect(decodeDigest(undefined)).toBeNull();

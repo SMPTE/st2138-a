@@ -38,6 +38,7 @@ const crypto = require('node:crypto');
 jest.mock('../src/templates');
 const { expandTemplates, rebaseTemplates } = require('../src/templates');
 const { resolve } = require('../src/resolve');
+const loader = require('../src/loader');
 
 describe('resolve', () => {
     // Reset expandTemplates to a passthrough default before each test: the
@@ -57,7 +58,7 @@ describe('resolve', () => {
     const transport = (files) => (url) => {
         const raw = files.get(url.href);
         if (raw === undefined) return Promise.reject(new Error(`no fixture for ${url.href}`));
-        return Promise.resolve(raw);
+        return Promise.resolve(Buffer.from(raw));
     };
 
     // a jest.fn() spy for the engine's validate(): it records every call and,
@@ -283,7 +284,7 @@ describe('resolve', () => {
             loaded.push(url.href);
             // an import directive missing its required `url`: descending would
             // dereference directive.url === undefined and fetch a garbage path
-            return Promise.resolve('import:\n  digest: abc123\n');
+            return Promise.resolve(Buffer.from('import:\n  digest: abc123\n'));
         };
         const badDiag = {
             level: 'error', message: "must have required property 'url'",
@@ -505,6 +506,21 @@ describe('resolve', () => {
         ]);
     });
 
+    test('falls back to the loader default transport when no load is supplied', async () => {
+        const url = new URL('file:///models/param.default.yaml');
+        const raw = 'type: INT32\nvalue:\n  int32_value: 3\n';
+        const spy = jest.spyOn(loader, 'defaultLoad').mockResolvedValue(Buffer.from(raw));
+        const validate = spyValidate();
+
+        const result = await resolve(url, { validate });
+
+        expect(result.valid).toBe(true);
+        expect(result.data).toEqual({ type: 'INT32', value: { int32_value: 3 } });
+        // no transport was injected, so the loader's own default was used
+        expect(spy).toHaveBeenCalledWith(url);
+        spy.mockRestore();
+    });
+
     test('descends nested params and resolves an import on a nested param', async () => {
         const rootUrl = new URL('file:///models/device.testing.yaml');
         const device = [
@@ -619,8 +635,8 @@ describe('resolve', () => {
         const seen = [];
         const load = (url) => {
             seen.push(url.href);
-            if (url.href === rootUrl.href) return Promise.resolve('import:\n  url: ../shared/param.target.yaml\n');
-            return Promise.resolve('type: INT32\n');
+            if (url.href === rootUrl.href) return Promise.resolve(Buffer.from('import:\n  url: ../shared/param.target.yaml\n'));
+            return Promise.resolve(Buffer.from('type: INT32\n'));
         };
         const validate = spyValidate();
 

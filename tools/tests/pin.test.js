@@ -49,7 +49,7 @@ function mapLoad(entries) {
         if (!files.has(url.href)) {
             throw new Error(`Cannot open ${url.href}`);
         }
-        return files.get(url.href);
+        return Buffer.from(files.get(url.href));
     };
 }
 

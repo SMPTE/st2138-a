@@ -58,6 +58,22 @@ function getEngine() {
 }
 
 /**
+ * Project the public options onto the internal CheckOptions shape, so the
+ * check contract stays decoupled from unrelated fields (e.g. `load`, `digest`).
+ * @param {ValidateOptions|ResolveOptions} options
+ * @returns {import('./types').CheckOptions}
+ */
+function pickCheckOpts(options) {
+    return {
+        disableMandatoryParams: options.disableMandatoryParams || false,
+        disableNestedValueChecks: options.disableNestedValueChecks || false,
+        disableScopeChecks: options.disableScopeChecks || false,
+        disableDigestChecks: options.disableDigestChecks || false,
+        disableClientHintChecks: options.disableClientHintChecks || false,
+    };
+}
+
+/**
  * Format a single diagnostic (from a validation result) as a human-readable
  * line, e.g. `ERROR: must be string at /params/foo on lines 5-7`.
  * @param {Diagnostic} diagnostic
@@ -94,11 +110,7 @@ async function validate(input, options = {}) {
         digest: options.digest ?? null,
         load: options.load,
     };
-    const checkOpts = {
-        disableMandatoryParams: options.disableMandatoryParams || false,
-        disableNestedValueChecks: options.disableNestedValueChecks || false,
-        disableScopeChecks: options.disableScopeChecks || false,
-    };
+    const checkOpts = pickCheckOpts(options);
     return getEngine().validate(schemaName, url, loadOpts, checkOpts);
 }
 
@@ -113,11 +125,7 @@ async function validate(input, options = {}) {
  */
 async function resolve(input, options = {}) {
     const url = toUrl(input);
-    const checkOpts = {
-        disableMandatoryParams: options.disableMandatoryParams || false,
-        disableNestedValueChecks: options.disableNestedValueChecks || false,
-        disableScopeChecks: options.disableScopeChecks || false,
-    };
+    const checkOpts = pickCheckOpts(options);
     const engine = getEngine();
     // The resolver validates in-memory data. Per fragment it runs only the
     // gate-phase checks (schema, digest) it depends on to descend and load

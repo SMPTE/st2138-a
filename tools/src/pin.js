@@ -105,7 +105,11 @@ async function pin(url, { load = loader.defaultLoad, includeLocal = false } = {}
         throw new loader.LoadError(err.message, { cause: err });
     }
 
-    const doc = parseDocument(raw);
+    // The loader hands back raw bytes; decode to parse and to echo the file
+    // unchanged. `toString('utf8')` keeps a leading BOM intact so the untouched
+    // passthrough stays byte-faithful.
+    const text = raw.toString('utf8');
+    const doc = parseDocument(text);
     if (doc.errors.length > 0) {
         throw new loader.LoadError(`Invalid YAML in ${url.pathname}: ${doc.errors[0].message}`, { cause: doc.errors[0] });
     }
@@ -152,7 +156,7 @@ async function pin(url, { load = loader.defaultLoad, includeLocal = false } = {}
     }
 
     return {
-        text: changed ? doc.toString() : raw,
+        text: changed ? doc.toString() : text,
         changes: changes.map(({ path: _path, ...change }) => change),
         changed,
         ok,

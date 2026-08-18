@@ -329,6 +329,29 @@ async function resolveFile(url, deps, digest, ancestors = []) {
 }
 
 /**
+ * Wrap a transport so each URL is fetched at most once per resolution. Keying on
+ * the resolved href and caching the promise, every branch that reaches a file —
+ * directly or through a diamond — sees the same bytes, so its digest, provenance,
+ * and inlined content agree wherever it lands; `dedupeImports` then collapses the
+ * identical records safely. The cache lives only for the enclosing `resolve`
+ * call, so an unpinned remote can still change between separate resolutions. Each
+ * `loadDescriptor` still verifies its own caller's digest against these bytes.
+ * @param {Loader} [load] the transport to memoize; defaults to the loader's own
+ * @returns {Loader}
+ */
+function memoizeLoad(load) {
+    const base = load || loader.defaultLoad;
+    const cache = new Map();
+    return (url) => {
+        const key = url.href;
+        if (!cache.has(key)) {
+            cache.set(key, base(url));
+        }
+        return cache.get(key);
+    };
+}
+
+/**
  * Resolve a descriptor's imports into a single self-contained tree, then expand
  * its templates into the runtime model it describes.
  *
@@ -362,7 +385,9 @@ async function resolveFile(url, deps, digest, ancestors = []) {
  * @returns {Promise<ResolutionResult>}
  */
 async function resolve(url, { validate, validateFinal = validate, load, digest = null, disableTemplateExpansion = false }) {
-    const deps = { validate, load };
+    // Memoize the transport for this resolution so a file reached along two
+    // branches is fetched once and every branch inlines the same bytes.
+    const deps = { validate, load: memoizeLoad(load) };
     const resolved = await resolveFile(url, deps, digest);
     const imports = dedupeImports(resolved.imports);
     // The root's own edges in the dependency graph: the files it imports directly.

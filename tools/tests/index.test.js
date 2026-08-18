@@ -106,6 +106,8 @@ describe('validate', () => {
                 disableMandatoryParams: false,
                 disableNestedValueChecks: false,
                 disableScopeChecks: false,
+                disableDigestChecks: false,
+                disableClientHintChecks: false,
             }
         );
     });
@@ -117,6 +119,8 @@ describe('validate', () => {
             disableMandatoryParams: true,
             disableNestedValueChecks: true,
             disableScopeChecks: true,
+            disableDigestChecks: true,
+            disableClientHintChecks: true,
         });
         expect(mockValidate).toHaveBeenCalledWith(
             'param',
@@ -126,6 +130,8 @@ describe('validate', () => {
                 disableMandatoryParams: true,
                 disableNestedValueChecks: true,
                 disableScopeChecks: true,
+                disableDigestChecks: true,
+                disableClientHintChecks: true,
             }
         );
     });
@@ -191,6 +197,8 @@ describe('resolve', () => {
             disableMandatoryParams: false,
             disableNestedValueChecks: false,
             disableScopeChecks: false,
+            disableDigestChecks: false,
+            disableClientHintChecks: false,
         }, 'gate');
     });
 
@@ -203,6 +211,8 @@ describe('resolve', () => {
             disableMandatoryParams: false,
             disableNestedValueChecks: false,
             disableScopeChecks: false,
+            disableDigestChecks: false,
+            disableClientHintChecks: false,
         }, 'report');
     });
 
@@ -215,6 +225,8 @@ describe('resolve', () => {
             disableMandatoryParams: true,
             disableNestedValueChecks: true,
             disableScopeChecks: true,
+            disableDigestChecks: true,
+            disableClientHintChecks: true,
             disableTemplateExpansion: true,
         });
         expect(mockResolveTree).toHaveBeenCalledWith(
@@ -227,6 +239,8 @@ describe('resolve', () => {
             disableMandatoryParams: true,
             disableNestedValueChecks: true,
             disableScopeChecks: true,
+            disableDigestChecks: true,
+            disableClientHintChecks: true,
         }, 'gate');
     });
 

@@ -38,7 +38,7 @@ const { randomUUID } = require('node:crypto');
 const { Models, Enums, Spec, Serialize, Contrib } = require('@cyclonedx/cyclonedx-library');
 const spdxExpressionParse = require('spdx-expression-parse');
 const { decodeDigest } = require('./digest');
-const { isRemote } = require('./urls');
+const { isRemote, toUrl } = require('./urls');
 const pkg = require('../package.json');
 
 /**
@@ -124,7 +124,7 @@ function component(href, digest, localProvenance, declared = {}) {
  */
 function toCycloneDx(result, subject, options = {}) {
     const localProvenance = options.localProvenance || {};
-    const rootHref = new URL(subject).href;
+    const rootHref = toUrl(subject).href;
     const root = component(rootHref, result.digest, localProvenance, result.provenance);
 
     // Index every file's component by URL so edges can reference them by bom-ref.

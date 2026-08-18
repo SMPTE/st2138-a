@@ -89,12 +89,27 @@ describe('loader', () => {
         expect(digest).toBe(expected);
     });
 
+    test('loadDescriptor hashes the raw bytes verbatim, including a leading UTF-8 BOM', async () => {
+        // the BOM bytes are part of the fetched content, so they must be hashed
+        // (matching openssl/sha256sum on the file) — but stripped before parsing
+        // so a BOM-prefixed descriptor still reads cleanly. Decoding before
+        // hashing would drop the BOM and desync the digest.
+        const bytes = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('name: bom\n')]);
+        const expected = crypto.createHash('sha256').update(bytes).digest('base64');
+        const url = new URL('memory://fixtures/param.bom.yaml');
+
+        const { data, digest } = await loadDescriptor(url, { load: () => Promise.resolve(bytes) });
+
+        expect(digest).toBe(expected);
+        expect(data).toEqual({ name: 'bom' });
+    });
+
     test('loadDescriptor reads the descriptor-declared provenance from its leading comments', async () => {
         // provenance is self-asserted in the file's comments, not the model
         const raw = '# SPDX-License-Identifier: BSD-3-Clause\n# st2138-version: 4.1.0\nname: gain\n';
         const url = new URL('memory://fixtures/param.gain.yaml');
 
-        const { provenance } = await loadDescriptor(url, { load: () => Promise.resolve(raw) });
+        const { provenance } = await loadDescriptor(url, { load: () => Promise.resolve(Buffer.from(raw)) });
 
         expect(provenance).toEqual({ license: 'BSD-3-Clause', version: '4.1.0' });
     });
@@ -111,7 +126,6 @@ describe('loader', () => {
         await expect(loadDescriptor(fixtureUrl, { digest })).resolves.toMatchObject({
             data: expect.any(Object)
         });
-
         // should reject with incorrect digest — a well-formed sha256 (32 zero
         // bytes) that is not the fixture's hash — a LoadError, like every other
         // load-time failure, so the resolver can catch and locate it
@@ -188,7 +202,7 @@ describe('loader', () => {
         // override the fetch mock to actually work for this test
         fetchSpy.mockResolvedValueOnce({
             ok: true,
-            text: () => Promise.resolve(jsonContent)
+            arrayBuffer: () => Promise.resolve(new TextEncoder().encode(jsonContent).buffer)
         });
 
         const { data } = await loadDescriptor(new URL('http://example.com/test.json'));
@@ -210,7 +224,7 @@ describe('loader', () => {
 
     describe('custom loader', () => {
         test('uses an injected load function instead of the default transport', async () => {
-            const load = jest.fn().mockResolvedValue('name: shimmed');
+            const load = jest.fn().mockResolvedValue(Buffer.from('name: shimmed'));
             const url = new URL('memory://fixtures/device.yaml');
 
             const { data } = await loadDescriptor(url, { load });
@@ -227,12 +241,12 @@ describe('loader', () => {
             const url = new URL('memory://fixtures/device.yaml');
 
             await expect(
-                loadDescriptor(url, { load: () => Promise.resolve(raw), digest })
+                loadDescriptor(url, { load: () => Promise.resolve(Buffer.from(raw)), digest })
             ).resolves.toMatchObject({ data: { name: 'shimmed' } });
 
             const wrongDigest = Buffer.alloc(32).toString('base64');
             await expect(
-                loadDescriptor(url, { load: () => Promise.resolve(raw), digest: wrongDigest })
+                loadDescriptor(url, { load: () => Promise.resolve(Buffer.from(raw)), digest: wrongDigest })
             ).rejects.toThrow('Digest mismatch');
         });
     });
@@ -242,7 +256,7 @@ describe('loader', () => {
             // comments are valid YAML but not valid JSON; a .json file must stay
             // portable to strict JSON consumers, so this is refused at load time.
             const url = new URL('file:///path/device.json');
-            const load = () => Promise.resolve('{ "a": 1 # nope\n}');
+            const load = () => Promise.resolve(Buffer.from('{ "a": 1 # nope\n}'));
 
             await expect(loadDescriptor(url, { load })).rejects.toThrow(LoadError);
             await expect(loadDescriptor(url, { load })).rejects.toThrow('Invalid JSON');
@@ -250,7 +264,7 @@ describe('loader', () => {
 
         test('accepts the same comment-bearing content when it is .yaml', async () => {
             const url = new URL('file:///path/device.yaml');
-            const load = () => Promise.resolve('a: 1 # fine in yaml');
+            const load = () => Promise.resolve(Buffer.from('a: 1 # fine in yaml'));
 
             await expect(loadDescriptor(url, { load })).resolves.toMatchObject({
                 data: { a: 1 }
@@ -262,7 +276,7 @@ describe('loader', () => {
         test('recasts malformed YAML as a LoadError', async () => {
             // a tab used for indentation is not valid YAML; the parser rejects it
             const url = new URL('file:///path/device.yaml');
-            const load = () => Promise.resolve('a:\n\t- bad\n');
+            const load = () => Promise.resolve(Buffer.from('a:\n\t- bad\n'));
 
             await expect(loadDescriptor(url, { load })).rejects.toThrow(LoadError);
             await expect(loadDescriptor(url, { load })).rejects.toThrow('Invalid YAML');

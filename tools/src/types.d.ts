@@ -118,7 +118,7 @@ export interface DescriptorOptions extends CheckOptions {
     digest?: string;
     /**
      * Custom transport for loading descriptor bytes, in place of the default
-     * file/HTTP loader. Receives a resolved URL and returns the raw text;
+     * file/HTTP loader. Receives a resolved URL and returns the raw bytes;
      * integrity (digest) checks and parsing are still performed by the engine
      * on whatever it returns.
      */
@@ -156,13 +156,15 @@ export interface DigestOptions {
 }
 
 /**
- * Loads the raw text of a descriptor from a resolved URL. Supply a custom
- * implementation to control transport (caching, auth, in-memory fixtures);
- * the engine still verifies and parses the returned bytes. Signal failure by
- * rejecting the returned promise; the resolved value is always the descriptor
- * text.
+ * Loads the raw bytes of a descriptor from a resolved URL. Supply a custom
+ * implementation to control transport (caching, auth, in-memory fixtures); the
+ * engine still verifies and parses whatever it returns. Return the bytes
+ * verbatim — undecoded — so the engine hashes exactly what was fetched; a
+ * decoded string can silently drop a UTF-8 BOM and desync the digest from
+ * openssl/sha256sum and the pinned value. Signal failure by rejecting the
+ * returned promise.
  */
-export type Loader = (url: URL) => Promise<string>;
+export type Loader = (url: URL) => Promise<Uint8Array>;
 
 /** Validate a descriptor from a path or URL against the ST 2138-a schema. */
 export function validate(
