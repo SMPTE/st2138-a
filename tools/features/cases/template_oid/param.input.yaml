@@ -1,0 +1,26 @@
+# Integration case root: a single-hop template fill. `width` and `height` template
+# from the definition-only `length`, so the expected artifact proves each consumer
+# inherits the missing range constraint while keeping its own local `value`.
+type: STRUCT
+params:
+  length:
+    type: INT32
+    constraint:
+      type: INT_RANGE
+      int32_range:
+        min_value: 0
+        max_value: 100
+    client_hints:
+      st2138_definition_only: "true"
+
+  width:
+    type: INT32
+    template_oid: length
+    value:
+      int32_value: 50
+
+  height:
+    type: INT32
+    template_oid: length
+    value:
+      int32_value: 30

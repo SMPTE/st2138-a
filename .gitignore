@@ -1,7 +1,7 @@
 node_modules/
 docs/openapi.yaml
 interface/schemata/device.json
-tools/data/*
+tools/src/data/*
 coverage/
 .redocly.yaml
 build/

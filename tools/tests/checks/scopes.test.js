@@ -27,16 +27,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const { createScopesVisitor } = require('../../checks/scopes');
-const { walkParams } = require('../../checks/walker');
-const { ERROR } = require('../../checks/constants');
+const { createScopesVisitor } = require('../../src/checks/scopes');
+const { walkDesc } = require('../../src/checks/walker');
+const { ERROR } = require('../../src/checks/constants');
 
 // drive the scopes visitor through the walker the same way runChecks does
 function checkScopes(desc, opts) {
     const visitor = createScopesVisitor(desc, opts);
     if (!visitor) return [];
     const warnings = [];
-    walkParams(desc, [visitor], warnings);
+    walkDesc(desc, [visitor], warnings, opts.schemaName);
     return warnings;
 }
 
@@ -114,6 +114,13 @@ describe('checkScopes', () => {
     test('returns empty when no device is provided', () => {
         const result = checkScopes(null, ENABLED_OPTS);
         expect(result).toEqual([]);
+    });
+
+    // called with no opts: the `opts = {}` default applies, so schemaName is
+    // undefined and the check disables itself by returning null
+    test('returns null when called with no opts', () => {
+        const visitor = createScopesVisitor(device);
+        expect(visitor).toBeNull();
     });
 
     // test that disabling the check works
@@ -267,6 +274,12 @@ describe('checkScopes', () => {
                 type: ERROR,
             },
         ]);
+    });
+
+    test('ignores command arguments with undeclared scopes when the command itself is valid', () => {
+        device.commands.do_thing.params.arg.access_scope = 'st2138:bogus';
+        const result = checkScopes(device, ENABLED_OPTS);
+        expect(result).toEqual([]);
     });
 
     // devices without any commands are handled gracefully (only params checked)

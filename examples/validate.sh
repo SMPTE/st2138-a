@@ -16,7 +16,7 @@ failures=0
 
 # Loop through all of the examples and validate them.
 for example in "$SCRIPT_DIR"/*.yaml; do
-    node "$SCRIPT_DIR/../tools/validate.js" "$example" || (( ++failures ))
+    "$SCRIPT_DIR/../st2138.sh" validate "$example" || (( ++failures ))
 done
 
 echo "-------------------"

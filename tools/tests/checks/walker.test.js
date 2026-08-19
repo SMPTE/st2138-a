@@ -27,9 +27,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const { walkParams } = require('../../checks/walker');
+const { walkDesc } = require('../../src/checks/walker');
 
-describe('walkParams', () => {
+describe('walkDesc', () => {
 
     const DEVICE = {
         params: {
@@ -59,7 +59,7 @@ describe('walkParams', () => {
     // visits every param exactly once, depth-first pre-order
     test('visits every param once in depth-first pre-order', () => {
         const log = [];
-        walkParams(DEVICE, [collectVisitor(log)], []);
+        walkDesc(DEVICE, [collectVisitor(log)], []);
         expect(log).toEqual([
             { key: 'a', path: '/params/a', depth: 0 },
             { key: 'b', path: '/params/a/params/b', depth: 1 },
@@ -72,7 +72,7 @@ describe('walkParams', () => {
     // provides parent and ancestor chain
     test('provides parent and ancestor context', () => {
         const seen = {};
-        walkParams(DEVICE, [{
+        walkDesc(DEVICE, [{
             visit(ctx) {
                 seen[ctx.key] = {
                     parentKey: ctx.parent ? ctx.parent.type : null,
@@ -90,7 +90,7 @@ describe('walkParams', () => {
         const warnings = [];
         const first = { visit: (ctx, w) => w.push(`1:${ctx.key}`) };
         const second = { visit: (ctx, w) => w.push(`2:${ctx.key}`) };
-        walkParams({ params: { x: {} } }, [first, second], warnings);
+        walkDesc({ params: { x: {} } }, [first, second], warnings);
         expect(warnings).toEqual(['1:x', '2:x']);
     });
 
@@ -101,7 +101,7 @@ describe('walkParams', () => {
             visit: (ctx) => order.push(`visit:${ctx.key}`),
             finalize: () => order.push('finalize'),
         };
-        walkParams({ params: { x: {}, y: {} } }, [visitor], []);
+        walkDesc({ params: { x: {}, y: {} } }, [visitor], []);
         expect(order).toEqual(['visit:x', 'visit:y', 'finalize']);
     });
 
@@ -109,9 +109,9 @@ describe('walkParams', () => {
     test('does nothing when there is no descriptor or no visitors', () => {
         const visitor = { visit: jest.fn(), finalize: jest.fn() };
 
-        walkParams(null, [visitor], []);
-        walkParams(undefined, [visitor], []);
-        walkParams({ params: { x: {} } }, [], []);
+        walkDesc(null, [visitor], []);
+        walkDesc(undefined, [visitor], []);
+        walkDesc({ params: { x: {} } }, [], []);
 
         expect(visitor.visit).not.toHaveBeenCalled();
         expect(visitor.finalize).not.toHaveBeenCalled();
@@ -124,7 +124,7 @@ describe('walkParams', () => {
         const finalize = jest.fn((warnings) => warnings.push('finalized'));
         const warnings = [];
 
-        walkParams({}, [{ visit, finalize }], warnings);
+        walkDesc({}, [{ visit, finalize }], warnings);
 
         expect(visit).not.toHaveBeenCalled();
         expect(finalize).toHaveBeenCalledTimes(1);
@@ -136,9 +136,134 @@ describe('walkParams', () => {
         const visit = jest.fn();
         const finalize = jest.fn();
 
-        walkParams({ params: {} }, [{ visit, finalize }], []);
+        walkDesc({ params: {} }, [{ visit, finalize }], []);
 
         expect(visit).not.toHaveBeenCalled();
+        expect(finalize).toHaveBeenCalledTimes(1);
+    });
+
+    // escapes special characters in param keys so path is a valid JSON pointer
+    test('escapes special characters in param key segments', () => {
+        const log = [];
+        walkDesc({ params: { 'a/b': { params: { 'c~d': {} } } } }, [collectVisitor(log)], []);
+        expect(log.map((e) => e.path)).toEqual([
+            '/params/a~1b',
+            '/params/a~1b/params/c~0d',
+        ]);
+    });
+
+    // walks the commands tree via visitCmd for visitors that opt in
+    test('visits commands via visitCmd rooted at /commands', () => {
+        const desc = {
+            params: { p: {} },
+            commands: {
+                reboot: {
+                    params: { delay: {} },
+                },
+            },
+        };
+        const params = [];
+        const commands = [];
+        walkDesc(desc, [{
+            visit: (ctx) => params.push({ path: ctx.path, depth: ctx.depth }),
+            visitCmd: (ctx) => commands.push({ path: ctx.path, depth: ctx.depth }),
+        }], []);
+        expect(params).toEqual([{ path: '/params/p', depth: 0 }]);
+        expect(commands).toEqual([
+            { path: '/commands/reboot', depth: 0 },
+            { path: '/commands/reboot/params/delay', depth: 1 },
+        ]);
+    });
+
+    // a registered visitCmd is not called when the descriptor has no commands
+    test('does not call visitCmd when there are no commands', () => {
+        const visit = jest.fn();
+        const visitCmd = jest.fn();
+        walkDesc({ params: { p: {} } }, [{ visit, visitCmd }], []);
+        expect(visit).toHaveBeenCalledTimes(1);
+        expect(visitCmd).not.toHaveBeenCalled();
+    });
+
+    // visit is optional: a visitCmd-only visitor drives the commands walk and
+    // its params walk is skipped
+    test('treats visit as optional, walking only commands', () => {
+        const desc = {
+            params: { gain: {} },
+            commands: { reboot: {} },
+        };
+        const seen = [];
+        walkDesc(desc, [{ visitCmd: (ctx) => seen.push(ctx.path) }], []);
+        expect(seen).toEqual(['/commands/reboot']);
+    });
+
+    // visitCmd is optional: a visit-only visitor walks params and leaves the
+    // commands tree untouched
+    test('treats visitCmd as optional, walking only params', () => {
+        const desc = {
+            params: { gain: {} },
+            commands: { reboot: {} },
+        };
+        const seen = [];
+        walkDesc(desc, [{ visit: (ctx) => seen.push(ctx.path) }], []);
+        expect(seen).toEqual(['/params/gain']);
+    });
+
+    // a finalize-only visitor walks nothing but still has finalize called
+    test('runs finalize for a visitor with neither visit nor visitCmd', () => {
+        const finalize = jest.fn();
+        walkDesc({ params: { gain: {} }, commands: { reboot: {} } }, [{ finalize }], []);
+        expect(finalize).toHaveBeenCalledTimes(1);
+    });
+
+    // a `param` artifact IS a param-shaped root: the root is visited (pointer '')
+    // and its sub-params resolve relative to it
+    test('visits the root and sub-params of a param artifact', () => {
+        const log = [];
+        const artifact = {
+            type: 'STRUCT',
+            params: { child: { type: 'INT32' } },
+        };
+        walkDesc(artifact, [collectVisitor(log)], [], 'param');
+        expect(log).toEqual([
+            { key: '', path: '', depth: 0 },
+            { key: 'child', path: '/params/child', depth: 1 },
+        ]);
+    });
+
+    // a `command` artifact root is walked via visitCmd, root included
+    test('visits the root and arguments of a command artifact via visitCmd', () => {
+        const params = [];
+        const commands = [];
+        const artifact = {
+            access_scope: 'st2138:op',
+            params: { mode: {} },
+        };
+        walkDesc(artifact, [{
+            visit: (ctx) => params.push(ctx.path),
+            visitCmd: (ctx) => commands.push({ path: ctx.path, depth: ctx.depth }),
+        }], [], 'command');
+        expect(params).toEqual([]);
+        expect(commands).toEqual([
+            { path: '', depth: 0 },
+            { path: '/params/mode', depth: 1 },
+        ]);
+    });
+
+    // a command artifact is left untouched by a visitor without visitCmd
+    test('does not walk a command artifact without a visitCmd', () => {
+        const visit = jest.fn();
+        walkDesc({ params: { mode: {} } }, [{ visit }], [], 'command');
+        expect(visit).not.toHaveBeenCalled();
+    });
+
+    // an unknown schema kind carries nothing param-shaped: only finalize runs
+    test('walks nothing for a schema kind that is not device/param/command', () => {
+        const visit = jest.fn();
+        const visitCmd = jest.fn();
+        const finalize = jest.fn();
+        walkDesc({ params: { p: {} } }, [{ visit, visitCmd, finalize }], [], 'constraint');
+        expect(visit).not.toHaveBeenCalled();
+        expect(visitCmd).not.toHaveBeenCalled();
         expect(finalize).toHaveBeenCalledTimes(1);
     });
 });

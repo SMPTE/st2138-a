@@ -27,19 +27,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
-const yaml = require('yaml');
-const schema = require('../data/device.json');
+const schema = require('../src/data/device.json');
 
-const Validator = require('../validator');
-const checks = require('../checks');
+const Validator = require('../src/validator');
+const checks = require('../src/checks');
+const loader = require('../src/loader');
+const sourcemap = require('../src/sourcemap');
 
 describe('Validator', () => {
-    let fetchSpy;
     let runChecksSpy;
     const tempDirs = [];
 
@@ -50,8 +49,8 @@ describe('Validator', () => {
     };
 
     beforeEach(() => {
-        // default fetch mock to prevent unexpected network calls during tests
-        fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(() => {
+        // guard against unexpected network calls during tests
+        jest.spyOn(global, 'fetch').mockImplementation(() => {
             throw new Error('Unexpected fetch call in test');
         });
         // default runChecks mock to prevent check-specific errors during tests
@@ -64,124 +63,6 @@ describe('Validator', () => {
             tempDirs.splice(0).map((dirPath) => fs.rm(dirPath, { recursive: true, force: true }))
         );
         jest.restoreAllMocks();
-    });
-
-    test('loadTestData parses YAML file content', async () => {
-        // basic success test for a real yaml file.
-        const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
-        const { data, sourceMap } = await Validator.loadTestData(pathToFileURL(fixturePath));
-
-        expect(data).toBeDefined();
-        expect(typeof data).toBe('object');
-        expect(sourceMap).toBeDefined();
-        expect(sourceMap.pointers).toBeDefined();
-    });
-
-    test('loadTestData rejects on unreadable file path', async () => {
-        // path that doesn't exist
-        const missingFile = pathToFileURL('/tmp/does-not-exist-2138.yaml');
-
-        await expect(Validator.loadTestData(missingFile)).rejects.toThrow('Cannot open file');
-    });
-
-    test('loadTestData enforces SHA-256 digest when provided', async () => {
-        // path to the good example
-        const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
-        const fixtureUrl = pathToFileURL(fixturePath);
-        const raw = await fs.readFile(fixturePath, 'utf8');
-        // compute its digest
-        const digest = crypto.createHash('sha256').update(raw).digest('hex');
-
-        // should resolve with correct digest
-        await expect(Validator.loadTestData(fixtureUrl, digest)).resolves.toMatchObject({
-            data: expect.any(Object)
-        });
-
-        // should reject with incorrect digest
-        await expect(Validator.loadTestData(fixtureUrl, 'bad-digest')).rejects.toThrow('Digest mismatch');
-    });
-
-    describe('loadTestData with inline serialized data', () => {
-        // doesn't need to validate for this test, just that it can parse the content
-        // and return a sourceMap
-        const testData = {
-            name: 'test-device',
-            version: '1.0',
-            settings: {
-                enabled: true,
-                timeout: 30
-            },
-            items: ['a', 'b', 'c']
-        };
-
-        test('parses YAML serialized from inline object', async () => {
-            const tempDir = await createTempDir();
-            const yamlPath = path.join(tempDir, 'test.yaml');
-            const yamlContent = yaml.stringify(testData);
-
-            await fs.writeFile(yamlPath, yamlContent, 'utf8');
-
-            // load the testData as yaml
-            const { data } = await Validator.loadTestData(pathToFileURL(yamlPath));
-            expect(data).toEqual(testData);
-        });
-
-        test('parses JSON serialized from inline object', async () => {
-            const tempDir = await createTempDir();
-            const jsonPath = path.join(tempDir, 'test.json');
-            const jsonContent = JSON.stringify(testData, null, 2);
-
-            await fs.writeFile(jsonPath, jsonContent, 'utf8');
-
-            // load the testData as json
-            const { data } = await Validator.loadTestData(pathToFileURL(jsonPath));
-            expect(data).toEqual(testData);
-        });
-
-        test('returns sourceMap for both YAML and JSON', async () => {
-            const tempDir = await createTempDir();
-            const yamlPath = path.join(tempDir, 'test.yaml');
-            await fs.writeFile(yamlPath, yaml.stringify(testData), 'utf8');
-
-            const jsonPath = path.join(tempDir, 'test.json');
-            await fs.writeFile(jsonPath, JSON.stringify(testData, null, 2), 'utf8');
-
-            // check sourcemaps for both
-            const yamlResult = await Validator.loadTestData(pathToFileURL(yamlPath));
-            const jsonResult = await Validator.loadTestData(pathToFileURL(jsonPath));
-
-            expect(yamlResult.sourceMap).toBeDefined();
-            expect(yamlResult.sourceMap.pointers).toBeDefined();
-            expect(jsonResult.sourceMap).toBeDefined();
-            expect(jsonResult.sourceMap.pointers).toBeDefined();
-        });
-    });
-
-    test('loadTestData fetches from HTTP URL successfully', async () => {
-        const testData = { name: 'http-test', value: 42 };
-        const jsonContent = JSON.stringify(testData);
-
-        // override the fetch mock to actually work for this test
-        fetchSpy.mockResolvedValueOnce({
-            ok: true,
-            text: () => Promise.resolve(jsonContent)
-        });
-
-        const { data } = await Validator.loadTestData(new URL('http://example.com/test.json'));
-        expect(data).toEqual(testData);
-        expect(fetchSpy).toHaveBeenCalled();
-    });
-
-    test('loadTestData rejects failed HTTP fetch', async () => {
-        // override the fetch mock to simulate a failed fetch
-        fetchSpy.mockResolvedValueOnce({
-            ok: false,
-            statusText: 'Not Found'
-        });
-
-        await expect(
-            Validator.loadTestData(new URL('http://example.com/missing.json'))
-        ).rejects.toThrow('Failed to fetch');
     });
 
     test('validate rejects unknown schema names', async () => {
@@ -201,58 +82,50 @@ describe('Validator', () => {
         const validator = new Validator();
         const fixturePath = path.resolve(__dirname, '../../examples/device.example.yaml');
 
-        const loadSpy = jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+        const loadSpy = jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
-            sourceMap: { pointers: {} }
+            sourceMap: { linesFor: () => null }
         });
 
-        const compileSpy = jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
-            const validateFn = () => true;
-            validateFn.errors = null;
-            return validateFn;
-        });
+        // the device root is compiled once in the constructor; stub the cached
+        // validator so validateData runs without the real schema.
+        validator.deviceValidate = Object.assign(jest.fn(() => true), { errors: null });
 
         const result = await validator.validate('device', pathToFileURL(fixturePath));
         expect(result).toEqual({
             valid: true,
-            data: expect.any(Object)
+            data: expect.any(Object),
+            diagnostics: []
         });
         expect(loadSpy).toHaveBeenCalled();
-        expect(compileSpy).toHaveBeenCalled();
+        expect(validator.deviceValidate).toHaveBeenCalled();
         expect(runChecksSpy).toHaveBeenCalledWith(
             { params: {} },
-            expect.objectContaining({ schemaName: 'device' })
+            expect.objectContaining({ schemaName: 'device' }),
+            'all'
         );
     });
 
     test('validate returns valid=false when AJV reports schema errors', async () => {
         const validator = new Validator();
         const mockSourceMap = {
-            pointers: {
-                '/bad': {
-                    value: { line: 1 },
-                    valueEnd: { line: 1 }
-                }
-            }
+            linesFor: (pointer) => (pointer === '/bad' ? { start: 1, end: 1 } : null)
         };
         const mockErrors = [{ instancePath: '/bad', message: 'must be string' }];
 
-        // mock loadTestData return an empty object with a mocked sourceMap
-        jest.spyOn(Validator, 'loadTestData').mockResolvedValueOnce({ data: {}, sourceMap: mockSourceMap });
-        // mock showErrors to make sure it's called with our mock errors and sourceMap (and to suppress console output during the test)
-        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementationOnce(() => { });
+        // mock loadDescriptor return an empty object with a mocked sourceMap
+        jest.spyOn(loader, 'loadDescriptor').mockResolvedValueOnce({ data: {}, sourceMap: mockSourceMap });
 
-        // mock AJV compile to return a validate function that always fails with our errors
-        jest.spyOn(validator.ajv, 'compile').mockImplementationOnce(() => {
-            const validateFn = () => false;
-            validateFn.errors = mockErrors;
-            return validateFn;
-        });
+        // the device root is compiled once in the constructor; stub the cached
+        // validator to fail with our errors so the diagnostics path is exercised.
+        validator.deviceValidate = Object.assign(() => false, { errors: mockErrors });
 
-        // make sure we get the expected errors
+        // AJV errors should be surfaced as structured diagnostics with line info
         const result = await validator.validate('device', new URL('file:///tmp/device.invalid.yaml'));
-        expect(result).toEqual({ valid: false });
-        expect(showSpy).toHaveBeenCalledWith(mockErrors, mockSourceMap);
+        expect(result.valid).toBe(false);
+        expect(result.diagnostics).toEqual([
+            { level: 'error', message: 'must be string', instancePath: '/bad', lines: { start: 1, end: 1 } }
+        ]);
         expect(runChecksSpy).not.toHaveBeenCalled();
     });
 
@@ -264,7 +137,8 @@ describe('Validator', () => {
         const result = await validator.validate('param', pathToFileURL(paramPath));
         expect(result).toEqual({
             valid: true,
-            data: expect.any(Object)
+            data: expect.any(Object),
+            diagnostics: []
         });
     });
 
@@ -277,29 +151,27 @@ describe('Validator', () => {
 
         await fs.writeFile(testPath, JSON.stringify({ invalid: 'data' }), 'utf8');
 
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
-
         const result = await validator.validate('param', pathToFileURL(testPath));
         expect(result.valid).toBe(false);
-        expect(logSpy).toHaveBeenCalled();
+        expect(result.diagnostics.length).toBeGreaterThan(0);
     });
 
     test('validate calls runChecks with data and opts after AJV passes', async () => {
         const validator = new Validator();
-        const mockSourceMap = { pointers: {} };
+        const mockSourceMap = { linesFor: () => null };
 
-        jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+        jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
             sourceMap: mockSourceMap
         });
-        jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
-            const validateFn = () => true;
-            validateFn.errors = null;
-            return validateFn;
-        });
+        validator.deviceValidate = Object.assign(() => true, { errors: null });
 
-        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
-        expect(result).toEqual({ valid: true, data: expect.any(Object) });
+        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'), null, {
+            disableMandatoryParams: false,
+            disableNestedValueChecks: false,
+            disableScopeChecks: false,
+        });
+        expect(result).toEqual({ valid: true, data: expect.any(Object), diagnostics: [] });
         expect(runChecksSpy).toHaveBeenCalledWith(
             { params: {} },
             {
@@ -307,26 +179,27 @@ describe('Validator', () => {
                 disableMandatoryParams: false,
                 disableNestedValueChecks: false,
                 disableScopeChecks: false,
-            }
+            },
+            'all'
         );
     });
 
     test('validate passes disable flags through to runChecks', async () => {
-        const validator = new Validator({ disableMandatoryParams: true, disableNestedValueChecks: true, disableScopeChecks: true });
-        const mockSourceMap = { pointers: {} };
+        const validator = new Validator();
+        const mockSourceMap = { linesFor: () => null };
 
-        jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+        jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
             sourceMap: mockSourceMap
         });
-        jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
-            const validateFn = () => true;
-            validateFn.errors = null;
-            return validateFn;
-        });
+        validator.deviceValidate = Object.assign(() => true, { errors: null });
 
-        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
-        expect(result).toEqual({ valid: true, data: expect.any(Object) });
+        const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'), null, {
+            disableMandatoryParams: true,
+            disableNestedValueChecks: true,
+            disableScopeChecks: true,
+        });
+        expect(result).toEqual({ valid: true, data: expect.any(Object), diagnostics: [] });
         expect(runChecksSpy).toHaveBeenCalledWith(
             { params: {} },
             {
@@ -334,130 +207,133 @@ describe('Validator', () => {
                 disableMandatoryParams: true,
                 disableNestedValueChecks: true,
                 disableScopeChecks: true,
-            }
+            },
+            'all'
         );
     });
 
     test('validate returns valid=true when runChecks returns only warnings', async () => {
         const validator = new Validator();
-        const mockSourceMap = { pointers: {} };
+        const mockSourceMap = { linesFor: () => null };
         const mockWarnings = [{ type: checks.WARNING, message: 'just a warning', instancePath: '/params/foo/value' }];
 
-        jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+        jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
             sourceMap: mockSourceMap
         });
-        jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
-            const validateFn = () => true;
-            validateFn.errors = null;
-            return validateFn;
-        });
+        validator.deviceValidate = Object.assign(() => true, { errors: null });
         runChecksSpy.mockReturnValue(mockWarnings);
-        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementation(() => { });
 
         const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
-        expect(result).toEqual({ valid: true, data: expect.any(Object) });
-        expect(showSpy).toHaveBeenCalledWith(mockWarnings, mockSourceMap);
+        expect(result.valid).toBe(true);
+        expect(result.diagnostics).toEqual([
+            { level: 'warning', message: 'just a warning', instancePath: '/params/foo/value', lines: null }
+        ]);
     });
 
     test('validate returns valid=false when runChecks returns errors', async () => {
         const validator = new Validator();
-        const mockSourceMap = { pointers: {} };
+        const mockSourceMap = { linesFor: () => null };
         const mockErrors = [{ message: 'check failed', instancePath: '/params/product' }];
 
-        jest.spyOn(Validator, 'loadTestData').mockResolvedValue({
+        jest.spyOn(loader, 'loadDescriptor').mockResolvedValue({
             data: { params: {} },
             sourceMap: mockSourceMap
         });
-        jest.spyOn(validator.ajv, 'compile').mockImplementation(() => {
-            const validateFn = () => true;
-            validateFn.errors = null;
-            return validateFn;
-        });
+        validator.deviceValidate = Object.assign(() => true, { errors: null });
         runChecksSpy.mockReturnValue(mockErrors);
-        const showSpy = jest.spyOn(Validator, 'showErrors').mockImplementation(() => { });
 
         const result = await validator.validate('device', new URL('file:///tmp/device.valid.yaml'));
-        expect(result).toEqual({ valid: false });
-        expect(showSpy).toHaveBeenCalledWith(mockErrors, mockSourceMap);
+        expect(result.valid).toBe(false);
+        expect(result.diagnostics).toEqual([
+            { level: 'error', message: 'check failed', instancePath: '/params/product', lines: null }
+        ]);
     });
 
-    test('showErrors handles errors without sourceMap pointers', () => {
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
-        const sourceMap = { pointers: {} };
+    test('toDiagnostics handles errors without source lines', () => {
+        const sourceMap = { linesFor: () => null };
         const errors = [
             { instancePath: '/missing', message: 'field required' }
         ];
 
-        // if the '/missing' path doesn't exist in sourceMap pointers,
-        // it should do its best to still log a useful message
-        Validator.showErrors(errors, sourceMap);
-        expect(logSpy).toHaveBeenCalledWith('ERROR: field required at /missing');
+        // if the '/missing' path resolves to no node, the diagnostic is still
+        // produced, just without line info
+        expect(Validator.toDiagnostics(errors, sourceMap)).toEqual([
+            { level: 'error', message: 'field required', instancePath: '/missing', lines: null }
+        ]);
     });
 
-    test('showErrors includes line info when sourceMap pointers exist', () => {
-        // normal function of showErrors is to log the error message along with the
-        // instancePath and line numbers if available from the sourceMap.
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+    test('toDiagnostics includes line info when the source map resolves a range', () => {
         const sourceMap = {
-            pointers: {
-                '/field': {
-                    value: { line: 5 },
-                    valueEnd: { line: 7 }
-                }
-            }
+            linesFor: (pointer) => (pointer === '/field' ? { start: 5, end: 7 } : null)
         };
         const errors = [
             { instancePath: '/field', message: 'type mismatch' }
         ];
 
-        Validator.showErrors(errors, sourceMap);
-        expect(logSpy).toHaveBeenCalledWith('ERROR: type mismatch at /field on lines 5-7');
+        expect(Validator.toDiagnostics(errors, sourceMap)).toEqual([
+            { level: 'error', message: 'type mismatch', instancePath: '/field', lines: { start: 5, end: 7 } }
+        ]);
     });
 
-    test('showErrors handles warnings in addition to errors', () => {
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+    test('toDiagnostics handles warnings in addition to errors', () => {
         const sourceMap = {
-            pointers: {
-                '/warnField': {
-                    value: { line: 10 },
-                    valueEnd: { line: 12 }
-                }
-            }
+            linesFor: (pointer) => (pointer === '/warnField' ? { start: 10, end: 12 } : null)
         };
         const warnings = [
             { type: checks.WARNING, instancePath: '/warnField', message: 'deprecated field' }
         ];
-        Validator.showErrors(warnings, sourceMap);
-        expect(logSpy).toHaveBeenCalledWith('WARNING: deprecated field at /warnField on lines 10-12');
+
+        expect(Validator.toDiagnostics(warnings, sourceMap)).toEqual([
+            { level: 'warning', message: 'deprecated field', instancePath: '/warnField', lines: { start: 10, end: 12 } }
+        ]);
     });
 
-    test('addSchemas rethrows addSchema errors with pointer and line info', () => {
-        const testGenus = '__test_genus_for_addSchemas_throw';
-        const testSpecies = 'broken_species';
+    test('loadSchema throws an actionable error when the bundled schema is missing', () => {
+        // the schema is generated by build-openapi.sh; a fresh checkout that
+        // has not run setup should get a helpful message, not MODULE_NOT_FOUND.
+        jest.isolateModules(() => {
+            jest.spyOn(require('node:fs'), 'existsSync').mockReturnValue(false);
+            expect(() => require('../src/validator')).toThrow(
+                /Bundled schema not found at .*device\.json[\s\S]*install-tooling\.sh[\s\S]*build-openapi\.sh/
+            );
+        });
+    });
 
-        // mutate the schema used in validator to add a test genus/species to test against
-        schema[testGenus] = {
-            [testSpecies]: {
-                type: 'string'
-            }
-        };
-
-        // mock the AJV method to throw an error
+    test('addSchemas rethrows addSchema errors with source line info', () => {
+        // force the very first addSchema call to fail; the catch path resolves
+        // the failing definition's real line range from data/device.json.
         const addSchema = jest.fn(() => {
             throw new Error('AJV schema error');
         });
 
+        expect(() => Validator.prototype.addSchemas.call({ ajv: { addSchema } }, '$defs')).toThrow(
+            /AJV schema error at #\/\$defs\/.+ on lines \d+-\d+/
+        );
+        expect(addSchema).toHaveBeenCalledTimes(1);
+    });
+
+    test('addSchemas omits line info when the failing definition cannot be located', () => {
+        // if the on-disk device.json and the loaded schema drift, linesFor
+        // returns null; the thrown error must still carry the real AJV message,
+        // just without a line range (never a null dereference).
+        jest.spyOn(sourcemap, 'parse').mockReturnValue({
+            data: null,
+            sourceMap: { linesFor: () => null }
+        });
+        const addSchema = jest.fn(() => {
+            throw new Error('AJV schema error');
+        });
+
+        let thrown;
         try {
-            // fancy js magic, you can call a object's methods with a custom "this" context
-            expect(() => Validator.prototype.addSchemas.call({ ajv: { addSchema } }, testGenus)).toThrow(
-                new RegExp(`AJV schema error at #/${testGenus}/${testSpecies} on lines \\d+-\\d+`)
-            );
-            expect(addSchema).toHaveBeenCalledTimes(1);
-        } finally {
-            // clean up the test genus
-            delete schema[testGenus];
+            Validator.prototype.addSchemas.call({ ajv: { addSchema } }, '$defs');
+        } catch (err) {
+            thrown = err;
         }
+
+        expect(thrown.message).toMatch(/^AJV schema error at #\/\$defs\/.+/);
+        expect(thrown.message).not.toMatch(/on lines/);
     });
 
     test('addSchemas skips inherited and $comment entries in schema genus', () => {

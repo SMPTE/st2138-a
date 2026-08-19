@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # This script installs the tools used by build-openapi.sh
-# and /tools/validator.js
+# and /tools/src/validator.js
 # do not run as root
 
 set -euo pipefail

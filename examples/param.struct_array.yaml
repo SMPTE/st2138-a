@@ -16,17 +16,27 @@ value:
   struct_array_values:
     struct_values:
       - fields:
-          team_name: Manchester United
-          ground_name: Old Trafford
+          team_name:
+            string_value: Manchester United
+          ground_name:
+            string_value: Old Trafford
       - fields:
-          team_name: Liverpool
-          ground_name: Anfield
+          team_name:
+            string_value: Liverpool
+          ground_name:
+            string_value: Anfield
       - fields:
-          team_name: Chelsea
-          ground_name: Stamford Bridge
+          team_name:
+            string_value: Chelsea
+          ground_name:
+            string_value: Stamford Bridge
       - fields:
-          team_name: Arsenal
-          ground_name: Emirates Stadium
+          team_name:
+            string_value: Arsenal
+          ground_name:
+            string_value: Emirates Stadium
       - fields:
-          team_name: Leeds United
-          ground_name: Elland Road
+          team_name:
+            string_value: Leeds United
+          ground_name:
+            string_value: Elland Road

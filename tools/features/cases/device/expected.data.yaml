@@ -1,0 +1,217 @@
+slot: 0
+access_scopes:
+  - st2138:mon
+  - st2138:op
+  - st2138:cfg
+  - st2138:adm
+default_scope: st2138:mon
+params:
+  product:
+    type: STRUCT
+    read_only: true
+    name:
+      display_strings:
+        en: Product Information
+    params:
+      name:
+        type: STRING
+      version:
+        type: STRING
+      vendor:
+        type: STRING
+      serial_number:
+        type: STRING
+      catena_sdk:
+        type: STRING
+      catena_sdk_version:
+        type: STRING
+    value:
+      struct_value:
+        fields:
+          name:
+            string_value: Minimal Device
+          version:
+            string_value: 1.0.0
+          vendor:
+            string_value: SMPTE
+          serial_number:
+            string_value: 0000-0000-0000
+          catena_sdk:
+            string_value: example-sdk
+          catena_sdk_version:
+            string_value: 0.1.0
+
+  normal_param:
+    type: INT32
+    value:
+      int32_value: 42
+
+  import_obj_def:
+    type: STRUCT
+    client_hints:
+      st2138_definition_only: "true"
+
+    params:
+      field1:
+        type: STRING
+        name:
+          display_strings:
+            en: Field 1
+            fr: Champ 1
+      field2:
+        type: STRING
+        name:
+          display_strings:
+            en: Field 2
+            fr: Champ 2
+
+    value:
+      struct_value:
+        fields:
+          field1:
+            string_value: default1
+          field2:
+            string_value: default2
+
+  object1:
+    type: STRUCT
+    template_oid: import_obj_def
+    params:
+      field1:
+        type: STRING
+        name:
+          display_strings:
+            en: Field 1
+            fr: Champ 1
+      field2:
+        type: STRING
+        name:
+          display_strings:
+            en: Field 2
+            fr: Champ 2
+    value:
+      struct_value:
+        fields:
+          field1:
+            string_value: override1
+          field2:
+            string_value: override2
+
+  object2:
+    type: STRUCT
+    template_oid: import_obj_def
+    params:
+      field1:
+        type: STRING
+        name:
+          display_strings:
+            en: Field 1
+            fr: Champ 1
+      field2:
+        type: STRING
+        name:
+          display_strings:
+            en: Field 2
+            fr: Champ 2
+    value:
+      struct_value:
+        fields:
+          field1:
+            string_value: override3
+          field2:
+            string_value: override4
+
+  import_shared_geo:
+    type: STRUCT
+    client_hints:
+      st2138_namespace: shared.geo
+
+    params:
+      coord:
+        type: STRUCT
+        name:
+          display_strings:
+            en: Coordinates
+            fr: Coordonnées
+        params:
+          latitude:
+            type: FLOAT32
+            name:
+              display_strings:
+                en: Latitude
+                fr: Latitude
+          longitude:
+            type: FLOAT32
+            name:
+              display_strings:
+                en: Longitude
+                fr: Longitude
+        value:
+          struct_value:
+            fields:
+              latitude:
+                float32_value: 0.0
+              longitude:
+                float32_value: 0.0
+
+  ottawa_coord:
+    type: STRUCT
+    template_oid: import_shared_geo/coord
+    name:
+      display_strings:
+        en: Ottawa
+        fr: Ottawa
+    params:
+      latitude:
+        type: FLOAT32
+        name:
+          display_strings:
+            en: Latitude
+            fr: Latitude
+      longitude:
+        type: FLOAT32
+        name:
+          display_strings:
+            en: Longitude
+            fr: Longitude
+    value:
+      struct_value:
+        fields:
+          latitude:
+            float32_value: 45.4215
+          longitude:
+            float32_value: -75.6972
+
+  coords:
+    type: STRUCT_ARRAY
+    template_oid: import_shared_geo/coord
+    name:
+      display_strings:
+        en: Coordinates
+        fr: Coordonnées
+    params:
+      latitude:
+        type: FLOAT32
+        name:
+          display_strings:
+            en: Latitude
+            fr: Latitude
+      longitude:
+        type: FLOAT32
+        name:
+          display_strings:
+            en: Longitude
+            fr: Longitude
+    value:
+      struct_array_values:
+        struct_values:
+          - fields:
+              latitude:
+                float32_value: 45.4215
+              longitude:
+                float32_value: -75.6972
+          - fields:
+              latitude:
+                float32_value: 43.6532
+              longitude:
+                float32_value: -79.3832
