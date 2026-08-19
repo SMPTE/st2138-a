@@ -341,8 +341,8 @@ those judgments are only meaningful after imports resolve.
 
 ```js
 const {
-  validate,          // (url, options) -> ValidationResult
-  resolve,           // (url, options) -> ResolutionResult (imports inlined, templates expanded)
+  validate,          // (url, options) -> Promise<ValidationResult>
+  resolve,           // (url, options) -> Promise<ResolutionResult> (imports inlined, templates expanded)
   digest,            // (url, options) -> Promise<string> (base64 sha256)
   toCycloneDx,       // (resolutionResult, subject, options) -> string (CycloneDX JSON)
   printDiagnostics,  // (diagnostics) -> void
