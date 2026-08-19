@@ -190,7 +190,7 @@ program
 program
     .command('pin')
     .description('Fill in or refresh the digest of each import in a descriptor')
-    .argument('<file>', 'path to a .json or .yaml descriptor to update')
+    .argument('<file>', 'path to a .yaml or .json descriptor to update (JSON is checked but not yet rewritten)')
     .option('-w, --write', 'rewrite the file in place instead of only reporting')
     .option('--include-local', 'also pin local (file:) imports, not just remote ones')
     .action(async (file, options) => {
@@ -226,6 +226,15 @@ program
 
         if (!changed) {
             console.error('All import digests are already up to date.');
+            return;
+        }
+
+        // pin re-serializes the descriptor as YAML, so writing it back over a
+        // JSON file would reflow it into YAML. Show the computed digests but
+        // leave the file untouched for the author to apply until in-place JSON
+        // editing exists.
+        if (path.extname(file).toLowerCase() === '.json') {
+            console.error('Left the JSON file unchanged: pinning can\'t rewrite JSON descriptors yet. Copy the digests listed above into the file by hand, or convert it to YAML and re-run with -w.');
             return;
         }
 
