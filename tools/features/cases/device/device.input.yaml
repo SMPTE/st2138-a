@@ -1,0 +1,100 @@
+# Integration case root: a whole device that exercises the resolver end to end.
+# It defers its `product` struct to an import, imports two more definition-only
+# structs (an object template and a namespaced coordinate library), and templates
+# concrete params from all three, so the expected artifact proves import inlining
+# and template expansion working together on a realistic device.
+slot: 0
+access_scopes:
+  - st2138:mon
+  - st2138:op
+  - st2138:cfg
+  - st2138:adm
+default_scope: st2138:mon
+
+params:
+  product:
+    type: STRUCT
+    import:
+      url: ./param.product.yaml
+    value:
+      struct_value:
+        fields:
+          name:
+            string_value: Minimal Device
+          version:
+            string_value: 1.0.0
+          vendor:
+            string_value: SMPTE
+          serial_number:
+            string_value: 0000-0000-0000
+          catena_sdk:
+            string_value: example-sdk
+          catena_sdk_version:
+            string_value: 0.1.0
+
+  normal_param:
+    type: INT32
+    value:
+      int32_value: 42
+
+  import_obj_def:
+    import:
+      url: ./param.obj_def.yaml
+
+  object1:
+    type: STRUCT
+    template_oid: import_obj_def
+    value:
+      struct_value:
+        fields:
+          field1:
+            string_value: override1
+          field2:
+            string_value: override2
+
+  object2:
+    type: STRUCT
+    template_oid: import_obj_def
+    value:
+      struct_value:
+        fields:
+          field1:
+            string_value: override3
+          field2:
+            string_value: override4
+
+  import_shared_geo:
+    import:
+      url: ./param.geo.yaml
+
+  ottawa_coord:
+    type: STRUCT
+    template_oid: import_shared_geo/coord
+    name:
+      display_strings:
+        en: Ottawa
+        fr: Ottawa
+    value:
+      struct_value:
+        fields:
+          latitude:
+            float32_value: 45.4215
+          longitude:
+            float32_value: -75.6972
+
+  coords:
+    type: STRUCT_ARRAY
+    template_oid: import_shared_geo/coord
+    value:
+      struct_array_values:
+        struct_values:
+          - fields:
+              latitude:
+                float32_value: 45.4215
+              longitude:
+                float32_value: -75.6972
+          - fields:
+              latitude:
+                float32_value: 43.6532
+              longitude:
+                float32_value: -79.3832

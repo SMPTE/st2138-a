@@ -1,0 +1,298 @@
+slot: 0
+
+params:
+  shared_audio_library:
+    client_hints:
+      st2138_namespace: "smpte.audio"
+    type: STRUCT
+    # import:
+    #   url: smpte.example.com/st2138-libraries/param.audio.yaml
+    #   digest: <something>
+    params:
+      fader:
+        type: FLOAT32
+        constraint:
+          type: FLOAT_RANGE
+          float32_range:
+            min_value: -100
+            max_value: 20
+            step: 0.1
+            display_min: -100
+            display_max: 20
+        value:
+          float32_value: 0
+
+      eq:
+        type: STRUCT
+        params:
+          frequency:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float32_range:
+                min_value: 20
+                max_value: 20000
+                step: 1
+                display_min: 20
+                display_max: 20000
+          q:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float32_range:
+                min_value: 0.1
+                max_value: 10
+                step: 0.001
+                display_min: 0.1
+                display_max: 10
+          gain:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float32_range:
+                min_value: -24
+                max_value: 24
+                step: 0.1
+                display_min: -24
+                display_max: 24
+        value:
+          struct_value:
+            fields:
+              frequency:
+                float32_value: 1000
+              q:
+                float32_value: 0.707
+              gain:
+                float32_value: 0
+
+
+
+  faders:
+    type: FLOAT32_ARRAY
+    template_oid: shared_audio_library/fader
+    value:
+      float32_array_values:
+        floats:
+          - 0.5
+          - 0.5
+
+  single_eq:
+    type: STRUCT
+    template_oid: shared_audio_library/eq
+    value:
+      struct_value:
+        fields:
+          frequency:
+            float32_value: 1000
+          q:
+            float32_value: 1
+          gain:
+            float32_value: 0
+
+  eqs:
+    type: STRUCT_ARRAY
+    template_oid: shared_audio_library/eq
+    value:
+      struct_array_values:
+        struct_values:
+          - fields:
+              frequency:
+                float32_value: 1000
+              q:
+                float32_value: 1
+              gain:
+                float32_value: 0
+          - fields:
+              frequency:
+                float32_value: 2000
+              q:
+                float32_value: 2
+              gain:
+                float32_value: 3
+---
+slot: 0
+
+params:
+  shared_audio_library:
+    client_hints:
+      st2138_namespace: "smpte.audio"
+    type: STRUCT
+    params:
+      fader:
+        type: FLOAT32
+        constraint:
+          type: FLOAT_RANGE
+          float32_range:
+            min_value: -100
+            max_value: 20
+            step: 0.1
+            display_min: -100
+            display_max: 20
+        value:
+          float32_value: 0
+
+      eq:
+        type: STRUCT
+        params:
+          frequency:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float32_range:
+                min_value: 20
+                max_value: 20000
+                step: 1
+                display_min: 20
+                display_max: 20000
+          q:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float32_range:
+                min_value: 0.1
+                max_value: 10
+                step: 0.001
+                display_min: 0.1
+                display_max: 10
+          gain:
+            type: FLOAT32
+            constraint:
+              type: FLOAT_RANGE
+              float32_range:
+                min_value: -24
+                max_value: 24
+                step: 0.1
+                display_min: -24
+                display_max: 24
+        value:
+          struct_value:
+            fields:
+              frequency:
+                float32_value: 1000
+              q:
+                float32_value: 0.707
+              gain:
+                float32_value: 0
+
+  faders:
+    type: FLOAT32_ARRAY
+    constraint:
+      type: FLOAT_RANGE
+      float32_range:
+        min_value: 0
+        max_value: 1
+        step: 0.1
+        display_min: 0
+        display_max: 1
+    value:
+      float32_array_values:
+        floats:
+          - 0.5
+          - 0.5
+
+
+  single_eq:
+    type: STRUCT
+    params:
+      frequency:
+        type: FLOAT32
+        constraint:
+          type: FLOAT_RANGE
+          float32_range:
+            min_value: 20
+            max_value: 20000
+            step: 1
+            display_min: 20
+            display_max: 20000
+        value:
+          float32_value: 1000
+      q:
+        type: FLOAT32
+        constraint:
+          type: FLOAT_RANGE
+          float32_range:
+            min_value: 0.1
+            max_value: 10
+            step: 0.1
+            display_min: 0.1
+            display_max: 10
+        value:
+          float32_value: 1
+      gain:
+        type: FLOAT32
+        constraint:
+          type: FLOAT_RANGE
+          float32_range:
+            min_value: -12
+            max_value: 12
+            step: 0.1
+            display_min: -12
+            display_max: 12
+        value:
+          float32_value: 0
+    value:
+      struct_value:
+        fields:
+          frequency:
+            float32_value: 1000
+          q:
+            float32_value: 1
+          gain:
+            float32_value: 0
+
+  eqs:
+    type: STRUCT_ARRAY
+    params:
+      frequency:
+        type: FLOAT32
+        constraint:
+          type: FLOAT_RANGE
+          float32_range:
+            min_value: 20
+            max_value: 20000
+            step: 1
+            display_min: 20
+            display_max: 20000
+        value:
+          float32_value: 1000
+      q:
+        type: FLOAT32
+        constraint:
+          type: FLOAT_RANGE
+          float32_range:
+            min_value: 0.1
+            max_value: 10
+            step: 0.1
+            display_min: 0.1
+            display_max: 10
+        value:
+          float32_value: 1
+      gain:
+        type: FLOAT32
+        constraint:
+          type: FLOAT_RANGE
+          float32_range:
+            min_value: -12
+            max_value: 12
+            step: 0.1
+            display_min: -12
+            display_max: 12
+        value:
+          float32_value: 0
+    value:
+      struct_array_values:
+        struct_values:
+          - fields:
+              frequency:
+                float32_value: 1000
+              q:
+                float32_value: 1
+              gain:
+                float32_value: 0
+          - fields:
+              frequency:
+                float32_value: 2000
+              q:
+                float32_value: 2
+              gain:
+                float32_value: 3

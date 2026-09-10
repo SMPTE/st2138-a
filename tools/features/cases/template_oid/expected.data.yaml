@@ -1,0 +1,33 @@
+type: STRUCT
+params:
+  length:
+    type: INT32
+    constraint:
+      type: INT_RANGE
+      int32_range:
+        min_value: 0
+        max_value: 100
+    client_hints:
+      st2138_definition_only: "true"
+
+  width:
+    type: INT32
+    template_oid: length
+    constraint:
+      type: INT_RANGE
+      int32_range:
+        min_value: 0
+        max_value: 100
+    value:
+      int32_value: 50
+
+  height:
+    type: INT32
+    template_oid: length
+    constraint:
+      type: INT_RANGE
+      int32_range:
+        min_value: 0
+        max_value: 100
+    value:
+      int32_value: 30

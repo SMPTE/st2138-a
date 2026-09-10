@@ -1,0 +1,28 @@
+# Integration case root: a three-link template chain. `level` templates from
+# `bounded_ro`, which templates from `bounded`, so the expected artifact proves
+# a field (the range constraint) cascades two hops down while each link keeps
+# what it declares locally.
+type: STRUCT
+params:
+  bounded:
+    type: INT32
+    client_hints:
+      st2138_definition_only: "true"
+    constraint:
+      type: INT_RANGE
+      int32_range:
+        min_value: 0
+        max_value: 100
+
+  bounded_ro:
+    type: INT32
+    client_hints:
+      st2138_definition_only: "true"
+    template_oid: bounded
+    read_only: true
+
+  level:
+    type: INT32
+    template_oid: bounded_ro
+    value:
+      int32_value: 42

@@ -1,0 +1,33 @@
+# Import target for the device integration case: a namespaced coordinate library whose
+# `coord` sub-param is referenced by template consumers through an FQOID path.
+type: STRUCT
+client_hints:
+  st2138_namespace: shared.geo
+
+params:
+  coord:
+    type: STRUCT
+    name:
+      display_strings:
+        en: Coordinates
+        fr: Coordonnées
+    params:
+      latitude:
+        type: FLOAT32
+        name:
+          display_strings:
+            en: Latitude
+            fr: Latitude
+      longitude:
+        type: FLOAT32
+        name:
+          display_strings:
+            en: Longitude
+            fr: Longitude
+    value:
+      struct_value:
+        fields:
+          latitude:
+            float32_value: 0.0
+          longitude:
+            float32_value: 0.0

@@ -1,0 +1,35 @@
+# Integration case root: a consumer that imports a shared, namespaced geometry
+# library and templates a concrete parameter from one of its shared types. The
+# library's `segment` type references its own `point` type internally via
+# template_oid, so the expected artifact proves those internal references resolve
+# within the library's scope after it is mounted under `import_geo`, and that the
+# consumer inherits the fully expanded structure while keeping its own value.
+type: STRUCT
+params:
+  import_geo:
+    import:
+      url: ./param.geo.yaml
+
+  flight_path:
+    type: STRUCT
+    name:
+      display_strings:
+        en: Flight Path
+    template_oid: import_geo/segment
+    value:
+      struct_value:
+        fields:
+          start:
+            struct_value:
+              fields:
+                latitude:
+                  float32_value: 45.4215
+                longitude:
+                  float32_value: -75.6972
+          end:
+            struct_value:
+              fields:
+                latitude:
+                  float32_value: 43.6532
+                longitude:
+                  float32_value: -79.3832

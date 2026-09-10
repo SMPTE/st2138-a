@@ -29,6 +29,8 @@
 
 'use strict';
 
+const { WARNING } = require('./constants');
+
 const REQUIRED_PARAMS = [
     "name",
     "vendor",
@@ -74,6 +76,15 @@ function validateRequiredParamsAndScopes(deviceDesc, opts) {
     }
 
     const product = deviceDesc.params.product;
+
+    // Deferring the product to an import is a legitimate authoring choice, so
+    // this is a warning, not a failure: plain validation simply cannot check the
+    // product without resolution. After resolution the `import` key is gone and
+    // the real checks below apply.
+    if ('import' in product) {
+        errors.push({ type: WARNING, message: 'Product struct is deferred to an import and cannot be checked here; validate with imports resolved', instancePath: '/params/product/import' });
+        return errors;
+    }
 
     if (product.type !== 'STRUCT') {
         errors.push({ message: `Product parameter must be STRUCT type, not ${product.type}`, instancePath: '/params/product/type' });

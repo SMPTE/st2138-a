@@ -1,0 +1,20 @@
+# Import target for the device integration case: the product struct the device defers
+# to an import, inlined in place of the local `product: {import: ...}` stub.
+type: STRUCT
+read_only: true
+name:
+  display_strings:
+    en: Product Information
+params:
+  name:
+    type: STRING
+  version:
+    type: STRING
+  vendor:
+    type: STRING
+  serial_number:
+    type: STRING
+  catena_sdk:
+    type: STRING
+  catena_sdk_version:
+    type: STRING

@@ -1,6 +1,5 @@
 # Example of an imported parameter
 
 import: 
-  url: https://raw.githubusercontent.com/smpte/examples/param.on_off.yaml
-  digest: sha256:1234567890
-  
+  url: ./param.on_off.yaml
+  digest: U0R1rCOixZhOa/PPQ88NHzWcyEkxfppToo+n4GOT85I=

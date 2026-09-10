@@ -32,8 +32,34 @@
 const mandatory = require('./mandatory');
 const nestedValues = require('./nested-values');
 const scopes = require('./scopes');
-const { walkParams } = require('./walker');
+const digest = require('./digest');
+const clientHints = require('./client-hints');
+const { walkDesc } = require('./walker');
 const { WARNING, ERROR } = require('./constants');
+
+/**
+ * @typedef {import('../types').CheckOptions} CheckOptions
+ * @typedef {import('../types').Level} Level
+ * @typedef {import('./walker').Visitor} Visitor
+ */
+
+/**
+ * The options each check receives: the caller's {@link CheckOptions} toggles
+ * plus the schema name currently being checked. The schema name is injected by
+ * the engine per file, not supplied by the caller.
+ * @typedef {CheckOptions & { schemaName: string }} RunCheckOptions
+ */
+
+/**
+ * A raw validation error, before it is resolved into a Diagnostic. Both AJV
+ * errors and check findings share this shape, so it is producer-neutral. When
+ * `type` is omitted the error is treated as an error-level finding.
+ *
+ * @typedef {object} RawError
+ * @property {string} message human-readable description
+ * @property {string} instancePath JSON pointer to the offending node
+ * @property {Level} [type] severity; defaults to error when omitted
+ */
 
 /**
  * Returns the list of all checks. A check is one of two shapes:
@@ -44,21 +70,38 @@ const { WARNING, ERROR } = require('./constants');
  *   visitor (or null to opt out). Walk checks share a single traversal of the
  *   parameter hierarchy, appending their findings to a shared list.
  *
- * @returns {Array<{name: string, run?: function(object, object): Array, createVisitor?: function(object, object): (object|null)}>}
+ * @returns {Array<{name: string, run?: function(object, object): RawError[], createVisitor?: function(object, object): (Visitor|null)}>}
  */
 function getChecks() {
+    // `phase` is when a check runs relative to import resolution: `gate` checks
+    // are preconditions the resolver consumes on every fragment before it
+    // descends or loads; `report` checks describe the fully resolved model and
+    // run once at the end. Gating is opt-in — an unmarked check is `report`.
     return [
         {
             name: 'mandatory',
+            phase: 'report',
             run: mandatory.validateRequiredParamsAndScopes,
         },
         {
             name: 'nestedValues',
+            phase: 'report',
             createVisitor: nestedValues.createNestedValuesVisitor,
         },
         {
             name: 'scopes',
+            phase: 'report',
             createVisitor: scopes.createScopesVisitor,
+        },
+        {
+            name: 'digest',
+            phase: 'gate',
+            run: digest.validateImportDigests,
+        },
+        {
+            name: 'clientHints',
+            phase: 'report',
+            createVisitor: clientHints.createClientHintsVisitor,
         },
     ];
 }
@@ -70,17 +113,19 @@ function getChecks() {
  * checks are registered.
  *
  * @param {object} data the parsed descriptor to validate
- * @param {object} opts
- * @param {string} opts.schemaName the schema being validated
- * @param {boolean} opts.disable... multiple flags to disable specific checks
- * @returns {Array<{message: string, instancePath: string, type?: string}>} aggregated errors from all checks
+ * @param {RunCheckOptions} opts the options for the checks
+ * @param {('all'|'gate'|'report')} [phase] which phase of checks to run; `all`
+ *   (the default) runs every check, as the single-file `validate` path needs.
+ * @returns {RawError[]} aggregated errors from all checks
  */
-function runChecks(data, opts) {
+function runChecks(data, opts, phase = 'all') {
     const errors = [];
     const visitors = [];
 
     const checks = module.exports.getChecks();
     for (const check of checks) {
+        // report is the default phase
+        if (phase !== 'all' && (check.phase ?? 'report') !== phase) continue;
         if (typeof check.run === 'function') {
             errors.push(...check.run(data, opts));
         } else if (typeof check.createVisitor === 'function') {
@@ -89,7 +134,7 @@ function runChecks(data, opts) {
         }
     }
 
-    walkParams(data, visitors, errors);
+    walkDesc(data, visitors, errors, opts.schemaName);
 
     return errors;
 }

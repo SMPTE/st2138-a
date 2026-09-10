@@ -19,9 +19,9 @@ mkdir -p build
 yq --yaml-fix-merge-anchor-to-spec 'explode(.) | del(.["x-anchors"])' interface/schemata/device.yaml -o=yaml > build/device.yaml
 # then remove $id fields and convert to JSON
 yq 'del(.. | select(has("$id"))["$id"])' build/device.yaml -o=json > interface/schemata/device.json
-# 2. Copy device.json to tools/data/device.json
-mkdir -p tools/data
-cp interface/schemata/device.json tools/data/device.json
+# 2. Copy device.json to tools/src/data/device.json
+mkdir -p tools/src/data
+cp interface/schemata/device.json tools/src/data/device.json
 
 echo "📦 Bundling OpenAPI spec with Redocly CLI..."
 

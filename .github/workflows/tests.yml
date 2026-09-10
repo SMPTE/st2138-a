@@ -27,5 +27,11 @@ jobs:
       - name: NPM install
         run: npm ci --prefix tools
 
+      - name: Typecheck
+        run: npm run typecheck --prefix tools
+
       - name: Run validator tests
         run: npm test --prefix tools
+
+      - name: Run integration tests
+        run: npm run integration --prefix tools

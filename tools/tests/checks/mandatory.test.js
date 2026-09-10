@@ -27,7 +27,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const { validateRequiredParamsAndScopes } = require('../../checks/mandatory.js');
+const { validateRequiredParamsAndScopes } = require('../../src/checks/mandatory.js');
 
 describe("Mandatory", () => {
 
@@ -130,6 +130,22 @@ describe("Mandatory", () => {
         const errors = validateRequiredParamsAndScopes({ params: {} }, DEVICE_OPTS);
         expect(errors).toEqual([
             { message: 'Missing mandatory product struct in params', instancePath: '/params/product' }
+        ]);
+    });
+
+    test('warns rather than fails when product is deferred to an import', () => {
+        // deferring the product to an import is legitimate; plain validation
+        // cannot check it, so it warns instead of cascading type/field errors
+        const errors = validateRequiredParamsAndScopes(
+            { params: { product: { import: { url: './product.yaml' } } } },
+            DEVICE_OPTS
+        );
+        expect(errors).toEqual([
+            {
+                type: 'warning',
+                message: 'Product struct is deferred to an import and cannot be checked here; validate with imports resolved',
+                instancePath: '/params/product/import'
+            }
         ]);
     });
 
