@@ -106,6 +106,18 @@ message StringStringChoiceConstraint {
   bool strict = 2;
 }
 
+/*
+ * Constrains a string to a named format, e.g. a JSON Schema format such as
+ * date-time, email, ipv4 or uri, or a custom regular expression. Strict turns
+ * the constraint on or off: when true the value must conform to format (and
+ * regex); when false the format is advisory and any string is accepted.
+ */
+message FormattedStringConstraint {
+  string format = 1; // the format name, e.g. a JSON Schema format, or "regex"
+  string regex = 2;  // pattern the value must match; required when format is "regex"
+  bool strict = 3;   // true: enforce the format; false: advisory only
+}
+
 message Constraint {
   enum ConstraintType {
     UNDEFINED = 0;
@@ -115,6 +127,7 @@ message Constraint {
     STRING_CHOICE = 6;
     STRING_STRING_CHOICE = 7;
     ALARM_TABLE = 8;
+    FORMATTED_STRING = 9;
   }
 
   ConstraintType type = 1;
@@ -133,6 +146,7 @@ message Constraint {
     /* String Constraints */
     StringChoiceConstraint string_choice = 7;
     StringStringChoiceConstraint string_string_choice = 8;
+    FormattedStringConstraint formatted_string = 9;
   }
 }
 

@@ -1,0 +1,18 @@
+# Example of a formatted string parameter
+# This example demonstrates how to define a uri formatted string parameter
+
+type: STRING
+
+name:
+  display_strings:
+    en: Formatted String Example
+    fr: Exemple de chaîne formatée
+
+value:
+  string_value: https://example.com/media/clip.mp4?quality=high#chapter2
+
+constraint:
+  type: FORMATTED_STRING
+  formatted_string:
+    format: uri
+    strict: true
