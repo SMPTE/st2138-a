@@ -70,6 +70,7 @@ function pickCheckOpts(options) {
         disableScopeChecks: options.disableScopeChecks || false,
         disableDigestChecks: options.disableDigestChecks || false,
         disableClientHintChecks: options.disableClientHintChecks || false,
+        sdkSuppliedProductParams: options.sdkSuppliedProductParams ?? [],
     };
 }
 

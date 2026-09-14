@@ -116,6 +116,15 @@ export interface CheckOptions {
     disableScopeChecks?: boolean;
     disableDigestChecks?: boolean;
     disableClientHintChecks?: boolean;
+    /**
+     * Mandatory product sub-parameters whose value is supplied by the SDK or
+     * toolchain rather than authored (e.g. `catena_sdk`, `catena_sdk_version`).
+     * The mandatory check still enforces their presence, STRING type, scope, and
+     * that they carry no stray `value`/`params` node, but does not require an
+     * authored value. Defaults to none, so every required product value is
+     * enforced unless the caller opts a parameter out here.
+     */
+    sdkSuppliedProductParams?: string[];
 }
 
 /**

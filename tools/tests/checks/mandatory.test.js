@@ -371,4 +371,70 @@ describe("Mandatory", () => {
             });
         }
     });
+
+    describe('sdkSuppliedProductParams', () => {
+        const SDK_OPTS = {
+            schemaName: 'device',
+            disableMandatoryParams: false,
+            sdkSuppliedProductParams: ['catena_sdk', 'catena_sdk_version'],
+        };
+
+        for (const key of ['catena_sdk', 'catena_sdk_version']) {
+            test(`does not require a value for SDK-supplied '${key}' when missing`, () => {
+                delete device.params.product.value.struct_value.fields[key];
+                const errors = validateRequiredParamsAndScopes(device, SDK_OPTS);
+                expect(errors).toEqual([]);
+            });
+
+            test(`does not require a value for SDK-supplied '${key}' when empty`, () => {
+                device.params.product.value.struct_value.fields[key].string_value = '';
+                const errors = validateRequiredParamsAndScopes(device, SDK_OPTS);
+                expect(errors).toEqual([]);
+            });
+
+            test(`still enforces STRING type for SDK-supplied '${key}'`, () => {
+                device.params.product.params[key].type = 'INT32';
+                const errors = validateRequiredParamsAndScopes(device, SDK_OPTS);
+                expect(errors).toEqual([
+                    {
+                        message: `Product parameter '${key}' must be STRING type, not INT32`,
+                        instancePath: `/params/product/params/${key}/type`
+                    }
+                ]);
+            });
+
+            test(`still enforces presence for SDK-supplied '${key}'`, () => {
+                delete device.params.product.params[key];
+                const errors = validateRequiredParamsAndScopes(device, SDK_OPTS);
+                expect(errors).toEqual([
+                    {
+                        message: `Missing mandatory product parameter '${key}'`,
+                        instancePath: `/params/product/params/${key}`
+                    }
+                ]);
+            });
+
+            test(`still enforces scope for SDK-supplied '${key}'`, () => {
+                device.params.product.params[key].access_scope = 'st2138:op';
+                const errors = validateRequiredParamsAndScopes(device, SDK_OPTS);
+                expect(errors).toEqual([
+                    {
+                        message: `Product parameter '${key}' has invalid scope (must be 'st2138:mon')`,
+                        instancePath: `/params/product/params/${key}/access_scope`
+                    }
+                ]);
+            });
+        }
+
+        test('still enforces values for params not in the SDK-supplied list', () => {
+            delete device.params.product.value.struct_value.fields.serial_number;
+            const errors = validateRequiredParamsAndScopes(device, SDK_OPTS);
+            expect(errors).toEqual([
+                {
+                    message: "Product parameter 'serial_number' has no value",
+                    instancePath: '/params/product/params/serial_number/value'
+                }
+            ]);
+        });
+    });
 });
