@@ -53,6 +53,16 @@ export interface ValidationResult {
     data: object;
 }
 
+/** A descriptor's identity, parsed from its filename. */
+export interface DescriptorId {
+    /** schema kind: `device`, `param`, or `command` */
+    kind: string;
+    /** the descriptor's name — the second filename segment */
+    name: string;
+    /** serialization format from the file extension, e.g. `json` or `yaml` */
+    format: string;
+}
+
 /**
  * A component's self-asserted provenance, declared in its descriptor's leading
  * comments. Each field is optional: a field the descriptor does not declare is
@@ -183,6 +193,9 @@ export function digest(
     input: string | URL,
     options?: DigestOptions,
 ): Promise<string>;
+
+/** Parse a descriptor's identity (kind, name, format) from its path or URL. */
+export function descriptorIdFromUrl(input: string | URL): DescriptorId;
 
 /**
  * Options for rendering an SBOM. Carries the "SBOM Author" of the 2026 "Minimum

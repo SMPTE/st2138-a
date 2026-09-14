@@ -34,7 +34,7 @@ const { resolve: resolveTree } = require('./resolve');
 const { toCycloneDx } = require('./cyclonedx');
 const { defaultLoad } = require('./loader');
 const { computeDigest } = require('./digest');
-const { toUrl, schemaNameFromUrl } = require('./urls');
+const { toUrl, descriptorIdFromUrl, schemaNameFromUrl } = require('./urls');
 
 /**
  * @typedef {import('./types').ValidateOptions} ValidateOptions
@@ -157,5 +157,5 @@ async function digest(input, options = {}) {
     return computeDigest(await load(url));
 }
 
-module.exports = { validate, resolve, digest, toCycloneDx, formatDiagnostic, printDiagnostics };
+module.exports = { validate, resolve, digest, descriptorIdFromUrl, toCycloneDx, formatDiagnostic, printDiagnostics };
 
