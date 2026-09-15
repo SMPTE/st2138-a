@@ -517,12 +517,12 @@ $defs:
           to enable both numeric and string values.
         oneOf:
           - type: string
-            enum: [UNDEFINED, INT_CHOICE, INT_RANGE, ALARM_TABLE, FLOAT_RANGE, STRING_CHOICE, STRING_STRING_CHOICE]
+            enum: [UNDEFINED, INT_CHOICE, INT_RANGE, ALARM_TABLE, FLOAT_RANGE, STRING_CHOICE, STRING_STRING_CHOICE, FORMATTED_STRING]
             default: UNDEFINED
           - type: integer
-            enum: [0, 2, 4, 5, 6, 7, 8]
+            enum: [0, 2, 4, 5, 6, 7, 8, 9]
             default: 0
-            examples: [0, 2, 4, 5, 6, 7, 8]
+            examples: [0, 2, 4, 5, 6, 7, 8, 9]
             oneOf:
               - const: 0
                 title: UNDEFINED
@@ -538,6 +538,8 @@ $defs:
                 title: STRING_CHOICE
               - const: 8
                 title: STRING_STRING_CHOICE
+              - const: 9
+                title: FORMATTED_STRING
     required:
       - type
     oneOf:
@@ -905,6 +907,24 @@ $defs:
               const: STRING_STRING_CHOICE
             string_string_choice:
               $ref: "#/$defs/string_string_choice"
+          required:
+            - string_string_choice
+          additionalProperties: false
+
+      - if: # FORMATTED_STRING
+          type: object
+          properties:
+            type:
+              const: FORMATTED_STRING
+        then:
+          type: object
+          properties:
+            type:
+              const: FORMATTED_STRING
+            formatted_string:
+              $ref: "#/$defs/formatted_string"
+          required:
+            - formatted_string
           additionalProperties: false
 
   string_choice:
@@ -955,6 +975,77 @@ $defs:
     required:
       - choices
     additionalProperties: false
+
+  formatted_string:
+    title: FORMATTED_STRING Constraint
+    description: |
+      Constrains a string to a named format from the JSON Schema format
+      vocabulary below (or "regex" for a custom pattern). As with the choice
+      constraints, strict turns the constraint on or off: when true the value
+      must conform to format (and regex); when false the format is advisory
+      and any string is accepted.
+    type: object
+    properties:
+      format:
+        title: String Format
+        description: |
+          The expected format. The enumerated values are the formats defined by
+          the JSON Schema Validation specification (Draft 2020-12), plus "regex"
+          to match the value against the regex field. There is no canonical
+          machine-readable list to reference, so the names are enumerated here.
+        type: string
+        enum:
+          - date-time
+          - date
+          - time
+          - duration
+          - email
+          - idn-email
+          - hostname
+          - idn-hostname
+          - ipv4
+          - ipv6
+          - uri
+          - uri-reference
+          - iri
+          - iri-reference
+          - uuid
+          - uri-template
+          - json-pointer
+          - relative-json-pointer
+          - regex
+      regex:
+        title: Regular Expression
+        description: |
+          A regular expression the string must match. Required when format is
+          "regex"; otherwise optional, e.g. to further constrain a custom
+          format when strict is false.
+        type: string
+        format: regex
+      strict:
+        title: Strict
+        description: |
+          Turns the constraint on or off. When true the value must conform to
+          format (and regex); when false the format is advisory and any string
+          is accepted.
+        type: boolean
+        default: false
+    required:
+      - format
+    additionalProperties: false
+    if:
+      properties:
+        format:
+          const: regex
+      required:
+        - format
+    then:
+      properties:
+        regex:
+          type: string
+          format: regex
+      required:
+        - regex
 
   apply_struct:
     title: STRUCT specialism
