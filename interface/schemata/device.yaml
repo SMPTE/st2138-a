@@ -540,8 +540,10 @@ $defs:
                 title: STRING_STRING_CHOICE
     required:
       - type
-    oneOf:
+    allOf:
       - $ref: "#/$defs/int32_constraint"
+      - $ref: "#/$defs/float32_constraint"
+      - $ref: "#/$defs/string_constraint"
 
   simple_oid:
     title: Simple OID
