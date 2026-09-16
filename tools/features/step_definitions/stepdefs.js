@@ -8,12 +8,19 @@ const st2138 = require('../../src/index');
 const { computeDigest } = require('../../src/digest');
 
 const casesDir = path.join(__dirname, '..', 'cases');
+const modelsDir = path.join(__dirname, '..', 'models');
 
 Given('the test case {word}', function (name) {
     this.dir = path.join(casesDir, name);
     const input = fs.readdirSync(this.dir).find((f) => /\.input\.(ya?ml|json)$/.test(f));
     assert.ok(input, `no input descriptor found in case "${name}"`);
     this.input = path.join(this.dir, input);
+});
+
+Given('the model {string}', function (name) {
+    const model = path.join(modelsDir, name);
+    assert.ok(fs.existsSync(model), `model "${name}" not found in models directory`);
+    this.input = model;
 });
 
 When('passed to {word}', async function (func) {
