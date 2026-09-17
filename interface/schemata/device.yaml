@@ -1109,7 +1109,13 @@ $defs:
       type: object
       properties:
         value:
-          $ref: "#/$defs/struct_variant_value"
+          type: object
+          properties:
+            struct_variant_value:
+              $ref: "#/$defs/struct_variant_value"
+          required:
+            - struct_variant_value
+          additionalProperties: false
         constraint: false
         precision: false
         max_length: false
@@ -1121,17 +1127,13 @@ $defs:
       Says which variant of the struct is being used and the value of that variant.
     type: object
     properties:
-      struct_variant_value:
-        type: object
-        properties:
-          struct_variant_type:
-            $ref: "#/$defs/simple_oid"
-          value:
-            $ref: "#/$defs/value"
-        required:
-          - struct_variant_type
-          - value
-        additionalProperties: false
+      struct_variant_type:
+        $ref: "#/$defs/simple_oid"
+      value:
+        $ref: "#/$defs/value"
+    required:
+      - struct_variant_type
+      - value
     additionalProperties: false
 
   apply_int32_array:
