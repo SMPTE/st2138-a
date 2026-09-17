@@ -16,7 +16,7 @@ subscriptions: false
 
 # Constraints can be shared between parameters if they're defined here.
 constraints:
-  # Example of a shared constraint. Parameters can use via ref_oid.
+  # Examples of shared constraints. Parameters can use via ref_oid.
   on_off:
     type: INT_CHOICE
     int32_choice:
@@ -33,6 +33,15 @@ constraints:
               en: On
               fr: Marche
               es: Encendido
+  gain:
+    type: FLOAT_RANGE
+    float_range:
+      min_value: -60.0
+      max_value: 12.0
+      step: 0.5
+      display_min: -60.0
+      display_max: 12.0
+
 
 # Our device's parameters - the minimum required by the Catena Model standard.
 params:
