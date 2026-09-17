@@ -51,6 +51,14 @@ const { ERROR } = require('./constants');
  *       declared at the device level. This is checked in `finalize`, since the
  *       walker only traverses params, not commands.
  *
+ *   R3. A device-level `default_scope` that is NOT one of the device's declared
+ *       `access_scopes`
+ *       -> "Device default_scope '<scope>' is not declared in the device's
+ *       access_scopes". The default scope is inherited by params and commands
+ *       that omit an explicit `access_scope`, so it too must be declared at the
+ *       device level. This is checked in `finalize`, since it is a device-level
+ *       property rather than a per-OID one.
+ *
  * Non-rules (explicitly NOT flagged):
  *   - Param with NO explicit access_scope: it inherits from its parent or the
  *     device default, so there is nothing to check here.
@@ -113,6 +121,21 @@ function createScopesVisitor(desc, opts = {}) {
                 warnings.push({
                     message: `Command '${ctx.key}' has access_scope '${scope}' which is not declared in the device's access_scopes`,
                     instancePath: `${ctx.path}/access_scope`,
+                    type: ERROR,
+                });
+            }
+        },
+        finalize(warnings) {
+            const defaultScope = desc.default_scope;
+
+            // a device without a default_scope has nothing to check here
+            if (defaultScope === undefined || defaultScope === null) return;
+
+            // R3: default_scope not declared at the device level -> ERROR
+            if (!scopes.has(defaultScope)) {
+                warnings.push({
+                    message: `Device default_scope '${defaultScope}' is not declared in the device's access_scopes`,
+                    instancePath: `/default_scope`,
                     type: ERROR,
                 });
             }

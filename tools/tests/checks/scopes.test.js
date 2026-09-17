@@ -155,8 +155,9 @@ describe('checkScopes', () => {
         delete device.access_scopes;
         const result = checkScopes(device, ENABLED_OPTS);
         // params parent (op), child (cfg), leaf (mon) plus command do_thing (op)
-        // all become undeclared; the command argument's scope is still ignored
-        expect(result).toHaveLength(4);
+        // all become undeclared, as does the device default_scope (mon); the
+        // command argument's scope is still ignored
+        expect(result).toHaveLength(5);
     });
 
     // flags a top-level param using an undeclared scope
@@ -287,5 +288,48 @@ describe('checkScopes', () => {
         delete device.commands;
         const result = checkScopes(device, ENABLED_OPTS);
         expect(result).toEqual([]);
+    });
+
+    // R3: a valid default_scope drawn from access_scopes is not flagged
+    test('does not flag a declared default_scope', () => {
+        device.default_scope = 'st2138:cfg';
+        const result = checkScopes(device, ENABLED_OPTS);
+        expect(result).toEqual([]);
+    });
+
+    // R3: flags a device-level default_scope not in access_scopes
+    test('flags an undeclared default_scope', () => {
+        device.default_scope = 'st2138:adm';
+        const result = checkScopes(device, ENABLED_OPTS);
+        expect(result).toEqual([
+            {
+                message: "Device default_scope 'st2138:adm' is not declared in the device's access_scopes",
+                instancePath: '/default_scope',
+                type: ERROR,
+            },
+        ]);
+    });
+
+    // R3: a device without a default_scope has nothing to check
+    // shouldn't happen but this is exercising the defensive programming logic
+    test('does not flag a missing default_scope', () => {
+        delete device.default_scope;
+        const result = checkScopes(device, ENABLED_OPTS);
+        expect(result).toEqual([]);
+    });
+
+    // R3: default_scope is checked even when the device has no params
+    test('flags an undeclared default_scope even when the device has no params', () => {
+        delete device.params;
+        delete device.commands;
+        device.default_scope = 'st2138:adm';
+        const result = checkScopes(device, ENABLED_OPTS);
+        expect(result).toEqual([
+            {
+                message: "Device default_scope 'st2138:adm' is not declared in the device's access_scopes",
+                instancePath: '/default_scope',
+                type: ERROR,
+            },
+        ]);
     });
 });

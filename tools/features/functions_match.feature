@@ -20,3 +20,8 @@ Feature: Api functions match expected output
     Then the function succeeds with no diagnostics
     And the output "data" is there
     And the resolved imports match
+
+  Scenario: default_scope can be a non st2138:scope
+    Given the model "device.default_scope.yaml"
+    When passed to validate
+    Then the function succeeds with no diagnostics

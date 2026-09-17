@@ -1,0 +1,38 @@
+slot: 0
+default_scope: ascope
+access_scopes:
+  - st2138:mon
+  - ascope
+params:
+  product:
+    type: STRUCT
+    read_only: true
+    access_scope: st2138:mon
+    params:
+      name:
+        type: STRING
+      version:
+        type: STRING
+      vendor:
+        type: STRING
+      serial_number:
+        type: STRING
+      catena_sdk:
+        type: STRING
+      catena_sdk_version:
+        type: STRING
+    value:
+      struct_value:
+        fields:
+          name:
+            string_value: Minimal Device
+          version:
+            string_value: 1.0.0
+          vendor:
+            string_value: SMPTE
+          serial_number:
+            string_value: 0000-0000-0000
+          catena_sdk:
+            string_value: example-sdk
+          catena_sdk_version:
+            string_value: 0.0.0
