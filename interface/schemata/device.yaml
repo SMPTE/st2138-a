@@ -138,7 +138,7 @@ $defs:
       The default scope for the device.
       Objects in the model will have this access scope unless overridden
       explicitly, or implicitly by inheritance
-    $ref: "#/$defs/access_scopes_enum"
+    $ref: "#/$defs/access_scope"
 
   slot:
     title: Slot
