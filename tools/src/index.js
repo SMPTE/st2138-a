@@ -35,6 +35,7 @@ const { toCycloneDx } = require('./cyclonedx');
 const { defaultLoad } = require('./loader');
 const { computeDigest } = require('./digest');
 const { toUrl, descriptorIdFromUrl, schemaNameFromUrl } = require('./urls');
+const { NAMESPACE_KEY, DEFINITION_ONLY_KEY } = require('./hints');
 
 /**
  * @typedef {import('./types').ValidateOptions} ValidateOptions
@@ -158,5 +159,5 @@ async function digest(input, options = {}) {
     return computeDigest(await load(url));
 }
 
-module.exports = { validate, resolve, digest, descriptorIdFromUrl, toCycloneDx, formatDiagnostic, printDiagnostics };
+module.exports = { validate, resolve, digest, descriptorIdFromUrl, toCycloneDx, formatDiagnostic, printDiagnostics, ST2138_NAMESPACE_KEY: NAMESPACE_KEY, ST2138_DEFINITION_ONLY_KEY: DEFINITION_ONLY_KEY };
 
