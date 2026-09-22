@@ -1,8 +1,8 @@
 name: "Build and Deploy GitHub Pages"
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*"
 
 jobs:
   build-and-deploy:
@@ -20,12 +20,24 @@ jobs:
       - name: Build
         run: |
           ./build-openapi.sh
-          echo "Copying files to publish directory"
-          mkdir -p publish/interface/schema
-          cp interface/schema/* publish/interface/schema
-          cp build/device.yaml publish/interface/schema/device.yaml
-          mkdir -p publish/docs
-          cp -r docs/openapi.yaml publish/docs/openapi.yaml
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          # the tag must equal the stamped VERSION so published $ids match their URL path
+          if [[ "$VERSION" != "$GITHUB_REF_NAME" ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match VERSION '$VERSION'; bump VERSION, run ./set-version.sh, commit, then tag."
+            exit 1
+          fi
+          echo "Assembling publish tree for $VERSION"
+          # assemble the schema/doc tree once; device.yaml is the exploded (anchor-free) build output
+          stage="$(mktemp -d)"
+          mkdir -p "$stage/interface/schema" "$stage/docs"
+          cp interface/schema/* "$stage/interface/schema/"
+          cp build/device.yaml "$stage/interface/schema/device.yaml"
+          cp docs/openapi.yaml "$stage/docs/openapi.yaml"
+          # versioned path plus /latest and bare aliases; copies, since Pages has no symlinks or redirects
+          for dest in "publish/$VERSION" "publish/latest" "publish"; do
+            mkdir -p "$dest"
+            cp -r "$stage/." "$dest/"
+          done
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
@@ -33,3 +45,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: publish
           enable_jekyll: true
+          keep_files: true
