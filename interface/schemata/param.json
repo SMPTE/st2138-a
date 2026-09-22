@@ -1,4 +1,4 @@
 {
-    "$comment": "Convienience schema for parameter definitions",
+    "$comment": "Convenience schema for parameter definitions. Intentionally has NO $id: this is a thin editor shim whose relative $ref must resolve to the sibling device.json on disk. Adding an absolute $id would rebase that $ref onto a network URL, and VS Code's JSON language service then refuses it ('Location ... is untrusted') or fetches the published copy instead of the local one, breaking offline validation. The param subschema's versioned identity already lives on device.json's root $id; cite it as device.json#/$defs/param.",
     "$ref": "./device.json#/$defs/param"
 }

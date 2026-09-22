@@ -34,7 +34,7 @@ servers:
 
 info:
   title: Catena API
-  version: '1.0'
+  version: 'v1.0.0-pcd'
   license:
     name: BSD-3-Clause
     url: https://opensource.org/licenses/BSD-3-Clause

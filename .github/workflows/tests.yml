@@ -24,6 +24,9 @@ jobs:
       - name: Build Schema
         run: bash ./build-openapi.sh
 
+      - name: Check generated artifacts are in sync with sources
+        run: git diff --exit-code
+
       - name: NPM install
         run: npm ci --prefix tools
 
@@ -35,3 +38,27 @@ jobs:
 
       - name: Run integration tests
         run: npm run integration --prefix tools
+
+  version-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Shape guard: MAJOR.MINOR.PATCH with optional leading v and semver
+      # pre-release suffix (e.g. v1.0.0-pcd, v1.0.0-pre-fcd-2, v1.0.0).
+      - name: Validate VERSION format
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          if [[ ! "$version" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error file=VERSION::Invalid VERSION '$version' (expected e.g. v1.0.0 or v1.0.0-pcd)"
+            exit 1
+          fi
+
+      # Stamping is idempotent, so a clean tree stays clean; any diff means the
+      # committed $id/version strings drifted from VERSION (bump it, then run
+      # ./set-version.sh and commit).
+      - name: Check version stamping is in sync with VERSION
+        run: |
+          bash ./set-version.sh
+          git diff --exit-code
