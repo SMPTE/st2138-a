@@ -21,9 +21,9 @@ jobs:
         run: |
           ./build-openapi.sh
           echo "Copying files to publish directory"
-          mkdir -p publish/interface/schemata
-          cp interface/schemata/* publish/interface/schemata
-          cp build/device.yaml publish/interface/schemata/device.yaml
+          mkdir -p publish/interface/schema
+          cp interface/schema/* publish/interface/schema
+          cp build/device.yaml publish/interface/schema/device.yaml
           mkdir -p publish/docs
           cp -r docs/openapi.yaml publish/docs/openapi.yaml
 

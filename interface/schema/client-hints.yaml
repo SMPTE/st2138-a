@@ -27,7 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-$id: https://smpte.github.io/st2138-a/v1.0.0-pcd/interface/schemata/client-hints.yaml
+$id: https://smpte.github.io/st2138-a/v1.0.0-pcd/interface/schema/client-hints.yaml
 $schema: https://json-schema.org/draft/2020-12/schema
 title: Schema for Client Hints
 description: |

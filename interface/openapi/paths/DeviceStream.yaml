@@ -40,21 +40,21 @@ get:
       required: true
       description: The slot of the device model to request components from
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
   
     - name: Detail-Level
       in: header
       required: false
       description: The level of detail to request the device in
       schema:
-        $ref: "../../schemata/device.json#/$defs/detail_level"
+        $ref: "../../schema/device.json#/$defs/detail_level"
 
     - name: Language-Code
       in: header
       required: false
       description: Optionally specify the language code for the response.
       schema:
-        $ref: "../../schemata/device.json#/$defs/language_code"
+        $ref: "../../schema/device.json#/$defs/language_code"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
@@ -80,7 +80,7 @@ get:
           
           x-sse-event-schema:
             message:
-              $ref: "../../schemata/device.json#/$defs/device_component"
+              $ref: "../../schema/device.json#/$defs/device_component"
             error:
               $ref: '../openapi.yaml#/components/schemas/SseError'
     

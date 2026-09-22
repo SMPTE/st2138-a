@@ -41,7 +41,7 @@ get:
       required: true
       description: The slot of the device model to request components from
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
         
   
     - name: Detail-Level
@@ -49,14 +49,14 @@ get:
       required: false
       description: The level of detail to request the device in
       schema:
-        $ref: "../../schemata/device.json#/$defs/detail_level"
+        $ref: "../../schema/device.json#/$defs/detail_level"
 
     - name: Language-Code
       in: header
       required: false
       description: Optionally specify the language code for the response.
       schema:
-        $ref: "../../schemata/device.json#/$defs/language_code"
+        $ref: "../../schema/device.json#/$defs/language_code"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
@@ -69,7 +69,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json"
+            $ref: "../../schema/device.json"
   
           example:   
             {  

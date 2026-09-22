@@ -40,14 +40,14 @@ get:
       required: true
       description: The slot of the device model containing the parameters to get info for
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
    
     - name: fqoid
       in: path
       required: true
       description: Fully qualified OID of the parameter to get info for
       schema:
-        $ref: "../../schemata/device.json#/$defs/fqoid"
+        $ref: "../../schema/device.json#/$defs/fqoid"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
@@ -62,7 +62,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json#/$defs/value"
+            $ref: "../../schema/device.json#/$defs/value"
           
           example:
             {
@@ -109,14 +109,14 @@ put:
       required: true
       description: The slot of the device model containing the parameters to get info for
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
   
     - name: fqoid
       in: path
       required: true
       description: Fully qualified OID of the parameter to get info for
       schema:
-        $ref: "../../schemata/device.json#/$defs/fqoid"
+        $ref: "../../schema/device.json#/$defs/fqoid"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
@@ -128,7 +128,7 @@ put:
     content:
       application/json:
         schema:
-          $ref: "../../schemata/device.json#/$defs/value"
+          $ref: "../../schema/device.json#/$defs/value"
         example:
           {
             "string_value": "Hello, World!"
