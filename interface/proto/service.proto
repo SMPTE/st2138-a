@@ -55,7 +55,14 @@ import "externalobject.proto";
  * This invariant is enforced in CI by check-proto-split.sh.
  */
 
-/* Catena's API */
+/*
+ * Legacy name retained intentionally. Although the "Catena" name is being
+ * removed elsewhere in favor of "st2138", the `CatenaService` service name
+ * (and its generated RPC/stub symbols) is deliberately preserved. Renaming it
+ * would change the gRPC service path and generated client/server bindings,
+ * forcing every existing client and server to be recompiled and redeployed in
+ * lockstep. That blast radius is too large to justify a cosmetic rename.
+ */
 service CatenaService {
   rpc DeviceRequest(DeviceRequestPayload) returns (stream DeviceComponent);
 
