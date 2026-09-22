@@ -30,7 +30,7 @@
 openapi: '3.1.0'
 
 servers:
-  - url: https://device.catenamedia.tv:443/st2138-api/v1
+  - url: https://device.example.com/st2138-api/v1
 
 info:
   title: Catena API
