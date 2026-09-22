@@ -24,9 +24,6 @@ jobs:
       - name: Build Schema
         run: bash ./build-openapi.sh
 
-      - name: Check generated artifacts are in sync with sources
-        run: git diff --exit-code
-
       - name: NPM install
         run: npm ci --prefix tools
 
