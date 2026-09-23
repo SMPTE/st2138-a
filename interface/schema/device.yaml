@@ -1616,6 +1616,60 @@ $defs:
       - language_pack
     additionalProperties: false
 
+  component_kind:
+    title: Component Kind
+    description: |
+      The kind of a component within the device model.
+    type: string
+    enum:
+      - UNSET
+      - PARAM
+      - COMMAND
+      - MENU
+      - CONSTRAINT
+      - LANGUAGE_PACK
+
+  component_response:
+    title: Component Response
+    description: |
+      The response of a component within the device model.
+    oneOf:
+      - type: object
+        properties:
+          param:
+            $ref: "#/$defs/component_param"
+        required:
+          - param
+        additionalProperties: false
+      - type: object
+        properties:
+          command:
+            $ref: "#/$defs/component_command"
+        required:
+          - command
+        additionalProperties: false
+      - type: object
+        properties:
+          menu:
+            $ref: "#/$defs/component_menu"
+        required:
+          - menu
+        additionalProperties: false
+      - type: object
+        properties:
+          shared_constraint:
+            $ref: "#/$defs/component_constraint"
+        required:
+          - constraint
+        additionalProperties: false
+      - type: object
+        properties:
+          language_pack:
+            $ref: "#/$defs/component_language_pack"
+        required:
+          - language_pack
+        additionalProperties: false
+
   exception:
     title: Exception
     description: |

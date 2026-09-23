@@ -32,8 +32,8 @@ syntax = "proto3";
 package st2138;
 
 option java_multiple_files = true;
-option java_package = "catena.core.service";
-option java_outer_classname = "CatenaCore";
+option java_package = "st2138.core.service";
+option java_outer_classname = "St2138Core";
 
 option optimize_for = SPEED;
 
@@ -83,6 +83,8 @@ service CatenaService {
   rpc UpdateSubscriptions(UpdateSubscriptionsPayload) returns (stream DeviceComponent.ComponentParam);
 
   rpc GetParam(GetParamPayload) returns (DeviceComponent.ComponentParam);
+
+  rpc GetComponent(GetComponentPayload) returns (ComponentResponse);
 
   /* The stream of PushUpdates is open-ended, terminating only when the
    * logical connection with the client is terminated. 
