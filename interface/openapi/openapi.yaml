@@ -33,7 +33,7 @@ servers:
   - url: https://device.example.com/st2138-api/v1
 
 info:
-  title: Catena API
+  title: ST2138 API
   version: 'v1.0.0-pcd'
   license:
     name: BSD-3-Clause

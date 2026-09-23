@@ -56,7 +56,7 @@ import "externalobject.proto";
  */
 
 /*
- * Legacy name retained intentionally. Although the "Catena" name is being
+ * Legacy name retained intentionally. Although the "Catena" name has been
  * removed elsewhere in favor of "st2138", the `CatenaService` service name
  * (and its generated RPC/stub symbols) is deliberately preserved. Renaming it
  * would change the gRPC service path and generated client/server bindings,
