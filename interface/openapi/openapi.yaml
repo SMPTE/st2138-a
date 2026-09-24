@@ -29,8 +29,24 @@
 
 openapi: '3.1.0'
 
+# The host is defined by the device implementer; the default below is a
+# non-functional placeholder using the RFC 2606 reserved example.com domain.
 servers:
-  - url: https://device.example.com/st2138-api/v1
+  - url: '{protocol}://{host}/st2138-api/v1'
+    variables:
+      protocol:
+        default: https
+        enum:
+          - https
+          - http
+        description: >-
+          Transport scheme. Use http only for local, non-TLS testing.
+      host:
+        default: device.example.com
+        description: >-
+          Hostname (or host:port) of the ST2138-conformant device.
+          This value is implementation-defined; the default shown here is a
+          non-functional placeholder and must be replaced by the implementer.
 
 info:
   title: ST2138 API
@@ -177,9 +193,14 @@ components:
   securitySchemes:
     oauth2:
       type: oauth2
+      description: >-
+        The authorization server (and therefore the token endpoint) is provided
+        by the device implementer. The tokenUrl below is a non-functional
+        placeholder on the RFC 2606 reserved example.com domain.
       flows:
         clientCredentials:
-          tokenUrl: https://device.catenamedia.tv/api/v1/oauth2/token
+          # Placeholder. The token endpoint is implementation-defined.
+          tokenUrl: https://auth.example.com/oauth2/token
           scopes:
             st2138:op: Read only access to operate a device
             st2138:op:w: Read and write access to operate a device
