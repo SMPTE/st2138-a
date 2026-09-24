@@ -1622,7 +1622,6 @@ $defs:
       The kind of a component within the device model.
     type: string
     enum:
-      - UNSET
       - PARAM
       - COMMAND
       - MENU

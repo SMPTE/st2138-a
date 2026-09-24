@@ -51,9 +51,14 @@ get:
     - name: fqoid
       in: path
       required: true
-      description: The fully qualified path to the component within the device model.
+      description: >-
+        The fully qualified path to the component within the device model.
+        For LANGUAGE_PACK components this parameter is overloaded to instead
+        carry the ISO 639-1 language code identifying the desired language pack.
       schema:
-        $ref: "../../schema/device.json#/$defs/fqoid"
+        anyOf:
+          - $ref: "../../schema/device.json#/$defs/fqoid"
+          - $ref: "../../schema/device.json#/$defs/language_code"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 

@@ -3,7 +3,7 @@ name: "Publish"
 on:
   push:
     tags:
-      - "v*"
+      - "*"
 
 permissions:
   contents: write # deploy-pages pushes to gh-pages; release creates the GitHub Release
@@ -17,6 +17,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Verify tag matches VERSION
+        id: gate
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          # the tag must equal the stamped VERSION so published/packaged $ids match their URL path
+          if [[ "$VERSION" != "$GITHUB_REF_NAME" ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match VERSION '$VERSION'; bump VERSION, run ./set-version.sh, commit, then tag."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -29,17 +40,6 @@ jobs:
 
       - name: Build
         run: ./build-openapi.sh
-
-      - name: Verify tag matches VERSION
-        id: gate
-        run: |
-          VERSION="$(tr -d '[:space:]' < VERSION)"
-          # the tag must equal the stamped VERSION so published/packaged $ids match their URL path
-          if [[ "$VERSION" != "$GITHUB_REF_NAME" ]]; then
-            echo "::error::Tag '$GITHUB_REF_NAME' does not match VERSION '$VERSION'; bump VERSION, run ./set-version.sh, commit, then tag."
-            exit 1
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Upload build output
         uses: actions/upload-artifact@v4
