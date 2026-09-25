@@ -376,10 +376,10 @@ describe("Mandatory", () => {
         const SDK_OPTS = {
             schemaName: 'device',
             disableMandatoryParams: false,
-            sdkSuppliedProductParams: ['catena_sdk', 'catena_sdk_version'],
+            sdkSuppliedProductParams: ['st2138_sdk', 'st2138_sdk_version'],
         };
 
-        for (const key of ['catena_sdk', 'catena_sdk_version']) {
+        for (const key of ['st2138_sdk', 'st2138_sdk_version']) {
             test(`does not require a value for SDK-supplied '${key}' when missing`, () => {
                 delete device.params.product.value.struct_value.fields[key];
                 const errors = validateRequiredParamsAndScopes(device, SDK_OPTS);
