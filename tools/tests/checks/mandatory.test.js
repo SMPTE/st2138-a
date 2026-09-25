@@ -62,8 +62,8 @@ describe("Mandatory", () => {
         'name',
         'vendor',
         'version',
-        'catena_sdk',
-        'catena_sdk_version',
+        'st2138_sdk',
+        'st2138_sdk_version',
         'serial_number'
     ];
 
@@ -77,8 +77,8 @@ describe("Mandatory", () => {
                     name: { type: 'STRING' },
                     vendor: { type: 'STRING' },
                     version: { type: 'STRING' },
-                    catena_sdk: { type: 'STRING' },
-                    catena_sdk_version: { type: 'STRING' },
+                    st2138_sdk: { type: 'STRING' },
+                    st2138_sdk_version: { type: 'STRING' },
                     serial_number: { type: 'STRING' },
                 },
                 value: {
@@ -87,8 +87,8 @@ describe("Mandatory", () => {
                             name: { string_value: 'Test Device' },
                             vendor: { string_value: 'Test Vendor' },
                             version: { string_value: '1.0' },
-                            catena_sdk: { string_value: 'Test SDK' },
-                            catena_sdk_version: { string_value: '1.0' },
+                            st2138_sdk: { string_value: 'Test SDK' },
+                            st2138_sdk_version: { string_value: '1.0' },
                             serial_number: { string_value: '1234567890' },
                         }
                     }

@@ -47,7 +47,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json#/$defs/slot_list"
+            $ref: "../../schema/device.json#/$defs/slot_list"
   
           example: 
             slots: [2,3,5,7,11]

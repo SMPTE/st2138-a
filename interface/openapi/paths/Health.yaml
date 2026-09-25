@@ -28,7 +28,7 @@
 #
 
 get:
-  summary: Checks the health of a Catena REST service
+  summary: Checks the health of a ST2138 REST service
 
   operationId: Health
 
@@ -42,7 +42,7 @@ get:
 
   responses:
     "200":
-      description: Indicates that the Catena REST service is healthy
+      description: Indicates that the ST2138 REST service is healthy
       # No content is returned.
     
     "500":

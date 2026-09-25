@@ -10,18 +10,18 @@ require_not_root || exit 1
 # put yq on PATH in current shell
 put_yq_on_path
 
-echo "🔄 Converting YAML schema to JSON with \$id stripped..."
+echo "🔄 Converting YAML schema to JSON (root \$id preserved)..."
 
-# 1. Convert YAML to JSON and remove $id and x-anchors
+# 1. Convert YAML to JSON, resolving anchors and dropping x-anchors
 # first resolve any anchors
 mkdir -p build
 # TODO: Remove --yaml-fix-merge-anchor-to-spec flag after yq defaults to true (late 2025)
-yq --yaml-fix-merge-anchor-to-spec 'explode(.) | del(.["x-anchors"])' interface/schemata/device.yaml -o=yaml > build/device.yaml
-# then remove $id fields and convert to JSON
-yq 'del(.. | select(has("$id"))["$id"])' build/device.yaml -o=json > interface/schemata/device.json
+yq --yaml-fix-merge-anchor-to-spec 'explode(.) | del(.["x-anchors"])' interface/schema/device.yaml -o=yaml > build/device.yaml
+# strip only nested $id fields; keep the root $id so device.json carries the version
+yq 'del(.. | select(has("$id") and (path | length > 0)).["$id"])' build/device.yaml -o=json > interface/schema/device.json
 # 2. Copy device.json to tools/src/data/device.json
 mkdir -p tools/src/data
-cp interface/schemata/device.json tools/src/data/device.json
+cp interface/schema/device.json tools/src/data/device.json
 
 echo "📦 Bundling OpenAPI spec with Redocly CLI..."
 

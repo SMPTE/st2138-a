@@ -40,7 +40,7 @@ get:
       required: true
       description: The slot of the device model containing the parameters to get info for
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
@@ -63,7 +63,7 @@ get:
             data: <stringified ComponentParam>
           x-sse-event-schema:
             message:
-              $ref: "../../schemata/device.json#/$defs/component_param"
+              $ref: "../../schema/device.json#/$defs/component_param"
             error:
               $ref: '../openapi.yaml#/components/schemas/SseError'
 

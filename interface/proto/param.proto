@@ -35,7 +35,7 @@ import "language.proto";
 import "constraint.proto";
 
 option java_multiple_files = true;
-option java_package = "catena.core.parameter";
+option java_package = "st2138.core.parameter";
 option java_outer_classname = "ParamProtos";
 
 option optimize_for = SPEED;

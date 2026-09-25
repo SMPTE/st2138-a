@@ -48,14 +48,14 @@ post:
       required: true
       description: The slot of the device model to get the value from
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - name: fqoid
       in: path
       required: true
       description: The fully qualified object ID of the command to execute
       schema:
-        $ref: "../../schemata/device.json#/$defs/fqoid"
+        $ref: "../../schema/device.json#/$defs/fqoid"
 
     - name: respond
       in: query
@@ -79,7 +79,7 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../../schemata/device.json#/$defs/value"
+          $ref: "../../schema/device.json#/$defs/value"
         example: {"float32_value":0.5}
 
 
@@ -101,7 +101,7 @@ post:
             data: <stringified {"exception":{"type":"Invalid Command","error_message":"Error message","details":"Something went wrong"}}>
           x-sse-event-schema:
             message:
-              $ref: "../../schemata/device.json#/$defs/command_response"
+              $ref: "../../schema/device.json#/$defs/command_response"
             error:
               $ref: '../openapi.yaml#/components/schemas/SseError'
 
