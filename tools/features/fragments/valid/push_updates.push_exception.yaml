@@ -1,0 +1,4 @@
+slot: 0
+refused:
+    type: INVALID_ARGUMENT
+    details: bad value
