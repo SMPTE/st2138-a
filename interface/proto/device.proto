@@ -38,7 +38,7 @@ import "language.proto";
 import "externalobject.proto";
 
 option java_multiple_files = true;
-option java_package = "catena.core.device";
+option java_package = "st2138.core.device";
 option java_outer_classname = "DeviceProtos";
 
 option optimize_for = SPEED;
@@ -192,6 +192,42 @@ message DeviceRequestPayload {
   string language = 2;                 // Optionally specify the language for the response
   Device.DetailLevel detail_level = 3; // Optionally specify the detail level for the response
   repeated string subscribed_oids = 4; // Optionally specify a subscription list for the device (see UpdateSubscriptionsPayload)
+}
+
+/* Requests a single addressable DeviceComponent by object id.
+ * Generalizes GetParam/LanguagePackRequest to any component kind except the
+ * whole-Device model, which is retrieved via DeviceRequest instead. */
+message GetComponentPayload {
+  /* Selects which component namespace `oid` is resolved against.
+   * Required: oids are only unique within a kind, so the same string may name
+   * both a param and a menu. */
+  enum ComponentKind {
+    UNUSED = 0;         // protobuf requires enums start at 0; not a valid request
+    PARAM = 1;
+    CONSTRAINT = 2;
+    MENU = 3;
+    COMMAND = 4;
+    LANGUAGE_PACK = 5;
+  }
+
+  uint32 slot = 1;      // Uniquely identifies the device at node scope.
+  /* Uniquely identifies the component at device scope, resolved within `kind`.
+   * For LANGUAGE_PACK this carries the language code (e.g. "es"), not an oid. */
+  string oid = 2;
+  ComponentKind kind = 3;
+}
+
+/* Response for GetComponent: the addressable subset of DeviceComponent (i.e.
+ * everything except the whole-Device variant). Field numbers deliberately match
+ * DeviceComponent.kind so the two remain wire-compatible. */
+message ComponentResponse {
+  oneof kind {
+    DeviceComponent.ComponentParam param = 3;
+    DeviceComponent.ComponentConstraint shared_constraint = 4;
+    DeviceComponent.ComponentMenu menu = 5;
+    DeviceComponent.ComponentCommand command = 6;
+    DeviceComponent.ComponentLanguagePack language_pack = 7;
+  }
 }
 
 /* Initial handshake between client and device. */

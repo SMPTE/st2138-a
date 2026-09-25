@@ -48,7 +48,7 @@ get:
       required: true
       description: The slot of the device model to get language codes from
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
       example: 1  
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'

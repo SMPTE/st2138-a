@@ -47,7 +47,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json#/$defs/connection_status"
+            $ref: "../../schema/device.json#/$defs/connection_status"
           example:
             {
               "connected": true,
@@ -87,7 +87,7 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../../schemata/device.json#/$defs/revoke_access_payload"
+          $ref: "../../schema/device.json#/$defs/revoke_access_payload"
         example:
           {
             "subject": "user123",
@@ -102,7 +102,7 @@ post:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json#/$defs/revocation_response"
+            $ref: "../../schema/device.json#/$defs/revocation_response"
           example:
             {
               "remaining_subjects": ["user123", "user456"],

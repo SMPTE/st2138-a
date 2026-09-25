@@ -40,7 +40,7 @@ get:
       required: true
       description: The slot of the device model containing the subscriptions to get
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
@@ -55,7 +55,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json#/$defs/component_param"
+            $ref: "../../schema/device.json#/$defs/component_param"
           example:
             [
               {
@@ -128,7 +128,7 @@ put:
       required: true
       description: The slot of the device model containing the subscriptions to update
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
   
@@ -147,11 +147,11 @@ put:
             added_oids:
               type: array
               items:
-                $ref: "../../schemata/device.json#/$defs/fqoid"
+                $ref: "../../schema/device.json#/$defs/fqoid"
             removed_oids:
               type: array
               items:
-                $ref: "../../schemata/device.json#/$defs/fqoid"
+                $ref: "../../schema/device.json#/$defs/fqoid"
           additionalProperties: false
 
         example:

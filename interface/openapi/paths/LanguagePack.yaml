@@ -40,7 +40,7 @@ get:
       required: true
       description: The slot of the device model to request language pack from
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
    
     - name: language-code
       in: path
@@ -63,7 +63,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json#/$defs/language_pack"
+            $ref: "../../schema/device.json#/$defs/language_pack"
           
           example:
             {
@@ -110,7 +110,7 @@ post:
       required: true
       description: The slot of the device model to add a language pack to
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
   
     - name: language-code
       in: path
@@ -128,7 +128,7 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../../schemata/device.json#/$defs/language_pack"
+          $ref: "../../schema/device.json#/$defs/language_pack"
         example:
           {
             "name": "French",
@@ -182,7 +182,7 @@ delete:
       required: true
       description: The slot of the device model to delete a language pack from
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - name: language-code
       in: path
@@ -241,7 +241,7 @@ put:
         The slot of the device model to containing the language pack to
         overwrite
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - name: language-code
       in: path
@@ -259,7 +259,7 @@ put:
     content:
       application/json: 
         schema:
-          $ref: "../../schemata/device.json#/$defs/language_pack"
+          $ref: "../../schema/device.json#/$defs/language_pack"
         example:
           {
             "name": "Klingon",

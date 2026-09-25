@@ -35,9 +35,9 @@ const REQUIRED_PARAMS = [
     "name",
     "vendor",
     "version",
-    "catena_sdk",
-    "catena_sdk_version",
-    "serial_number"
+    "serial_number",
+    "st2138_sdk",
+    "st2138_sdk_version"
 ];
 
 const REQUIRED_SCOPE = "st2138:mon";

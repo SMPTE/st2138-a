@@ -34,7 +34,7 @@ package st2138;
 import "param.proto";
 
 option java_multiple_files = true;
-option java_package = "catena.core.externalobject";
+option java_package = "st2138.core.externalobject";
 option java_outer_classname = "ExternalObjectProtos";
 
 option optimize_for = SPEED;

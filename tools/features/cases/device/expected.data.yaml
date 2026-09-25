@@ -21,9 +21,9 @@ params:
         type: STRING
       serial_number:
         type: STRING
-      catena_sdk:
+      st2138_sdk:
         type: STRING
-      catena_sdk_version:
+      st2138_sdk_version:
         type: STRING
     value:
       struct_value:
@@ -36,9 +36,9 @@ params:
             string_value: SMPTE
           serial_number:
             string_value: 0000-0000-0000
-          catena_sdk:
+          st2138_sdk:
             string_value: example-sdk
-          catena_sdk_version:
+          st2138_sdk_version:
             string_value: 0.1.0
 
   normal_param:

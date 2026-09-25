@@ -1,0 +1,122 @@
+name: "Publish"
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write # deploy-pages pushes to gh-pages; release creates the GitHub Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.gate.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches VERSION
+        id: gate
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          # the tag must equal the stamped VERSION so published/packaged $ids match their URL path
+          if [[ "$VERSION" != "$GITHUB_REF_NAME" ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match VERSION '$VERSION'; bump VERSION, run ./set-version.sh, commit, then tag."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.17.0"
+          cache: "npm"
+          cache-dependency-path: tools/package-lock.json
+
+      - name: Install tooling
+        run: ./install-tooling.sh
+
+      - name: Build
+        run: ./build-openapi.sh
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          # device.yaml here is the exploded (anchor-free) build output consumed downstream
+          path: |
+            interface/schema/
+            interface/proto/
+            build/device.yaml
+            docs/openapi.yaml
+          if-no-files-found: error
+
+  deploy-pages:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - name: Download build output
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+
+      - name: Assemble publish tree
+        run: |
+          echo "Assembling publish tree for $VERSION"
+          stage="$(mktemp -d)"
+          mkdir -p "$stage/interface/schema" "$stage/docs"
+          cp interface/schema/* "$stage/interface/schema/"
+          cp build/device.yaml "$stage/interface/schema/device.yaml"
+          cp docs/openapi.yaml "$stage/docs/openapi.yaml"
+          # versioned path plus /latest and bare aliases; copies, since Pages has no symlinks or redirects
+          for dest in "publish/$VERSION" "publish/latest" "publish"; do
+            mkdir -p "$dest"
+            cp -r "$stage/." "$dest/"
+          done
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: publish
+          enable_jekyll: true
+          keep_files: true
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - name: Download build output
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+
+      - name: Package artifacts
+        run: |
+          mkdir -p dist
+
+          echo "Packaging protos for $VERSION"
+          tar -czf "dist/st2138-protos-$VERSION.tgz" -C interface proto
+
+          echo "Assembling full interface bundle for $VERSION"
+          # self-contained snapshot; device.yaml is the exploded (anchor-free) build output
+          stage="$(mktemp -d)"
+          mkdir -p "$stage/interface/schema" "$stage/interface/proto" "$stage/docs"
+          cp interface/schema/* "$stage/interface/schema/"
+          cp build/device.yaml "$stage/interface/schema/device.yaml"
+          cp interface/proto/*.proto "$stage/interface/proto/"
+          cp docs/openapi.yaml "$stage/docs/openapi.yaml"
+          tar -czf "dist/st2138-interface-$VERSION.tgz" -C "$stage" .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/st2138-protos-*.tgz
+            dist/st2138-interface-*.tgz

@@ -9,8 +9,8 @@ local `settings.json`
 
 ```json
 "yaml.schemas": {
-  "https://smpte.github.io/st2138-a/interface/schemata/device.yaml#/$defs/param": ["**/param.*.yaml"],
-  "https://smpte.github.io/st2138-a/interface/schemata/device.yaml": ["**/device.*.yaml"]
+  "https://smpte.github.io/st2138-a/v1.0.0-pcd/interface/schema/device.yaml#/$defs/param": ["**/param.*.yaml"],
+  "https://smpte.github.io/st2138-a/v1.0.0-pcd/interface/schema/device.yaml": ["**/device.*.yaml"]
 }
 ```
 

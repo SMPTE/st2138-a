@@ -27,12 +27,12 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-$id: https://smpte.github.io/st2138-a/interface/schemata/device.yaml
+$id: https://smpte.github.io/st2138-a/v1.0.0-pcd/interface/schema/device.yaml
 $schema: https://json-schema.org/draft/2020-12/schema
 title: Schema for Catena's Device Model
 description: |
   Intended to assist humans to author Catena device models as JSON files as
-  some IDEs can use schemata such as this one to lint models.
+  some IDEs can use schema such as this one to lint models.
 
 # Anchors for reuse within this file
 # will be removed by build-openapi.sh
@@ -1615,6 +1615,59 @@ $defs:
       - language
       - language_pack
     additionalProperties: false
+
+  component_kind:
+    title: Component Kind
+    description: |
+      The kind of a component within the device model.
+    type: string
+    enum:
+      - PARAM
+      - COMMAND
+      - MENU
+      - CONSTRAINT
+      - LANGUAGE_PACK
+
+  component_response:
+    title: Component Response
+    description: |
+      The response of a component within the device model.
+    oneOf:
+      - type: object
+        properties:
+          param:
+            $ref: "#/$defs/component_param"
+        required:
+          - param
+        additionalProperties: false
+      - type: object
+        properties:
+          command:
+            $ref: "#/$defs/component_command"
+        required:
+          - command
+        additionalProperties: false
+      - type: object
+        properties:
+          menu:
+            $ref: "#/$defs/component_menu"
+        required:
+          - menu
+        additionalProperties: false
+      - type: object
+        properties:
+          shared_constraint:
+            $ref: "#/$defs/component_constraint"
+        required:
+          - constraint
+        additionalProperties: false
+      - type: object
+        properties:
+          language_pack:
+            $ref: "#/$defs/component_language_pack"
+        required:
+          - language_pack
+        additionalProperties: false
 
   exception:
     title: Exception
