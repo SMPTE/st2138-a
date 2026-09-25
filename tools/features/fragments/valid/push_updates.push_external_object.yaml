@@ -1,0 +1,5 @@
+slot: 0
+oid: logo
+external_object:
+    payload:
+        payload: https://example.com/logo.png

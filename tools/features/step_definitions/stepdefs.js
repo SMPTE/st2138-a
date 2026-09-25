@@ -9,6 +9,7 @@ const { computeDigest } = require('../../src/digest');
 
 const casesDir = path.join(__dirname, '..', 'cases');
 const modelsDir = path.join(__dirname, '..', 'models');
+const fragmentsDir = path.join(__dirname, '..', 'fragments');
 
 Given('the test case {word}', function (name) {
     this.dir = path.join(casesDir, name);
@@ -21,6 +22,41 @@ Given('the model {string}', function (name) {
     const model = path.join(modelsDir, name);
     assert.ok(fs.existsSync(model), `model "${name}" not found in models directory`);
     this.input = model;
+});
+
+// Each fragment's schema is chosen from its filename prefix (see
+// schemaNameFromUrl), so a directory can mix subtypes that share a schema.
+Given('the fragments in {string}', function (subdir) {
+    const dir = path.join(fragmentsDir, subdir);
+    assert.ok(fs.existsSync(dir), `fragments directory "${subdir}" not found`);
+    this.fragments = fs.readdirSync(dir)
+        .filter((f) => /\.(ya?ml|json)$/.test(f))
+        .sort()
+        .map((f) => path.join(dir, f));
+    assert.ok(this.fragments.length > 0, `no fragments found in "${subdir}"`);
+});
+
+Then('they all validate', async function () {
+    const failures = [];
+    for (const file of this.fragments) {
+        const result = await st2138.validate(file);
+        if (!result.valid || result.diagnostics.length > 0) {
+            const why = result.diagnostics.map((d) => d.message).join('; ') || 'invalid';
+            failures.push(`${path.basename(file)}: ${why}`);
+        }
+    }
+    assert.strictEqual(failures.length, 0, `fragments failed to validate:\n  ${failures.join('\n  ')}`);
+});
+
+Then('they all fail validation', async function () {
+    const unexpected = [];
+    for (const file of this.fragments) {
+        const result = await st2138.validate(file);
+        if (result.valid && result.diagnostics.length === 0) {
+            unexpected.push(path.basename(file));
+        }
+    }
+    assert.strictEqual(unexpected.length, 0, `fragments validated but should have failed:\n  ${unexpected.join('\n  ')}`);
 });
 
 When('passed to {word}', async function (func) {

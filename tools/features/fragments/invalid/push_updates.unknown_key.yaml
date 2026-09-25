@@ -1,0 +1,7 @@
+# Guards unevaluatedProperties: false on push_updates — an unknown top-level
+# key must be rejected even though slot/oid/value are individually valid.
+slot: 0
+oid: asdf
+value:
+    empty_value:
+bogus_extra_key: true
