@@ -52,7 +52,7 @@ Then('they all fail validation', async function () {
     const unexpected = [];
     for (const file of this.fragments) {
         const result = await st2138.validate(file);
-        if (result.valid && result.diagnostics.length === 0) {
+        if (result.valid) {
             unexpected.push(path.basename(file));
         }
     }
