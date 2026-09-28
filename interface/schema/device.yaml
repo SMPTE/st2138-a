@@ -1995,7 +1995,6 @@ $defs:
               type: string
         required:
           - type
-          - trap_data
         additionalProperties: false
     required:
       - trap_message

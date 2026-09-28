@@ -1,0 +1,4 @@
+# Sample push_trap_message with no additional trap data
+slot: 0
+trap_message:
+    type: RESTART
