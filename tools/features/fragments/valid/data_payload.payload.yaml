@@ -1,0 +1,6 @@
+payload: aGVsbG8=
+digest: sha256:...
+metadata:
+  mime-type: application/octet-stream
+  encoding: base64
+payload_encoding: GZIP
