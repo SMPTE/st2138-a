@@ -1,5 +1,9 @@
-payload: aGVsbG8=
-digest: sha256:...
+# payload is "Hello World!\n" compressed with gzip and encoded in base64
+# echo "Hello World!" | gzip | base64
+payload: H4sIAAAAAAAAA/NIzcnJVwjPL8pJUeQCAN3dFH0NAAAA
+# digest = sha256 of the base64 payload string above:
+# echo -n 'H4sIAAAAAAAAA/NIzcnJVwjPL8pJUeQCAN3dFH0NAAAA' | sha256sum
+digest: 3963351a8a558f91d3559021b55063c85327256b4f001bb27a1a6d66a0618603
 metadata:
   mime-type: application/octet-stream
   encoding: base64
