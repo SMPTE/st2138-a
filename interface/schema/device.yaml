@@ -1895,12 +1895,18 @@ $defs:
       A value to be pushed to the client.
     type: object
     properties:
-      oid:
-        $ref: "#/$defs/fqoid"
       value:
-        $ref: "#/$defs/value"
+        type: object
+        properties:
+          oid:
+            $ref: "#/$defs/fqoid"
+          value:
+            $ref: "#/$defs/value"
+        required:
+          - oid
+          - value
+        additionalProperties: false
     required:
-      - oid
       - value
   
   push_device_component:
