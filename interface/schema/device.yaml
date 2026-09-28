@@ -2030,9 +2030,15 @@ $defs:
     title: ID List
     description: |
       A list of object ids (OIDs)
-    type: array
-    items:
-      $ref: "#/$defs/fqoid"
+    type: object
+    properties:
+      oids:
+        type: array
+        items:
+          $ref: "#/$defs/fqoid"
+    required:
+      - oids
+    additionalProperties: false
 
   language_list:
     title: Language List
@@ -2086,9 +2092,15 @@ $defs:
           - type: object
             properties:
               language_packs:
-                type: array
-                items:
-                  $ref: "#/$defs/language_code"
+                type: object
+                properties: 
+                  oids:
+                    type: array
+                    items:
+                      $ref: "#/$defs/language_code"
+                required:
+                  - oids
+                additionalProperties: false
             required:
               - language_packs
             additionalProperties: false
