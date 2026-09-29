@@ -54,8 +54,8 @@ jobs:
 
       # Stamping is idempotent, so a clean tree stays clean; any diff means the
       # committed $id/version strings drifted from VERSION (bump it, then run
-      # ./set-version.sh and commit).
+      # ./scripts/set-version.sh and commit).
       - name: Check version stamping is in sync with VERSION
         run: |
-          bash ./set-version.sh
+          bash ./scripts/set-version.sh
           git diff --exit-code

@@ -23,7 +23,7 @@ jobs:
           VERSION="$(tr -d '[:space:]' < VERSION)"
           # the tag must equal the stamped VERSION so published/packaged $ids match their URL path
           if [[ "$VERSION" != "$GITHUB_REF_NAME" ]]; then
-            echo "::error::Tag '$GITHUB_REF_NAME' does not match VERSION '$VERSION'; bump VERSION, run ./set-version.sh, commit, then tag."
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match VERSION '$VERSION'; bump VERSION, run ./scripts/set-version.sh, commit, then tag."
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
