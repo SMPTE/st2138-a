@@ -60,7 +60,7 @@ RELEASE="$(tr -d '[:space:]' < VERSION)"
 # "merge commit only" rule: a squash/rebase merge produces no such commit.
 release_sha="$(git rev-parse HEAD)"
 merge_sha="$(git rev-list --merges --parents origin/main |
-    awk -v r="$release_sha" '$2 == r || $3 == r { print $1; exit }')"
+    awk -v r="$release_sha" '$3 == r { print $1; exit }')"
 [[ -n "$merge_sha" ]] ||
     die "no merge commit for '$BRANCH' found on main; merge the release PR with a merge commit first"
 
@@ -71,6 +71,10 @@ if git rev-parse -q --verify "refs/tags/$RELEASE" >/dev/null ||
 fi
 
 if [[ -n "$INPUT_NEXT" ]]; then
+    [[ "$INPUT_NEXT" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] ||
+        die "next dev version '$INPUT_NEXT' is not vMAJOR.MINOR.PATCH[-stage]"
+    [[ "$INPUT_NEXT" =~ [.-]dev$ ]] ||
+        die "next dev version '$INPUT_NEXT' must end in .dev/-dev"
     NEXT="$INPUT_NEXT"
 else
     NEXT="$(bash ./scripts/release-version.sh next-dev "$RELEASE")"

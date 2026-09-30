@@ -55,6 +55,10 @@ git fetch --quiet origin develop --tags
 
 CURRENT="$(tr -d '[:space:]' < VERSION)"
 if [[ -n "$INPUT_VERSION" ]]; then
+    [[ "$INPUT_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] ||
+        die "release version '$INPUT_VERSION' is not vMAJOR.MINOR.PATCH[-stage]"
+    [[ ! "$INPUT_VERSION" =~ [.-]dev$ ]] ||
+        die "release version '$INPUT_VERSION' must not end in .dev/-dev"
     RELEASE="$INPUT_VERSION"
 else
     RELEASE="$(bash ./scripts/release-version.sh release "$CURRENT")"
