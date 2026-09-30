@@ -40,7 +40,7 @@ load_nvm() {
 }
 
 echo "🔧 Starting toolchain setup..."
-NODE_VERSION="24.17.0"
+NODE_VERSION="$(tr -d '[:space:]' < "$SCRIPT_DIR/.nvmrc")"
 
 if command -v node >/dev/null 2>&1; then
   CURRENT_NODE_VERSION="$(node -v | sed 's/^v//')"
