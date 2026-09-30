@@ -1,0 +1,109 @@
+name: "Release - open"
+
+# Mint a release: branch off develop, stamp the release version, and open a PR
+# to main. Merging that PR (with a merge commit) hands off to "Release - finish".
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (optional). If omitted, strips the trailing .dev from develop's VERSION."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# serialize release runs; queued rather than cancelled (cancel-in-progress defaults to false)
+concurrency: release
+
+jobs:
+  open:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Setup tooling
+        uses: ./.github/actions/setup-tooling
+
+      - name: Resolve release version
+        id: ver
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          CURRENT="$(tr -d '[:space:]' < VERSION)"
+          if [[ -n "$INPUT_VERSION" ]]; then
+            RELEASE="$INPUT_VERSION"
+          else
+            RELEASE="$(bash ./scripts/release-version.sh release "$CURRENT")"
+          fi
+          echo "release=$RELEASE" >> "$GITHUB_OUTPUT"
+          echo "branch=release/$RELEASE" >> "$GITHUB_OUTPUT"
+          echo "Releasing '$RELEASE' from develop '$CURRENT'."
+
+      - name: Guard against existing tag or branch
+        env:
+          RELEASE: ${{ steps.ver.outputs.release }}
+          BRANCH: ${{ steps.ver.outputs.branch }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE" >/dev/null 2>&1; then
+            echo "::error::Tag '$RELEASE' already exists; choose a different version."
+            exit 1
+          fi
+          if git ls-remote --exit-code --heads origin "refs/heads/$BRANCH" >/dev/null 2>&1; then
+            echo "::error::Branch '$BRANCH' already exists; delete it or choose a different version."
+            exit 1
+          fi
+
+      - name: Create release branch and stamp version
+        env:
+          RELEASE: ${{ steps.ver.outputs.release }}
+          BRANCH: ${{ steps.ver.outputs.branch }}
+        run: |
+          git switch -c "$BRANCH"
+          printf '%s\n' "$RELEASE" > VERSION
+          bash ./scripts/set-version.sh
+          bash ./build-openapi.sh
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Release $RELEASE"
+          git push --set-upstream origin "$BRANCH"
+
+      - name: Open pull request to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ steps.ver.outputs.release }}
+          BRANCH: ${{ steps.ver.outputs.branch }}
+        run: |
+          body="$(cat <<'EOF'
+          ## Release __RELEASE__
+
+          Stamps and publishes release **__RELEASE__**.
+
+          ### ⚠️ Merge with a **merge commit** — do NOT squash or rebase
+          The tag on `main` and the back-merge to `develop` both depend on the
+          real commits from this branch. GitHub remembers your last merge choice,
+          so explicitly pick **"Create a merge commit"**. If this PR is squashed,
+          the follow-up automation will refuse to proceed.
+
+          ### What happens automatically when you merge
+          1. `main` is tagged `__RELEASE__`.
+          2. The tag is built and published (GitHub Pages + GitHub Release).
+          3. A follow-up PR bumps `develop` to the next dev version; merging it
+             deletes this release branch.
+
+          ### Manual steps to firm up the release
+          - [ ] Confirm CI is green on this PR.
+          - [ ] Confirm version number is correct.
+          EOF
+          )"
+          body="${body//__RELEASE__/$RELEASE}"
+          gh pr create --base main --head "$BRANCH" \
+            --title "Release $RELEASE" \
+            --body "$body"

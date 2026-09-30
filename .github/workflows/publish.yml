@@ -1,6 +1,20 @@
 name: "Publish"
 
 on:
+  # Primary path: called directly by the release-finish workflow once a release
+  # PR merges. A tag pushed with GITHUB_TOKEN can't trigger a workflow, so the
+  # release automation must invoke publishing rather than rely on the tag event.
+  workflow_call:
+    inputs:
+      ref:
+        description: "Git ref (tag or SHA) to build and publish."
+        required: true
+        type: string
+      version:
+        description: "Expected VERSION at that ref; asserted against the committed stamp."
+        required: true
+        type: string
+  # Safety valve: a human-pushed tag for an emergency / manual re-publish.
   push:
     tags:
       - "*"
@@ -16,27 +30,32 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
 
-      - name: Verify tag matches VERSION
+      - name: Verify VERSION
         id: gate
+        env:
+          EXPECTED: ${{ inputs.version }}
         run: |
           VERSION="$(tr -d '[:space:]' < VERSION)"
-          # the tag must equal the stamped VERSION so published/packaged $ids match their URL path
-          if [[ "$VERSION" != "$GITHUB_REF_NAME" ]]; then
-            echo "::error::Tag '$GITHUB_REF_NAME' does not match VERSION '$VERSION'; bump VERSION, run ./scripts/set-version.sh, commit, then tag."
-            exit 1
+          if [[ -n "$EXPECTED" ]]; then
+            # workflow_call: the caller already tagged; assert the stamp matches
+            if [[ "$VERSION" != "$EXPECTED" ]]; then
+              echo "::error::Caller expected VERSION '$EXPECTED' but ref has '$VERSION'."
+              exit 1
+            fi
+          else
+            # tag push: the tag must equal the stamped VERSION so published/packaged $ids match their URL path
+            if [[ "$VERSION" != "$GITHUB_REF_NAME" ]]; then
+              echo "::error::Tag '$GITHUB_REF_NAME' does not match VERSION '$VERSION'; bump VERSION, run ./scripts/set-version.sh, commit, then tag."
+              exit 1
+            fi
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24.17.0"
-          cache: "npm"
-          cache-dependency-path: tools/package-lock.json
-
-      - name: Install tooling
-        run: ./install-tooling.sh
+      - name: Setup tooling
+        uses: ./.github/actions/setup-tooling
 
       - name: Build
         run: ./build-openapi.sh
@@ -117,6 +136,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          # explicit because github.ref is not the tag on the workflow_call path
+          tag_name: ${{ env.VERSION }}
           files: |
             dist/st2138-protos-*.tgz
             dist/st2138-interface-*.tgz

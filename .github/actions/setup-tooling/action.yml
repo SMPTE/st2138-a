@@ -1,0 +1,22 @@
+name: Setup tooling
+description: Set up Node.js with npm cache and install the repo's build/validation tooling.
+
+inputs:
+  node-version:
+    description: Node.js version to install.
+    required: false
+    default: "24.17.0"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+        cache-dependency-path: tools/package-lock.json
+
+    - name: Install tooling
+      shell: bash
+      run: bash ./install-tooling.sh

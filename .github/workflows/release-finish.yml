@@ -1,0 +1,125 @@
+name: "Release - finish"
+
+# Reacts to release PR merges:
+#   * merged into main   -> tag, publish, open the develop bump PR
+#   * merged into develop -> delete the release branch (repo can't auto-delete)
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  to-main:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      branch: ${{ steps.tag.outputs.branch }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify a real merge commit (not squash or rebase)
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          # a merge commit prints SHA + 2 parents = 3 tokens; squash/rebase = 2
+          parents="$(git rev-list --parents -n 1 "$MERGE_SHA" | wc -w)"
+          if [[ "$parents" -ne 3 ]]; then
+            echo "::error::Release PR was not merged with a merge commit (looks squashed/rebased). The tag and the develop back-merge depend on the real commits; revert and re-merge using 'Create a merge commit'."
+            exit 1
+          fi
+
+      - name: Tag release
+        id: tag
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "refs/tags/$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: to-main
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish.yml
+    with:
+      ref: ${{ needs.to-main.outputs.version }}
+      version: ${{ needs.to-main.outputs.version }}
+
+  bump-develop:
+    needs: [to-main, publish]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.to-main.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Setup tooling
+        uses: ./.github/actions/setup-tooling
+
+      - name: Bump to next dev version and open PR to develop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ needs.to-main.outputs.branch }}
+          RELEASE: ${{ needs.to-main.outputs.version }}
+        run: |
+          NEXT="$(bash ./scripts/release-version.sh next-dev "$RELEASE")"
+          printf '%s\n' "$NEXT" > VERSION
+          bash ./scripts/set-version.sh
+          bash ./build-openapi.sh
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Begin $NEXT development"
+          git push origin "$BRANCH"
+          body="$(cat <<'EOF'
+          ## Begin __NEXT__ development
+
+          Back-merges release **__RELEASE__** into `develop` and bumps the version
+          to **__NEXT__** for continued development.
+
+          ### ⚠️ Merge with a **merge commit** — do NOT squash or rebase
+
+          ### On merge
+          - The `__BRANCH__` release branch is deleted automatically.
+          EOF
+          )"
+          body="${body//__NEXT__/$NEXT}"
+          body="${body//__RELEASE__/$RELEASE}"
+          body="${body//__BRANCH__/$BRANCH}"
+          gh pr create --base develop --head "$BRANCH" \
+            --title "Begin $NEXT development" \
+            --body "$body"
+
+  cleanup:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'develop' &&
+      startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the release branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          gh api -X DELETE "repos/$REPO/git/refs/heads/$BRANCH"
