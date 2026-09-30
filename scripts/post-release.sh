@@ -40,7 +40,7 @@ die() {
 }
 
 # Must be on a clean release/* branch that matches the remote.
-git diff --quiet && git diff --cached --quiet ||
+[[ -z "$(git status --porcelain)" ]] ||
     die "working tree is dirty; commit or stash first"
 
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"

@@ -42,7 +42,7 @@ die() {
 
 # Must be on a clean develop that matches the remote, so the release branches
 # off exactly what everyone else sees on develop.
-git diff --quiet && git diff --cached --quiet ||
+[[ -z "$(git status --porcelain)" ]] ||
     die "working tree is dirty; commit or stash first"
 
 branch_now="$(git rev-parse --abbrev-ref HEAD)"
@@ -99,5 +99,5 @@ Pushed '$BRANCH'. Now open the release PR yourself so CI runs:
 
 When merging that PR, use "Create a merge commit" — NOT squash or rebase.
 The tag on main and the develop back-merge both depend on the real commits,
-and "Release - finish" will refuse a squashed merge.
+and scripts/post-release.sh will refuse a squashed merge.
 EOF
