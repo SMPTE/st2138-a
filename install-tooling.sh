@@ -9,7 +9,7 @@ set -euo pipefail
 # source the common.sh script, the -- tells cd and dirname that everything that
 # follows is data, not options.
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/common.sh"
+source "$SCRIPT_DIR/scripts/common.sh"
 
 # fail fast if running as root or with sudo
 require_not_root || exit 1
@@ -40,7 +40,7 @@ load_nvm() {
 }
 
 echo "🔧 Starting toolchain setup..."
-NODE_VERSION="24.17.0"
+NODE_VERSION="$(tr -d '[:space:]' < "$SCRIPT_DIR/.nvmrc")"
 
 if command -v node >/dev/null 2>&1; then
   CURRENT_NODE_VERSION="$(node -v | sed 's/^v//')"

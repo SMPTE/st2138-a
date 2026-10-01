@@ -52,7 +52,7 @@ import "externalobject.proto";
  * from the plain message types, so consumers that only need the messages are
  * not forced to link the gRPC runtime. Downstream projects rely on this split.
  *
- * This invariant is enforced in CI by check-proto-split.sh.
+ * This invariant is enforced in CI by scripts/check-proto-split.sh.
  */
 
 /*
