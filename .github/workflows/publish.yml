@@ -1,6 +1,8 @@
 name: "Publish"
 
 on:
+  # A pushed tag (matching the stamped VERSION) builds and publishes that
+  # release. Push the tag by hand after the release PR merges into main.
   push:
     tags:
       - "*"
@@ -17,26 +19,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify tag matches VERSION
+      - name: Verify VERSION
         id: gate
         run: |
           VERSION="$(tr -d '[:space:]' < VERSION)"
           # the tag must equal the stamped VERSION so published/packaged $ids match their URL path
           if [[ "$VERSION" != "$GITHUB_REF_NAME" ]]; then
-            echo "::error::Tag '$GITHUB_REF_NAME' does not match VERSION '$VERSION'; bump VERSION, run ./set-version.sh, commit, then tag."
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match VERSION '$VERSION'; bump VERSION, run ./scripts/set-version.sh, commit, then tag."
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24.17.0"
-          cache: "npm"
-          cache-dependency-path: tools/package-lock.json
-
-      - name: Install tooling
-        run: ./install-tooling.sh
+      - name: Setup tooling
+        uses: ./.github/actions/setup-tooling
 
       - name: Build
         run: ./build-openapi.sh
@@ -117,6 +112,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          # VERSION equals the pushed tag (asserted in the gate)
+          tag_name: ${{ env.VERSION }}
           files: |
             dist/st2138-protos-*.tgz
             dist/st2138-interface-*.tgz

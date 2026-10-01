@@ -12,4 +12,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check service/message separation
-        run: bash ./check-proto-split.sh
+        run: bash ./scripts/check-proto-split.sh

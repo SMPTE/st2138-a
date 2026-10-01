@@ -1,0 +1,16 @@
+name: Setup tooling
+description: Set up Node.js with npm cache and install the repo's build/validation tooling.
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        cache: npm
+        cache-dependency-path: tools/package-lock.json
+
+    - name: Install tooling
+      shell: bash
+      run: bash ./install-tooling.sh
