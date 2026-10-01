@@ -59,12 +59,20 @@ function toUrl(input) {
  * Decompose a descriptor filename into its identity: schema kind, name, and
  * serialization format, e.g. `device.example.yaml` ->
  * `{ kind: 'device', name: 'example', format: 'yaml' }`.
+ * The three-part `<kind>.<name>.<ext>` form is required: a stem with too few or
+ * too many dot-separated segments is malformed and throws, so a kind is never
+ * guessed from an ambiguous name.
  * @param {string|URL} input
  * @returns {{ kind: string, name: string, format: string }}
+ * @throws {Error} when the filename is not `<kind>.<name>.<ext>`
  */
 function descriptorIdFromUrl(input) {
     const parsed = path.parse(toUrl(input).pathname);
-    const [kind, name] = parsed.name.split('.');
+    const segments = parsed.name.split('.');
+    if (segments.length !== 2) {
+        throw new Error(`Descriptor filename must be <kind>.<name>.<ext> (e.g. device.example.yaml), got '${parsed.base}'`);
+    }
+    const [kind, name] = segments;
     return { kind, name, format: parsed.ext.replace(/^\./, '').toLowerCase() };
 }
 

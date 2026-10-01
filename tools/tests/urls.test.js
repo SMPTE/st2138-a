@@ -87,6 +87,16 @@ describe('descriptorIdFromUrl', () => {
             format: 'json',
         });
     })
+
+    test('throws when the stem has too few segments', () => {
+        expect(() => descriptorIdFromUrl(new URL('file:///a/b/device.yaml')))
+            .toThrow(/must be <kind>\.<name>\.<ext>/);
+    })
+
+    test('throws when the stem has too many segments', () => {
+        expect(() => descriptorIdFromUrl(new URL('file:///a/b/param.on_off.v2.yaml')))
+            .toThrow(/must be <kind>\.<name>\.<ext>/);
+    })
 })
 
 describe('schemaNameFromUrl', () => {
