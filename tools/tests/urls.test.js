@@ -97,6 +97,14 @@ describe('descriptorIdFromUrl', () => {
         expect(() => descriptorIdFromUrl(new URL('file:///a/b/param.on_off.v2.yaml')))
             .toThrow(/must be <kind>\.<name>\.<ext>/);
     })
+
+    test('percent-decodes the name so spaces and Unicode round-trip', () => {
+        expect(descriptorIdFromUrl(new URL('file:///a/b/param.my%20param.yaml'))).toEqual({
+            kind: 'param',
+            name: 'my param',
+            format: 'yaml',
+        });
+    })
 })
 
 describe('schemaNameFromUrl', () => {

@@ -68,7 +68,9 @@ function toUrl(input) {
  */
 function descriptorIdFromUrl(input) {
     const parsed = path.parse(toUrl(input).pathname);
-    const segments = parsed.name.split('.');
+    // feed through decodeURIComponent to handle escaped characters that were
+    // just escaped in toUrl()
+    const segments = decodeURIComponent(parsed.name).split('.');
     if (segments.length !== 2) {
         throw new Error(`Descriptor filename must be <kind>.<name>.<ext> (e.g. device.example.yaml), got '${parsed.base}'`);
     }
