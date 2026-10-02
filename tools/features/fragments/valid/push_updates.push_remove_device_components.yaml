@@ -1,0 +1,6 @@
+slot: 0
+remove_device_components:
+  params:
+    oids:
+      - aparam
+      - another_param

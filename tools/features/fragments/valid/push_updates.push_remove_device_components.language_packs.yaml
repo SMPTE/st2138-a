@@ -1,0 +1,10 @@
+# language_packs oids are locale codes (e.g. en-CA) that contain dashes,
+# which normal fqoids disallow. This checks that language_packs use a
+# custom schema permitting dashes rather than the standard fqoid schema.
+slot: 0
+remove_device_components:
+  language_packs:
+    oids:
+      - en-CA
+      - fr-FR
+      - es

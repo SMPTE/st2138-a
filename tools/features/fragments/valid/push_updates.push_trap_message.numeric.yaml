@@ -1,0 +1,5 @@
+slot: 0
+trap_message:
+    type: 2
+    trap_data:
+        - gain
