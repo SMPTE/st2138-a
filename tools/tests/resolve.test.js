@@ -564,7 +564,7 @@ describe('resolve', () => {
     });
 
     test('descends the commands map to resolve a nested command import', async () => {
-        const rootUrl = new URL('file:///models/device.yaml');
+        const rootUrl = new URL('file:///models/device.testing.yaml');
         const device = [
             'slot: 0',
             'commands:',

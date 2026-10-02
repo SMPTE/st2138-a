@@ -108,6 +108,7 @@ describe('validate', () => {
                 disableScopeChecks: false,
                 disableDigestChecks: false,
                 disableClientHintChecks: false,
+                sdkSuppliedProductParams: [],
             }
         );
     });
@@ -132,6 +133,7 @@ describe('validate', () => {
                 disableScopeChecks: true,
                 disableDigestChecks: true,
                 disableClientHintChecks: true,
+                sdkSuppliedProductParams: [],
             }
         );
     });
@@ -199,6 +201,7 @@ describe('resolve', () => {
             disableScopeChecks: false,
             disableDigestChecks: false,
             disableClientHintChecks: false,
+            sdkSuppliedProductParams: [],
         }, 'gate');
     });
 
@@ -213,6 +216,7 @@ describe('resolve', () => {
             disableScopeChecks: false,
             disableDigestChecks: false,
             disableClientHintChecks: false,
+            sdkSuppliedProductParams: [],
         }, 'report');
     });
 
@@ -241,6 +245,7 @@ describe('resolve', () => {
             disableScopeChecks: true,
             disableDigestChecks: true,
             disableClientHintChecks: true,
+            sdkSuppliedProductParams: [],
         }, 'gate');
     });
 
