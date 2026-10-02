@@ -98,6 +98,21 @@ describe('descriptorIdFromUrl', () => {
             .toThrow(/must be <kind>\.<name>\.<ext>/);
     })
 
+    test('throws when the kind is empty', () => {
+        expect(() => descriptorIdFromUrl(new URL('file:///a/b/.example.yaml')))
+            .toThrow(/must have a non-empty kind/);
+    });
+
+    test('throws when the name is empty', () => {
+        expect(() => descriptorIdFromUrl(new URL('file:///a/b/device..yaml')))
+            .toThrow(/must have a non-empty name/);
+    });
+
+    test('throws when the format is empty', () => {
+        expect(() => descriptorIdFromUrl(new URL('file:///a/b/device.example.')))
+            .toThrow(/must have a non-empty format/);
+    });
+
     test('percent-decodes the name so spaces and Unicode round-trip', () => {
         expect(descriptorIdFromUrl(new URL('file:///a/b/param.my%20param.yaml'))).toEqual({
             kind: 'param',

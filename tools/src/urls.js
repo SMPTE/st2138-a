@@ -75,7 +75,17 @@ function descriptorIdFromUrl(input) {
         throw new Error(`Descriptor filename must be <kind>.<name>.<ext> (e.g. device.example.yaml), got '${parsed.base}'`);
     }
     const [kind, name] = segments;
-    return { kind, name, format: parsed.ext.replace(/^\./, '').toLowerCase() };
+    const format = parsed.ext.replace(/^\./, '').toLowerCase();
+    if (kind.length === 0) {
+        throw new Error(`Descriptor filename must have a non-empty kind: '${parsed.base}'`);
+    }
+    if (name.length === 0) {
+        throw new Error(`Descriptor filename must have a non-empty name: '${parsed.base}'`);
+    }
+    if (format.length === 0) {
+        throw new Error(`Descriptor filename must have a non-empty format: '${parsed.base}'`);
+    }
+    return { kind, name, format: format };
 }
 
 /**
