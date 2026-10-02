@@ -34,6 +34,11 @@
  */
 export type Level = 'warning' | 'error';
 
+/** Key for the reserved st2138 namespace client_hint key */
+export const ST2138_NAMESPACE_KEY: string;
+/** Key for the reserved st2138 declaration-only client_hint key */
+export const ST2138_DECLARATION_ONLY_KEY: string;
+
 /** A structured validation finding, with source line info where available. */
 export interface Diagnostic {
     /** severity, one of the ERROR/WARNING constants from checks/constants */
