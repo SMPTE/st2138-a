@@ -127,23 +127,25 @@ function validateRequiredParamsAndScopes(deviceDesc, opts) {
         }
 
         const field = productValue?.struct_value?.fields?.[key];
-        const stringValue = field?.string_value;
 
-        // SDK-supplied params carry a value injected by the toolchain, so an
-        // authored value is not required for them.
-        if (!sdkSuppliedProductParams.includes(key)) {
-            if (stringValue === undefined || stringValue === null) {
+        // Wrong type is always wrong, SDK-supplied or not.
+        if (field != null && field.string_value == null) {
+            errors.push({ message: `Product parameter '${key}' value must use string_value`, instancePath: `${basePath}/value/string_value` });
+        } else if (!sdkSuppliedProductParams.includes(key)) {
+            // Presence + non-emptiness only required for authored params;
+            // SDK params may be blank placeholders in a shared/imported struct.
+            if (field == null) {
                 errors.push({ message: `Product parameter '${key}' has no value`, instancePath: `${basePath}/value` });
-            } else if (String(stringValue).trim() === '') {
+            } else if (String(field.string_value).trim() === '') {
                 errors.push({ message: `Product parameter '${key}' has empty string value`, instancePath: `${basePath}/value/string_value` });
             }
         }
 
-        if (param.value !== undefined && param.value !== null) {
+        if (param.value != null) {
             errors.push({ message: `Product parameter '${key}' should not have a 'value' field (use 'value.struct_value.fields.${key}.string_value' instead)`, instancePath: `${basePath}/value` });
         }
 
-        if (param.params !== undefined && param.params !== null) {
+        if (param.params != null) {
             errors.push({ message: `Product parameter '${key}' should not have a 'params' field`, instancePath: `${basePath}/params` });
         }
     }

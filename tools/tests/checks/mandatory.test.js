@@ -392,6 +392,18 @@ describe("Mandatory", () => {
                 expect(errors).toEqual([]);
             });
 
+            // even if it is sdk-supplied we check that if the value is supplied, it must use string_value
+            test(`requires a string_value for SDK-supplied '${key}' when present`, () => {
+                device.params.product.value.struct_value.fields[key] = { int32_value: 123 };
+                const errors = validateRequiredParamsAndScopes(device, SDK_OPTS);
+                expect(errors).toEqual([
+                    {
+                        message: `Product parameter '${key}' value must use string_value`,
+                        instancePath: `/params/product/params/${key}/value/string_value`
+                    }
+                ]);
+            });
+
             test(`still enforces STRING type for SDK-supplied '${key}'`, () => {
                 device.params.product.params[key].type = 'INT32';
                 const errors = validateRequiredParamsAndScopes(device, SDK_OPTS);
