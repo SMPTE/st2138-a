@@ -9,28 +9,28 @@ local `settings.json`
 
 ```json
 "yaml.schemas": {
-  "https://smpte.github.io/st2138-a/interface/schemata/device.yaml#/$defs/param": ["**/param.*.yaml"],
-  "https://smpte.github.io/st2138-a/interface/schemata/device.yaml": ["**/device.*.yaml"]
+  "https://smpte.github.io/st2138-a/v1.1.0-pre-fcd/interface/schema/device.yaml#/$defs/param": ["**/param.*.yaml"],
+  "https://smpte.github.io/st2138-a/v1.1.0-pre-fcd/interface/schema/device.yaml": ["**/device.*.yaml"]
 }
 ```
 
 ## Command Line
 
-You can install the validator globally:
+You can install the tools globally:
 
 ```bash
-npm install -g smpte-st2138-a-validator
+npm install -g smpte-st2138-a-tools
 ```
 
 Then run
 
 ```bash
-st2138-a-validate ./data/device.good.yaml
+st2138 validate ./data/device.good.yaml
 ```
 
-Or ust npx to run without installation
+Or use npx to run without installation
 
 ```bash
-npx smpte-st2138-a-validator ./data/device.good.yaml
+npx smpte-st2138-a-tools validate ./data/device.good.yaml
 ```
 

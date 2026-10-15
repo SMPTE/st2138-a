@@ -27,12 +27,12 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-$id: https://smpte.github.io/st2138-a/interface/schemata/device.yaml
+$id: https://smpte.github.io/st2138-a/v1.1.0-pre-fcd/interface/schema/device.yaml
 $schema: https://json-schema.org/draft/2020-12/schema
 title: Schema for Catena's Device Model
 description: |
   Intended to assist humans to author Catena device models as JSON files as
-  some IDEs can use schemata such as this one to lint models.
+  some IDEs can use schema such as this one to lint models.
 
 # Anchors for reuse within this file
 # will be removed by build-openapi.sh
@@ -117,6 +117,10 @@ properties:
   menu_groups:
     $ref: "#/$defs/menu_groups"
 additionalProperties: false
+required:
+  - slot
+  - access_scopes
+  - default_scope
 
 $defs:
   access_scopes:
@@ -126,6 +130,7 @@ $defs:
     type: array
     items:
       $ref: "#/$defs/access_scope"
+    uniqueItems: true
   
   default_scope:
     title: Default Scope
@@ -133,8 +138,7 @@ $defs:
       The default scope for the device.
       Objects in the model will have this access scope unless overridden
       explicitly, or implicitly by inheritance
-    type: string
-    default: ""
+    $ref: "#/$defs/access_scope"
 
   slot:
     title: Slot
@@ -342,8 +346,7 @@ $defs:
       A list of fully qualified OIDs.
     type: array
     items:
-      type: string
-      format: json-pointer
+      $ref: "#/$defs/fqoid"
 
   param:
     title: Schema for Catena's Param object
@@ -514,12 +517,12 @@ $defs:
           to enable both numeric and string values.
         oneOf:
           - type: string
-            enum: [UNDEFINED, INT_CHOICE, INT_RANGE, ALARM_TABLE, FLOAT_RANGE, STRING_CHOICE, STRING_STRING_CHOICE]
+            enum: [UNDEFINED, INT_CHOICE, INT_RANGE, ALARM_TABLE, FLOAT_RANGE, STRING_CHOICE, STRING_STRING_CHOICE, FORMATTED_STRING]
             default: UNDEFINED
           - type: integer
-            enum: [0, 2, 4, 5, 6, 7, 8]
+            enum: [0, 2, 4, 5, 6, 7, 8, 9]
             default: 0
-            examples: [0, 2, 4, 5, 6, 7, 8]
+            examples: [0, 2, 4, 5, 6, 7, 8, 9]
             oneOf:
               - const: 0
                 title: UNDEFINED
@@ -535,10 +538,14 @@ $defs:
                 title: STRING_CHOICE
               - const: 8
                 title: STRING_STRING_CHOICE
+              - const: 9
+                title: FORMATTED_STRING
     required:
       - type
-    oneOf:
+    allOf:
       - $ref: "#/$defs/int32_constraint"
+      - $ref: "#/$defs/float32_constraint"
+      - $ref: "#/$defs/string_constraint"
 
   simple_oid:
     title: Simple OID
@@ -558,12 +565,12 @@ $defs:
     description: |
       A fully qualified OID is used to uniquely locate a specific item in the
       device model, and elements of array type objects.
-      It is a "headless" json-pointer with the leading solidus implied.
       It is composed of segments of two types, separated by a solidus.
       - simple OIDs
       - array indices
       - the one-past-the-end index indicated by '-', only valid at the end of
       the fqoid
+      A leading solidus is not used.
       An additional restriction is that the last segment cannot be 'stream'
       because the REST API uses this after the fqoid in the path as a Parameter
       to indicate that the response is a stream of SSEs.
@@ -573,9 +580,7 @@ $defs:
   template_oid:
     title: Template OID
     description: The fully qualified OID of the template that this parameter is based on.
-    type: string
-    format: json-pointer
-    default: ""
+    $ref: "#/$defs/fqoid"
 
   constraint_ref:
     title: Constraint Reference
@@ -821,7 +826,7 @@ $defs:
           properties:
             type:
               const: FLOAT_RANGE
-            float32_range:
+            float_range:
               type: object
               properties:
                 min_value:
@@ -904,6 +909,24 @@ $defs:
               const: STRING_STRING_CHOICE
             string_string_choice:
               $ref: "#/$defs/string_string_choice"
+          required:
+            - string_string_choice
+          additionalProperties: false
+
+      - if: # FORMATTED_STRING
+          type: object
+          properties:
+            type:
+              const: FORMATTED_STRING
+        then:
+          type: object
+          properties:
+            type:
+              const: FORMATTED_STRING
+            formatted_string:
+              $ref: "#/$defs/formatted_string"
+          required:
+            - formatted_string
           additionalProperties: false
 
   string_choice:
@@ -954,6 +977,77 @@ $defs:
     required:
       - choices
     additionalProperties: false
+
+  formatted_string:
+    title: FORMATTED_STRING Constraint
+    description: |
+      Constrains a string to a named format from the JSON Schema format
+      vocabulary below (or "regex" for a custom pattern). As with the choice
+      constraints, strict turns the constraint on or off: when true the value
+      must conform to format (and regex); when false the format is advisory
+      and any string is accepted.
+    type: object
+    properties:
+      format:
+        title: String Format
+        description: |
+          The expected format. The enumerated values are the formats defined by
+          the JSON Schema Validation specification (Draft 2020-12), plus "regex"
+          to match the value against the regex field. There is no canonical
+          machine-readable list to reference, so the names are enumerated here.
+        type: string
+        enum:
+          - date-time
+          - date
+          - time
+          - duration
+          - email
+          - idn-email
+          - hostname
+          - idn-hostname
+          - ipv4
+          - ipv6
+          - uri
+          - uri-reference
+          - iri
+          - iri-reference
+          - uuid
+          - uri-template
+          - json-pointer
+          - relative-json-pointer
+          - regex
+      regex:
+        title: Regular Expression
+        description: |
+          A regular expression the string must match. Required when format is
+          "regex"; otherwise optional, e.g. to further constrain a custom
+          format when strict is false.
+        type: string
+        format: regex
+      strict:
+        title: Strict
+        description: |
+          Turns the constraint on or off. When true the value must conform to
+          format (and regex); when false the format is advisory and any string
+          is accepted.
+        type: boolean
+        default: false
+    required:
+      - format
+    additionalProperties: false
+    if:
+      properties:
+        format:
+          const: regex
+      required:
+        - format
+    then:
+      properties:
+        regex:
+          type: string
+          format: regex
+      required:
+        - regex
 
   apply_struct:
     title: STRUCT specialism
@@ -1015,7 +1109,13 @@ $defs:
       type: object
       properties:
         value:
-          $ref: "#/$defs/struct_variant_value"
+          type: object
+          properties:
+            struct_variant_value:
+              $ref: "#/$defs/struct_variant_value"
+          required:
+            - struct_variant_value
+          additionalProperties: false
         constraint: false
         precision: false
         max_length: false
@@ -1027,17 +1127,13 @@ $defs:
       Says which variant of the struct is being used and the value of that variant.
     type: object
     properties:
-      struct_variant_value:
-        type: object
-        properties:
-          struct_variant_type:
-            $ref: "#/$defs/simple_oid"
-          value:
-            $ref: "#/$defs/value"
-        required:
-          - struct_variant_type
-          - value
-        additionalProperties: false
+      struct_variant_type:
+        $ref: "#/$defs/simple_oid"
+      value:
+        $ref: "#/$defs/value"
+    required:
+      - struct_variant_type
+      - value
     additionalProperties: false
 
   apply_int32_array:
@@ -1347,14 +1443,22 @@ $defs:
     description: Recommended UI widget to use for the parameter
     type: string
 
+  access_scopes_enum:
+    title: Access Scopes Enum
+    description: |
+      The set of access scopes recognized by ST 2138.
+    type: string
+    enum: [st2138:mon, st2138:op, st2138:cfg, st2138:adm]
+
   access_scope:
     title: Access Scope
     description: |
       The parameter's access scope. If not present, the parameter's parent's
       access scope is used unless the parameter is a top-level one, in which
       case the device's default access scope is used.
-    type: string
-    enum: [st2138:mon, st2138:op, st2138:cfg, st2138:adm]
+    anyOf:
+      - $ref: "#/$defs/access_scopes_enum"
+      - type: string
 
   client_hints:
     title: Client Hints
@@ -1511,6 +1615,59 @@ $defs:
       - language
       - language_pack
     additionalProperties: false
+
+  component_kind:
+    title: Component Kind
+    description: |
+      The kind of a component within the device model.
+    type: string
+    enum:
+      - PARAM
+      - COMMAND
+      - MENU
+      - CONSTRAINT
+      - LANGUAGE_PACK
+
+  component_response:
+    title: Component Response
+    description: |
+      The response of a component within the device model.
+    oneOf:
+      - type: object
+        properties:
+          param:
+            $ref: "#/$defs/component_param"
+        required:
+          - param
+        additionalProperties: false
+      - type: object
+        properties:
+          command:
+            $ref: "#/$defs/component_command"
+        required:
+          - command
+        additionalProperties: false
+      - type: object
+        properties:
+          menu:
+            $ref: "#/$defs/component_menu"
+        required:
+          - menu
+        additionalProperties: false
+      - type: object
+        properties:
+          shared_constraint:
+            $ref: "#/$defs/component_constraint"
+        required:
+          - constraint
+        additionalProperties: false
+      - type: object
+        properties:
+          language_pack:
+            $ref: "#/$defs/component_language_pack"
+        required:
+          - language_pack
+        additionalProperties: false
 
   exception:
     title: Exception

@@ -39,7 +39,7 @@ get:
       required: true
       description: The slot of the device model containing the parameters to get info for
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - name: recursive
       in: query
@@ -52,6 +52,8 @@ get:
         type: boolean
       style: form
       explode: false
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
   tags:
     - Parameters
@@ -74,7 +76,10 @@ get:
             data: <stringified {info: ParamInfo, array_length: 1}>
             data: <stringified {info: ParamInfo, array_length: 2}>
           x-sse-event-schema:
-            $ref: "../../schemata/device.json#/$defs/param_info"
+            message:
+              $ref: "../../schema/device.json#/$defs/param_info"
+            error:
+              $ref: '../openapi.yaml#/components/schemas/SseError'
 
     "500":
       $ref: '../openapi.yaml#/components/responses/InternalServerError'

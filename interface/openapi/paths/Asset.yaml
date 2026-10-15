@@ -39,14 +39,14 @@ get:
       required: true
       description: The slot of the device model to get the value from
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - name: fqoid
       in: path
       required: true
       description: The fully qualified object ID of the asset to get
       schema:
-        $ref: "../../schemata/device.json#/$defs/fqoid"
+        $ref: "../../schema/device.json#/$defs/fqoid"
       example: "image.png"
 
     - name: compression
@@ -58,6 +58,8 @@ get:
         enum: [UNCOMPRESSED, GZIP, DEFLATE]
       example: "UNCOMPRESSED"
 
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   tags:
     - Assets
     
@@ -68,7 +70,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json#/$defs/external_object_payload"
+            $ref: "../../schema/device.json#/$defs/external_object_payload"
             # example: {
             #   "cachable": true,
             #   "payload": {
@@ -120,22 +122,24 @@ post:
       required: true
       description: The slot of the device model to get the value from 
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - name: fqoid
       in: path
       required: true  
       description: The place to store the asset
       schema:
-        $ref: "../../schemata/device.json#/$defs/fqoid"
+        $ref: "../../schema/device.json#/$defs/fqoid"
       example: "image.png"
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
   requestBody:
     required: true
     content:
       application/json:
         schema:
-          $ref: "../../schemata/device.json#/$defs/external_object_payload"
+          $ref: "../../schema/device.json#/$defs/external_object_payload"
 
 
   responses:
@@ -179,22 +183,24 @@ put:
       required: true
       description: The slot of the device model to get the value from 
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - name: fqoid
       in: path
       required: true  
       description: The place to store the asset
       schema:
-        $ref: "../../schemata/device.json#/$defs/fqoid"
+        $ref: "../../schema/device.json#/$defs/fqoid"
       example: "image.png"
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
   requestBody:
     required: true
     content:
       application/json:
         schema:
-          $ref: "../../schemata/device.json#/$defs/external_object_payload"
+          $ref: "../../schema/device.json#/$defs/external_object_payload"
 
   responses:
     "204":
@@ -236,22 +242,24 @@ delete:
       required: true  
       description: The slot of the device model to get the value from 
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - name: fqoid
       in: path      
       required: true
       description: The fully qualified object ID of the asset to delete
       schema:
-        $ref: "../../schemata/device.json#/$defs/fqoid"
+        $ref: "../../schema/device.json#/$defs/fqoid"
       example: "image.png"
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
   
   requestBody:
     required: true
     content:
       application/json:
         schema:
-          $ref: "../../schemata/device.json#/$defs/external_object_payload" 
+          $ref: "../../schema/device.json#/$defs/external_object_payload" 
 
   responses:
     "204":

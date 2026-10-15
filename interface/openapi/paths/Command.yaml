@@ -48,23 +48,27 @@ post:
       required: true
       description: The slot of the device model to get the value from
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - name: fqoid
       in: path
       required: true
       description: The fully qualified object ID of the command to execute
       schema:
-        $ref: "../../schemata/device.json#/$defs/fqoid"
-    
+        $ref: "../../schema/device.json#/$defs/fqoid"
+
     - name: respond
       in: query
       required: false
-      description: flag to suppress the server's response unless set to true
+      description: >-
+        Controls whether the server sends a response body. The server does not
+        respond unless this is explicitly set to true; any other value (or
+        omitting the parameter) results in no response.
       schema:
-        type: string
-        enum: ["true"]
-        default: "true" # because protobuf defaults to false
+        type: boolean
+        default: false
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
   tags:
     - Commands
@@ -75,7 +79,7 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../../schemata/device.json#/$defs/value"
+          $ref: "../../schema/device.json#/$defs/value"
         example: {"float32_value":0.5}
 
 
@@ -88,7 +92,7 @@ post:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json#/$defs/command_response"
+            $ref: "../../schema/device.json#/$defs/command_response"
           example: {"response":{"string_value":"Command executed successfully"}}
 
     "500":

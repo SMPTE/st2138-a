@@ -1,0 +1,27 @@
+# Import target for the device integration case: a definition-only object struct that,
+# once imported, serves as the template source for the device's object params.
+type: STRUCT
+client_hints:
+  st2138_definition_only: "true"
+
+params:
+  field1:
+    type: STRING
+    name:
+      display_strings:
+        en: Field 1
+        fr: Champ 1
+  field2:
+    type: STRING
+    name:
+      display_strings:
+        en: Field 2
+        fr: Champ 2
+
+value:
+  struct_value:
+    fields:
+      field1:
+        string_value: default1
+      field2:
+        string_value: default2

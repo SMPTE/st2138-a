@@ -1,0 +1,11 @@
+# The resolver records the one file it inlined. Its url and dependency edges are
+# written relative to this case directory, and its digest is verified by the step
+# against the bytes on disk (so it isn't pinned here). Its provenance is exactly
+# what the target declares about itself in its leading comments.
+- url: param.on_off.yaml
+  dependencies: []
+  provenance:
+    license: BSD-3-Clause
+    copyright: 2026 SMPTE
+    producer: SMPTE
+    version: 1.0.0

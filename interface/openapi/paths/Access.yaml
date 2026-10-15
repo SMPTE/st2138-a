@@ -35,7 +35,10 @@ get:
 
   tags:
     - Access Management
-    
+
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   responses:
     "200":
       description: |
@@ -44,7 +47,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json#/$defs/connection_status"
+            $ref: "../../schema/device.json#/$defs/connection_status"
           example:
             {
               "connected": true,
@@ -76,12 +79,15 @@ post:
   tags:
     - Access Management
 
+  parameters:
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
+
   requestBody:
     required: true
     content:
       application/json:
         schema:
-          $ref: "../../schemata/device.json#/$defs/revoke_access_payload"
+          $ref: "../../schema/device.json#/$defs/revoke_access_payload"
         example:
           {
             "subject": "user123",
@@ -96,7 +102,7 @@ post:
       content:
         application/json:
           schema:
-            $ref: "../../schemata/device.json#/$defs/revocation_response"
+            $ref: "../../schema/device.json#/$defs/revocation_response"
           example:
             {
               "remaining_subjects": ["user123", "user456"],

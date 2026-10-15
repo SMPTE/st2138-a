@@ -39,15 +39,17 @@ get:
       required: true
       description: The slot of the device model to get the value from
       schema:
-        $ref: "../../schemata/device.json#/$defs/slot"
+        $ref: "../../schema/device.json#/$defs/slot"
 
     - name: fqoid
       in: path
       required: true
       description: The fully qualified object ID of the asset to get
       schema:
-        $ref: "../../schemata/device.json#/$defs/fqoid"
+        $ref: "../../schema/device.json#/$defs/fqoid"
       example: "image.png"
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
   tags:
     - Assets
@@ -61,10 +63,14 @@ get:
         text/event-stream:
           schema:
             type: string
-            example: |
-              data: <stringified ExternalObjectPayload>
-              data: <stringified ExternalObjectPayload>
-      # ExternalObjectPayload doesn't yet have a schema, todo!
+          example: |
+            data: <stringified ExternalObjectPayload>
+            data: <stringified ExternalObjectPayload>
+          x-sse-event-schema:
+            message:
+              $ref: "../../schema/device.json#/$defs/external_object_payload"
+            error:
+              $ref: '../openapi.yaml#/components/schemas/SseError'
           
     "401":
       $ref: '../openapi.yaml#/components/responses/Unauthorized'

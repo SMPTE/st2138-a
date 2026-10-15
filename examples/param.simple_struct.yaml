@@ -18,7 +18,7 @@ params:
       float32_value: 0.0
     constraint:
       type: FLOAT_RANGE
-      float32_range:
+      float_range:
         min_value: -90.0
         max_value: 90.0
 
@@ -32,7 +32,7 @@ params:
       float32_value: 0.0
     constraint:
       type: FLOAT_RANGE
-      float32_range:
+      float_range:
         min_value: -180.0
         max_value: 180.0
 

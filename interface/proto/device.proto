@@ -38,7 +38,7 @@ import "language.proto";
 import "externalobject.proto";
 
 option java_multiple_files = true;
-option java_package = "catena.core.device";
+option java_package = "st2138.core.device";
 option java_outer_classname = "DeviceProtos";
 
 option optimize_for = SPEED;
@@ -94,24 +94,25 @@ message DeviceComponent {
 
   /* A parameter or sub-parameter, or sub-sub-parameter, or ...
    *
-   * These can be arbitrarily nested so a JSON pointer (RFC 6901) is used to
+   * These can be arbitrarily nested so a fully qualified OID is used to
    * locate the component within the data model.
    * This is to allow large parameter trees to be broken into smaller
    * components.
    *
-   * The json_pointer is relative to device["params"].
+   * The OID is relative to device["params"] and does not use a leading
+   * solidus.
    * Let's see how this could be arranged for an audio processing device
    * which has a monitor output mix that has gain and eq controls.
    *
-   * monitor - top level object id. The json_pointer is an object id in this
+   * monitor - top level object id. The OID is a simple object id in this
    * case. The whole multi-level parameter descriptor would form the body
    * of the message.
    *
    * monitor/eq, monitor/level - sub-params of the top-level monitor
-   * parameter. The json_pointer is a cascade of object IDs.
+   * parameter. The OID is a cascade of object IDs.
    * Only the selected sub-param occupies the message body. Note that the eq
    * param is likely an array of 4 objects. Without an index in the
-   * json_pointer, the whole array forms the body of the message.
+   * OID, the whole array forms the body of the message.
    *
    * monitor/eq/1/f, monitor/eq/1/q, monitor/eq/1/gain sub-sub params of
    * eq 2 in the monitor output audio processing.
@@ -124,7 +125,7 @@ message DeviceComponent {
 
    /* A menu.
     * Note that menus are grouped into menu groups. They are uniquely identified
-    * by the json_pointer field which is relative to the Device's top-level
+    * by the OID field which is relative to the Device's top-level
     * menu-groups object thus: menu-group-name/menu-name.
     * example: status/vendor_info */
   message ComponentMenu {
@@ -176,7 +177,7 @@ message RemoveComponents {
      * "types" object. */
     IdList shared_constraints = 4;
     /* Note that menus are grouped into menu groups. They are uniquely identified
-     * by the json_pointer field which is relative to the Device's top-level
+     * by the OID field which is relative to the Device's top-level
      * menu-groups object thus: menu-group-name/menu-name.
      * example: status/vendor_info */
     IdList menus = 5;
@@ -191,6 +192,42 @@ message DeviceRequestPayload {
   string language = 2;                 // Optionally specify the language for the response
   Device.DetailLevel detail_level = 3; // Optionally specify the detail level for the response
   repeated string subscribed_oids = 4; // Optionally specify a subscription list for the device (see UpdateSubscriptionsPayload)
+}
+
+/* Requests a single addressable DeviceComponent by object id.
+ * Generalizes GetParam/LanguagePackRequest to any component kind except the
+ * whole-Device model, which is retrieved via DeviceRequest instead. */
+message GetComponentPayload {
+  /* Selects which component namespace `oid` is resolved against.
+   * Required: oids are only unique within a kind, so the same string may name
+   * both a param and a menu. */
+  enum ComponentKind {
+    UNUSED = 0;         // protobuf requires enums start at 0; not a valid request
+    PARAM = 1;
+    CONSTRAINT = 2;
+    MENU = 3;
+    COMMAND = 4;
+    LANGUAGE_PACK = 5;
+  }
+
+  uint32 slot = 1;      // Uniquely identifies the device at node scope.
+  /* Uniquely identifies the component at device scope, resolved within `kind`.
+   * For LANGUAGE_PACK this carries the language code (e.g. "es"), not an oid. */
+  string oid = 2;
+  ComponentKind kind = 3;
+}
+
+/* Response for GetComponent: the addressable subset of DeviceComponent (i.e.
+ * everything except the whole-Device variant). Field numbers deliberately match
+ * DeviceComponent.kind so the two remain wire-compatible. */
+message ComponentResponse {
+  oneof kind {
+    DeviceComponent.ComponentParam param = 3;
+    DeviceComponent.ComponentConstraint shared_constraint = 4;
+    DeviceComponent.ComponentMenu menu = 5;
+    DeviceComponent.ComponentCommand command = 6;
+    DeviceComponent.ComponentLanguagePack language_pack = 7;
+  }
 }
 
 /* Initial handshake between client and device. */

@@ -32,7 +32,7 @@ syntax = "proto3";
 package st2138;
 
 option java_multiple_files = true;
-option java_package = "catena.core.language";
+option java_package = "st2138.core.language";
 option java_outer_classname = "LanguageProtos";
 
 option optimize_for = SPEED;

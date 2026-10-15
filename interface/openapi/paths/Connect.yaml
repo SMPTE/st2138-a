@@ -39,7 +39,16 @@ get:
       required: false
       description: The level of detail to connect in
       schema:
-        $ref: "../../schemata/device.json#/$defs/detail_level"
+        $ref: "../../schema/device.json#/$defs/detail_level"
+
+    - name: Language-Code
+      in: header
+      required: false
+      description: Optionally specify the language code for the response.
+      schema:
+        $ref: "../../schema/device.json#/$defs/language_code"
+
+    - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
   tags:
     - Updates  
@@ -56,9 +65,12 @@ get:
           schema:
             type: string
           example: |
-            <stringified {"value": {string_value: "Hello, world!"}}>
+            data: <stringified PushUpdates>
           x-sse-event-schema:
-            $ref: "../../schemata/device.json#/$defs/push_updates"
+            message:
+              $ref: "../../schema/device.json#/$defs/push_updates"
+            error:
+              $ref: '../openapi.yaml#/components/schemas/SseError'
     "400":
       $ref: '../openapi.yaml#/components/responses/BadRequest'
     "401":

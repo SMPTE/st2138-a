@@ -11,7 +11,7 @@ value:
   float32_value: 1000.0
 constraint:
   type: FLOAT_RANGE
-  float32_range:
+  float_range:
     min_value: -20.0
     max_value: 20000.0
     display_min: 0.0

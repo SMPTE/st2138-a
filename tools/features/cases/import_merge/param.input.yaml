@@ -1,0 +1,5 @@
+# Integration case root: imports the sibling on/off param and overrides one scalar
+# locally, so the expected artifact proves both inlining and local-wins merge.
+import:
+  url: ./param.on_off.yaml
+minimal_set: false

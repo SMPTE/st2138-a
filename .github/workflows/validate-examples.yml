@@ -1,0 +1,20 @@
+name: Validate Examples
+on:
+  pull_request:
+  push:
+
+jobs:
+  validate-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup tooling
+        uses: ./.github/actions/setup-tooling
+
+      - name: NPM install
+        run: npm ci --prefix tools
+
+      - name: Validate examples
+        run: bash ./examples/validate.sh

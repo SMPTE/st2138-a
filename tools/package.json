@@ -1,23 +1,26 @@
 {
   "dependencies": {
-    "ajv": "^8.12.1",
-    "ajv-formats": "^2.1.1",
-    "json-source-map": "^0.6.1",
-    "protobufjs": "^7.5.3",
-    "yaml": "^2.3.0"
+    "@cyclonedx/cyclonedx-library": "^10.1.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "commander": "^12.1.0",
+    "spdx-expression-parse": "^5.0.0",
+    "yaml": "^2.9.0"
   },
   "engines": {
     "node": ">=20.7.0"
   },
   "scripts": {
-    "test_good": "node validate.js ./data/device.good.yaml || true",
-    "test_bad": "node validate.js ./data/device.bad.yaml || true",
-    "test": "npm run validate.js ./data/device.good.yaml"
+    "test": "jest --coverage",
+    "integration": "cucumber-js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:all": "npm run typecheck && npm run test && npm run integration"
   },
-  "name": "smpte-st2138-a-validator",
+  "name": "smpte-st2138-a-tools",
   "version": "1.0.0",
-  "description": "Validates JSON and YAML files against Catena schemata",
-  "main": "validator.js",
+  "description": "Tooling for SMPTE ST 2138-a device models and parameter descriptors",
+  "main": "src/index.js",
+  "types": "src/types.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SMPTE/st2138-a.git"
@@ -35,11 +38,15 @@
   },
   "homepage": "https://github.com/SMPTE/st2138-a#readme",
   "files": [
-    "validator.js",
-    "validate.js",
-    "data/"
+    "bin/",
+    "src/"
   ],
   "bin": {
-    "st2138-a-validate": "./validate.js"
+    "st2138": "./bin/cli.js"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^13.2.1",
+    "jest": "^30.4.2",
+    "typescript": "^7.0.2"
   }
 }

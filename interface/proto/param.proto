@@ -35,7 +35,7 @@ import "language.proto";
 import "constraint.proto";
 
 option java_multiple_files = true;
-option java_package = "catena.core.parameter";
+option java_package = "st2138.core.parameter";
 option java_outer_classname = "ParamProtos";
 
 option optimize_for = SPEED;
@@ -143,7 +143,7 @@ message Param {
   Import import = 16;
 
   /* Additional OIDs represented by this parameter - used to allow a client to locate a parameter that may have been moved or renamed.
-   * The aliases must be fully-qualified. */
+   * An alias must be unique and must not conflict with any other alias or fully qualified OID (FQOID) */
   repeated string oid_aliases = 17;
 
   /* When true, indicates that the parameter is part of the minimal set of parameters that should be reported by the device */

@@ -1,7 +1,8 @@
 node_modules/
 docs/openapi.yaml
-interface/schemata/device.json
-tools/data/*
+interface/schema/device.json
+tools/src/data/*
+coverage/
 .redocly.yaml
 build/
 *.tgz
