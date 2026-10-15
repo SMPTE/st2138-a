@@ -1,12 +1,22 @@
 openapi: 3.1.0
 info:
-  title: Catena API
-  version: '1.0'
+  title: ST2138 API
+  version: v1.1.0-pre-fcd
   license:
     name: BSD-3-Clause
     url: https://opensource.org/licenses/BSD-3-Clause
 servers:
-  - url: https://device.catenamedia.tv:443/st2138-api/v1
+  - url: '{protocol}://{host}/st2138-api/v1'
+    variables:
+      protocol:
+        default: https
+        enum:
+          - https
+          - http
+        description: Transport scheme. Use http only for local, non-TLS testing.
+      host:
+        default: device.example.com
+        description: Hostname (or host:port) of the ST2138-conformant device. This value is implementation-defined; the default shown here is a non-functional placeholder and must be replaced by the implementer.
 security:
   - oauth2:
       - st2138:op
@@ -19,13 +29,15 @@ security:
 paths:
   /health:
     get:
-      summary: Checks the health of a Catena REST service
+      summary: Checks the health of a ST2138 REST service
       operationId: Health
       tags:
         - Discovery
+      parameters:
+        - $ref: '#/components/parameters/RequestStart'
       responses:
         '200':
-          description: Indicates that the Catena REST service is healthy
+          description: Indicates that the ST2138 REST service is healthy
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -43,6 +55,8 @@ paths:
       operationId: Devices
       tags:
         - Discovery
+      parameters:
+        - $ref: '#/components/parameters/RequestStart'
       responses:
         '200':
           description: A list of the slot numbers that are occupied by a device
@@ -86,6 +100,13 @@ paths:
           description: The level of detail to request the device in
           schema:
             $ref: '#/components/schemas/detail_level'
+        - name: Language-Code
+          in: header
+          required: false
+          description: Optionally specify the language code for the response.
+          schema:
+            $ref: '#/components/schemas/language_code'
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Discovery
       responses:
@@ -134,6 +155,13 @@ paths:
           description: The level of detail to request the device in
           schema:
             $ref: '#/components/schemas/detail_level'
+        - name: Language-Code
+          in: header
+          required: false
+          description: Optionally specify the language code for the response.
+          schema:
+            $ref: '#/components/schemas/language_code'
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Discovery
       responses:
@@ -151,19 +179,32 @@ paths:
                 data: <stringified ComponentConstraint>
                 data: <more DeviceComponents>
               x-sse-event-schema:
-                title: Device Component
-                description: |
-                  The device model can be broken into smaller components: parameters,
-                  commands, menus, etc. The entire device model can be sent as a single
-                  component.
-                type: object
-                oneOf:
-                  - $ref: '#/components/schemas/device'
-                  - $ref: '#/components/schemas/component_param'
-                  - $ref: '#/components/schemas/component_command'
-                  - $ref: '#/components/schemas/component_menu'
-                  - $ref: '#/components/schemas/component_constraint'
-                  - $ref: '#/components/schemas/component_language_pack'
+                message:
+                  title: Device Component
+                  description: |
+                    The device model can be broken into smaller components: parameters,
+                    commands, menus, etc. The entire device model can be sent as a single
+                    component.
+                  type: object
+                  oneOf:
+                    - $ref: '#/components/schemas/device'
+                    - $ref: '#/components/schemas/component_param'
+                    - $ref: '#/components/schemas/component_command'
+                    - $ref: '#/components/schemas/component_menu'
+                    - $ref: '#/components/schemas/component_constraint'
+                    - $ref: '#/components/schemas/component_language_pack'
+                error:
+                  type: object
+                  description: An error event sent in an SSE stream when an error occurs after HTTP headers have already been sent. Carried as an SSE event with event type "error".
+                  required:
+                    - code
+                  properties:
+                    code:
+                      type: integer
+                      description: The HTTP status code that would have been returned
+                    message:
+                      type: string
+                      description: A human-readable error message. Optional because servers may omit or generalize this field in production to avoid exposing internal details.
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -205,12 +246,11 @@ paths:
         - name: respond
           in: query
           required: false
-          description: flag to suppress the server's response unless set to true
+          description: Controls whether the server sends a response body. The server does not respond unless this is explicitly set to true; any other value (or omitting the parameter) results in no response.
           schema:
-            type: string
-            enum:
-              - 'true'
-            default: 'true'
+            type: boolean
+            default: false
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Commands
       requestBody:
@@ -276,12 +316,11 @@ paths:
         - name: respond
           in: query
           required: false
-          description: flag to suppress the server's response unless set to true
+          description: Controls whether the server sends a response body. The server does not respond unless this is explicitly set to true; any other value (or omitting the parameter) results in no response.
           schema:
-            type: string
-            enum:
-              - 'true'
-            default: 'true'
+            type: boolean
+            default: false
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Commands
       requestBody:
@@ -301,7 +340,6 @@ paths:
             content, just the status code.
             The response is a sequence of stringified JSON objects, each containing
             a single command response.
-            Each object in the stream has the following structure:
           content:
             text/event-stream:
               schema:
@@ -311,32 +349,92 @@ paths:
                 data: <stringified {"response":{"string_value":"Command executed successfully"}}>
                 data: <stringified {"exception":{"type":"Invalid Command","error_message":"Error message","details":"Something went wrong"}}>
               x-sse-event-schema:
-                title: Command Response
-                description: |
-                  Possible responses to a command.
-                type: object
-                oneOf:
-                  - type: object
-                    properties:
-                      no_response:
-                        $ref: '#/components/schemas/empty'
-                    required:
-                      - no_response
-                    additionalProperties: false
-                  - type: object
-                    properties:
-                      response:
-                        $ref: '#/components/schemas/value'
-                    required:
-                      - response
-                    additionalProperties: false
-                  - type: object
-                    properties:
-                      exception:
-                        $ref: '#/components/schemas/exception'
-                    required:
-                      - exception
-                    additionalProperties: false
+                message:
+                  title: Command Response
+                  description: |
+                    Possible responses to a command.
+                  type: object
+                  oneOf:
+                    - type: object
+                      properties:
+                        no_response:
+                          $ref: '#/components/schemas/empty'
+                      required:
+                        - no_response
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        response:
+                          $ref: '#/components/schemas/value'
+                      required:
+                        - response
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        exception:
+                          $ref: '#/components/schemas/exception'
+                      required:
+                        - exception
+                      additionalProperties: false
+                error:
+                  type: object
+                  description: An error event sent in an SSE stream when an error occurs after HTTP headers have already been sent. Carried as an SSE event with event type "error".
+                  required:
+                    - code
+                  properties:
+                    code:
+                      type: integer
+                      description: The HTTP status code that would have been returned
+                    message:
+                      type: string
+                      description: A human-readable error message. Optional because servers may omit or generalize this field in production to avoid exposing internal details.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /{slot}/component/{kind}/{fqoid}:
+    get:
+      summary: Retrieves a component descriptor from the device model.
+      operationId: Component
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          description: The slot of the device model containing the component to retrieve.
+          schema:
+            $ref: '#/components/schemas/slot'
+        - name: kind
+          in: path
+          required: true
+          description: The kind of the component within the device model.
+          schema:
+            $ref: '#/components/schemas/component_kind'
+        - name: fqoid
+          in: path
+          required: true
+          description: The fully qualified path to the component within the device model. For LANGUAGE_PACK components this parameter is overloaded to instead carry the ISO 639-1 language code identifying the desired language pack.
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/fqoid'
+              - $ref: '#/components/schemas/language_code'
+        - $ref: '#/components/parameters/RequestStart'
+      tags:
+        - Components
+      responses:
+        '200':
+          description: The component descriptor specified by `fqoid` within the device model.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/component_response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -376,6 +474,7 @@ paths:
               - GZIP
               - DEFLATE
           example: UNCOMPRESSED
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Assets
       responses:
@@ -422,6 +521,7 @@ paths:
           schema:
             $ref: '#/components/schemas/fqoid'
           example: image.png
+        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -467,6 +567,7 @@ paths:
           schema:
             $ref: '#/components/schemas/fqoid'
           example: image.png
+        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -512,6 +613,7 @@ paths:
           schema:
             $ref: '#/components/schemas/fqoid'
           example: image.png
+        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -549,6 +651,7 @@ paths:
           schema:
             $ref: '#/components/schemas/fqoid'
           example: image.png
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Assets
       responses:
@@ -560,9 +663,36 @@ paths:
             text/event-stream:
               schema:
                 type: string
-                example: |
-                  data: <stringified ExternalObjectPayload>
-                  data: <stringified ExternalObjectPayload>
+              example: |
+                data: <stringified ExternalObjectPayload>
+                data: <stringified ExternalObjectPayload>
+              x-sse-event-schema:
+                message:
+                  title: External Object Payload
+                  description: |
+                    How assets/external objects are sent to the client.
+                  type: object
+                  properties:
+                    cachable:
+                      type: boolean
+                      default: false
+                    payload:
+                      $ref: '#/components/schemas/data_payload'
+                  required:
+                    - payload
+                  additionalProperties: false
+                error:
+                  type: object
+                  description: An error event sent in an SSE stream when an error occurs after HTTP headers have already been sent. Carried as an SSE event with event type "error".
+                  required:
+                    - code
+                  properties:
+                    code:
+                      type: integer
+                      description: The HTTP status code that would have been returned
+                    message:
+                      type: string
+                      description: A human-readable error message. Optional because servers may omit or generalize this field in production to avoid exposing internal details.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -590,6 +720,7 @@ paths:
           description: Fully qualified OID of the parameter to get info for
           schema:
             $ref: '#/components/schemas/fqoid'
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
         - Subscriptions
@@ -644,6 +775,7 @@ paths:
           description: The prefix of the OID to get info for
           schema:
             $ref: '#/components/schemas/fqoid'
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
         - Subscriptions
@@ -662,19 +794,32 @@ paths:
                 data: <stringified {info: ParamInfo, array_length: 1}>
                 data: <stringified {info: ParamInfo, array_length: 2}>
               x-sse-event-schema:
-                title: Param Info
-                description: |
-                  Information about a parameter - it's id and descriptor.
-                type: object
-                properties:
-                  oid:
-                    $ref: '#/components/schemas/fqoid'
-                  param:
-                    $ref: '#/components/schemas/param'
-                required:
-                  - oid
-                  - param
-                additionalProperties: false
+                message:
+                  title: Param Info
+                  description: |
+                    Information about a parameter - it's id and descriptor.
+                  type: object
+                  properties:
+                    oid:
+                      $ref: '#/components/schemas/fqoid'
+                    param:
+                      $ref: '#/components/schemas/param'
+                  required:
+                    - oid
+                    - param
+                  additionalProperties: false
+                error:
+                  type: object
+                  description: An error event sent in an SSE stream when an error occurs after HTTP headers have already been sent. Carried as an SSE event with event type "error".
+                  required:
+                    - code
+                  properties:
+                    code:
+                      type: integer
+                      description: The HTTP status code that would have been returned
+                    message:
+                      type: string
+                      description: A human-readable error message. Optional because servers may omit or generalize this field in production to avoid exposing internal details.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -704,6 +849,7 @@ paths:
             type: boolean
           style: form
           explode: false
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
         - Subscriptions
@@ -722,19 +868,32 @@ paths:
                 data: <stringified {info: ParamInfo, array_length: 1}>
                 data: <stringified {info: ParamInfo, array_length: 2}>
               x-sse-event-schema:
-                title: Param Info
-                description: |
-                  Information about a parameter - it's id and descriptor.
-                type: object
-                properties:
-                  oid:
-                    $ref: '#/components/schemas/fqoid'
-                  param:
-                    $ref: '#/components/schemas/param'
-                required:
-                  - oid
-                  - param
-                additionalProperties: false
+                message:
+                  title: Param Info
+                  description: |
+                    Information about a parameter - it's id and descriptor.
+                  type: object
+                  properties:
+                    oid:
+                      $ref: '#/components/schemas/fqoid'
+                    param:
+                      $ref: '#/components/schemas/param'
+                  required:
+                    - oid
+                    - param
+                  additionalProperties: false
+                error:
+                  type: object
+                  description: An error event sent in an SSE stream when an error occurs after HTTP headers have already been sent. Carried as an SSE event with event type "error".
+                  required:
+                    - code
+                  properties:
+                    code:
+                      type: integer
+                      description: The HTTP status code that would have been returned
+                    message:
+                      type: string
+                      description: A human-readable error message. Optional because servers may omit or generalize this field in production to avoid exposing internal details.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -762,6 +921,7 @@ paths:
           description: Fully qualified OID of the parameter to get info for
           schema:
             $ref: '#/components/schemas/fqoid'
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
       responses:
@@ -810,6 +970,7 @@ paths:
           description: Fully qualified OID of the parameter to get info for
           schema:
             $ref: '#/components/schemas/fqoid'
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
       requestBody:
@@ -855,6 +1016,7 @@ paths:
           description: The slot of the device model containing the parameters to get info for
           schema:
             $ref: '#/components/schemas/slot'
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
       requestBody:
@@ -916,6 +1078,7 @@ paths:
           description: The slot of the device model containing the subscriptions to get
           schema:
             $ref: '#/components/schemas/slot'
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Subscriptions
         - Parameters
@@ -976,6 +1139,7 @@ paths:
           description: The slot of the device model containing the subscriptions to update
           schema:
             $ref: '#/components/schemas/slot'
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
         - Subscriptions
@@ -1026,6 +1190,7 @@ paths:
           description: The slot of the device model containing the parameters to get info for
           schema:
             $ref: '#/components/schemas/slot'
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Subscriptions
         - Parameters
@@ -1040,6 +1205,33 @@ paths:
                 data: <stringified ComponentParam>
                 data: <stringified ComponentParam>
                 data: <stringified ComponentParam>
+              x-sse-event-schema:
+                message:
+                  title: Component Param
+                  description: |
+                    A top-level parameter descriptor plus its oid.
+                    type: object
+                  properties:
+                    oid:
+                      $ref: '#/components/schemas/simple_oid'
+                    param:
+                      $ref: '#/components/schemas/param'
+                  required:
+                    - oid
+                    - param
+                  additionalProperties: false
+                error:
+                  type: object
+                  description: An error event sent in an SSE stream when an error occurs after HTTP headers have already been sent. Carried as an SSE event with event type "error".
+                  required:
+                    - code
+                  properties:
+                    code:
+                      type: integer
+                      description: The HTTP status code that would have been returned
+                    message:
+                      type: string
+                      description: A human-readable error message. Optional because servers may omit or generalize this field in production to avoid exposing internal details.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1068,6 +1260,7 @@ paths:
           schema:
             $ref: '#/components/schemas/fqoid'
           example: text_box
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Parameters
       responses:
@@ -1111,6 +1304,13 @@ paths:
           description: The level of detail to connect in
           schema:
             $ref: '#/components/schemas/detail_level'
+        - name: Language-Code
+          in: header
+          required: false
+          description: Optionally specify the language code for the response.
+          schema:
+            $ref: '#/components/schemas/language_code'
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Updates
       responses:
@@ -1125,24 +1325,37 @@ paths:
               schema:
                 type: string
               example: |
-                <stringified {"value": {string_value: "Hello, world!"}}>
+                data: <stringified PushUpdates>
               x-sse-event-schema:
-                title: Push Updates
-                description: |
-                  Asynchronous updates of various types to the client.
-                allOf:
-                  - $ref: '#/components/schemas/with_slot'
-                  - oneOf:
-                      - $ref: '#/components/schemas/push_value'
-                      - $ref: '#/components/schemas/push_device_component'
-                      - $ref: '#/components/schemas/push_exception'
-                      - $ref: '#/components/schemas/push_invalidated_external_object_id'
-                      - $ref: '#/components/schemas/push_trap_message'
-                      - $ref: '#/components/schemas/push_invalidate_device_model'
-                      - $ref: '#/components/schemas/push_external_object'
-                      - $ref: '#/components/schemas/push_remove_device_components'
-                      - $ref: '#/components/schemas/push_slots_added'
-                      - $ref: '#/components/schemas/push_slots_removed'
+                message:
+                  title: Push Updates
+                  description: |
+                    Asynchronous updates of various types to the client.
+                  allOf:
+                    - $ref: '#/components/schemas/with_slot'
+                    - oneOf:
+                        - $ref: '#/components/schemas/push_value'
+                        - $ref: '#/components/schemas/push_device_component'
+                        - $ref: '#/components/schemas/push_exception'
+                        - $ref: '#/components/schemas/push_invalidated_external_object_id'
+                        - $ref: '#/components/schemas/push_trap_message'
+                        - $ref: '#/components/schemas/push_invalidate_device_model'
+                        - $ref: '#/components/schemas/push_external_object'
+                        - $ref: '#/components/schemas/push_remove_device_components'
+                        - $ref: '#/components/schemas/push_slots_added'
+                        - $ref: '#/components/schemas/push_slots_removed'
+                error:
+                  type: object
+                  description: An error event sent in an SSE stream when an error occurs after HTTP headers have already been sent. Carried as an SSE event with event type "error".
+                  required:
+                    - code
+                  properties:
+                    code:
+                      type: integer
+                      description: The HTTP status code that would have been returned
+                    message:
+                      type: string
+                      description: A human-readable error message. Optional because servers may omit or generalize this field in production to avoid exposing internal details.
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1174,6 +1387,7 @@ paths:
             type: string
             default: en
           example: es
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Languages
       responses:
@@ -1221,6 +1435,7 @@ paths:
             type: string
             default: ''
           example: fr
+        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -1273,6 +1488,7 @@ paths:
             type: string
             default: en
             example: fr
+        - $ref: '#/components/parameters/RequestStart'
       responses:
         '204':
           description: Empty response - everything is OK
@@ -1313,6 +1529,7 @@ paths:
             type: string
             default: en
             example: fr
+        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -1360,6 +1577,7 @@ paths:
           schema:
             $ref: '#/components/schemas/slot'
           example: 1
+        - $ref: '#/components/parameters/RequestStart'
       tags:
         - Languages
       responses:
@@ -1394,6 +1612,8 @@ paths:
       operationId: RefreshToken
       tags:
         - Access Management
+      parameters:
+        - $ref: '#/components/parameters/RequestStart'
       responses:
         '200':
           description: |
@@ -1424,6 +1644,8 @@ paths:
             - st2138:adm:w
       tags:
         - Access Management
+      parameters:
+        - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
         content:
@@ -1459,35 +1681,19 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 components:
-  responses:
-    NotFound:
-      description: The requested resource was not found
-    BadRequest:
-      description: Bad Request - Invalid input parameters or malformed request
-    Unauthorized:
-      description: Unauthorized, access token is either missing or invalid
-    Forbidden:
-      description: Forbidden, insufficient permission for access
-    InternalServerError:
-      description: An error occurred while processing the request
-    ServiceUnavailable:
-      description: The service is temporarily unavailable
-  securitySchemes:
-    oauth2:
-      type: oauth2
-      flows:
-        clientCredentials:
-          tokenUrl: https://device.catenamedia.tv/api/v1/oauth2/token
-          scopes:
-            st2138:op: Read only access to operate a device
-            st2138:op:w: Read and write access to operate a device
-            st2138:cfg: Read only access to configure a device
-            st2138:cfg:w: Read and write access to configure a device
-            st2138:adm: Read only access to administer a device
-            st2138:adm:w: Read and write access to administer a device
-            st2138:mon: Read only access to monitor a device
-            st2138:mon:w: Read and write access to monitor a device
   schemas:
+    SseError:
+      type: object
+      description: An error event sent in an SSE stream when an error occurs after HTTP headers have already been sent. Carried as an SSE event with event type "error".
+      required:
+        - code
+      properties:
+        code:
+          type: integer
+          description: The HTTP status code that would have been returned
+        message:
+          type: string
+          description: A human-readable error message. Optional because servers may omit or generalize this field in production to avoid exposing internal details.
     slot:
       title: Slot
       description: |
@@ -1550,18 +1756,37 @@ components:
               title: NONE
             - const: 5
               title: UNSET
-    access_scope:
-      title: Access Scope
+    language_code:
+      title: ISO 639-1 Language Code (well, almost)
       description: |
-        The parameter's access scope. If not present, the parameter's parent's
-        access scope is used unless the parameter is a top-level one, in which
-        case the device's default access scope is used.
+        A (likely) valid ISO 639-1 language code.
+      $comment: |
+        There may be a published reference we can use instead of inlining this here.
+        The regex forces the language code to be in the format of a ISO 639-1
+        language code, but it will also allow invalid codes such as "zz-ZZ" to
+        be used.
+      type: string
+      pattern: ^[a-z]{2}(-[A-Z]{2})?$
+      default: ''
+    access_scopes_enum:
+      title: Access Scopes Enum
+      description: |
+        The set of access scopes recognized by ST 2138.
       type: string
       enum:
         - st2138:mon
         - st2138:op
         - st2138:cfg
         - st2138:adm
+    access_scope:
+      title: Access Scope
+      description: |
+        The parameter's access scope. If not present, the parameter's parent's
+        access scope is used unless the parameter is a top-level one, in which
+        case the device's default access scope is used.
+      anyOf:
+        - $ref: '#/components/schemas/access_scopes_enum'
+        - type: string
     int32:
       title: INT32
       description: Defines INT32 as a primitive number type
@@ -1755,6 +1980,215 @@ components:
                   - alarms
                 additionalProperties: false
             additionalProperties: false
+    float32:
+      title: FLOAT32
+      description: Defines FLOAT32 as a primitive number type
+      type: number
+      minimum: -3.4028234663852886e+38
+      maximum: 3.4028234663852886e+38
+      default: 0
+    float32_constraint:
+      title: FLOAT32 Constraint
+      description: |
+        There is currently only one constraint type for FLOAT32, FLOAT_RANGE.
+        The intent of this schema is to allow for future expansion of constraint types.
+      type: object
+      allOf:
+        - if:
+            type: object
+            properties:
+              type:
+                const: FLOAT_RANGE
+          then:
+            type: object
+            properties:
+              type:
+                const: FLOAT_RANGE
+              float_range:
+                type: object
+                properties:
+                  min_value:
+                    $ref: '#/components/schemas/float32'
+                  max_value:
+                    $ref: '#/components/schemas/float32'
+                  step:
+                    $ref: '#/components/schemas/float32'
+                  display_min:
+                    $ref: '#/components/schemas/float32'
+                  display_max:
+                    $ref: '#/components/schemas/float32'
+                required:
+                  - min_value
+                  - max_value
+                additionalProperties: false
+            additionalProperties: false
+    string_choice:
+      title: STRING_CHOICE Constraint
+      description: |
+        Maps strings intended for use in pick-lists to string values.
+        Not multi-lingual.
+        Has a flag, strict, that if true, will only allow values that are in the choices array.
+        If false, will allow any string value.
+      type: object
+      properties:
+        choices:
+          type: array
+          items:
+            type: string
+        strict:
+          type: boolean
+          default: false
+      required:
+        - choices
+      additionalProperties: false
+    string_string_choice:
+      title: STRING_STRING_CHOICE Constraint
+      description: |
+        Maps strings intended for use in pick-lists to string values.
+        Has a flag, strict, that if true, will only allow values that are in the choices array.
+        If false, will allow any string value.
+        Has multi-language support.
+      type: object
+      properties:
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              name:
+                $ref: '#/components/schemas/polyglot_text'
+            required:
+              - name
+              - value
+            additionalProperties: false
+        strict:
+          type: boolean
+          default: false
+      required:
+        - choices
+      additionalProperties: false
+    formatted_string:
+      title: FORMATTED_STRING Constraint
+      description: |
+        Constrains a string to a named format from the JSON Schema format
+        vocabulary below (or "regex" for a custom pattern). As with the choice
+        constraints, strict turns the constraint on or off: when true the value
+        must conform to format (and regex); when false the format is advisory
+        and any string is accepted.
+      type: object
+      properties:
+        format:
+          title: String Format
+          description: |
+            The expected format. The enumerated values are the formats defined by
+            the JSON Schema Validation specification (Draft 2020-12), plus "regex"
+            to match the value against the regex field. There is no canonical
+            machine-readable list to reference, so the names are enumerated here.
+          type: string
+          enum:
+            - date-time
+            - date
+            - time
+            - duration
+            - email
+            - idn-email
+            - hostname
+            - idn-hostname
+            - ipv4
+            - ipv6
+            - uri
+            - uri-reference
+            - iri
+            - iri-reference
+            - uuid
+            - uri-template
+            - json-pointer
+            - relative-json-pointer
+            - regex
+        regex:
+          title: Regular Expression
+          description: |
+            A regular expression the string must match. Required when format is
+            "regex"; otherwise optional, e.g. to further constrain a custom
+            format when strict is false.
+          type: string
+          format: regex
+        strict:
+          title: Strict
+          description: |
+            Turns the constraint on or off. When true the value must conform to
+            format (and regex); when false the format is advisory and any string
+            is accepted.
+          type: boolean
+          default: false
+      required:
+        - format
+      additionalProperties: false
+      if:
+        properties:
+          format:
+            const: regex
+        required:
+          - format
+      then:
+        properties:
+          regex:
+            type: string
+            format: regex
+        required:
+          - regex
+    string_constraint:
+      title: STRING Constraint
+      description: Provides two ways of constraining a string value to a set of choices
+      type: object
+      allOf:
+        - if:
+            type: object
+            properties:
+              type:
+                const: STRING_CHOICE
+          then:
+            type: object
+            properties:
+              type:
+                const: STRING_CHOICE
+              string_choice:
+                $ref: '#/components/schemas/string_choice'
+            required:
+              - string_choice
+            additionalProperties: false
+        - if:
+            type: object
+            properties:
+              type:
+                const: STRING_STRING_CHOICE
+          then:
+            type: object
+            properties:
+              type:
+                const: STRING_STRING_CHOICE
+              string_string_choice:
+                $ref: '#/components/schemas/string_string_choice'
+            required:
+              - string_string_choice
+            additionalProperties: false
+        - if:
+            type: object
+            properties:
+              type:
+                const: FORMATTED_STRING
+          then:
+            type: object
+            properties:
+              type:
+                const: FORMATTED_STRING
+              formatted_string:
+                $ref: '#/components/schemas/formatted_string'
+            required:
+              - formatted_string
+            additionalProperties: false
     constraint:
       title: Constraint to define the parameter's allowed values
       description: Polymorphic depending on the type of constraint applied
@@ -1777,6 +2211,7 @@ components:
                 - FLOAT_RANGE
                 - STRING_CHOICE
                 - STRING_STRING_CHOICE
+                - FORMATTED_STRING
               default: UNDEFINED
             - type: integer
               enum:
@@ -1787,6 +2222,7 @@ components:
                 - 6
                 - 7
                 - 8
+                - 9
               default: 0
               examples:
                 - 0
@@ -1796,6 +2232,7 @@ components:
                 - 6
                 - 7
                 - 8
+                - 9
               oneOf:
                 - const: 0
                   title: UNDEFINED
@@ -1811,10 +2248,14 @@ components:
                   title: STRING_CHOICE
                 - const: 8
                   title: STRING_STRING_CHOICE
+                - const: 9
+                  title: FORMATTED_STRING
       required:
         - type
-      oneOf:
+      allOf:
         - $ref: '#/components/schemas/int32_constraint'
+        - $ref: '#/components/schemas/float32_constraint'
+        - $ref: '#/components/schemas/string_constraint'
     language_pack:
       title: Language Pack
       description: |
@@ -1832,14 +2273,29 @@ components:
             A map of string identifiers to strings.
           additionalProperties:
             type: string
+    fqoid:
+      title: Fully Qualified OID
+      description: |
+        A fully qualified OID is used to uniquely locate a specific item in the
+        device model, and elements of array type objects.
+        It is composed of segments of two types, separated by a solidus.
+        - simple OIDs
+        - array indices
+        - the one-past-the-end index indicated by '-', only valid at the end of
+        the fqoid
+        A leading solidus is not used.
+        An additional restriction is that the last segment cannot be 'stream'
+        because the REST API uses this after the fqoid in the path as a Parameter
+        to indicate that the response is a stream of SSEs.
+      type: string
+      pattern: ^(?!.*\.)(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}(?:/(?:(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\d{0,14}|[1-8]\d{15}))){0,29}(?:/(?:(?!stream$)[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\d{0,14}|[1-8]\d{15})|-))?$
     oid_list:
       title: OID List
       description: |
         A list of fully qualified OIDs.
       type: array
       items:
-        type: string
-        format: json-pointer
+        $ref: '#/components/schemas/fqoid'
     client_hints:
       title: Client Hints
       description: |
@@ -1964,13 +2420,6 @@ components:
           precision: false
           max_length: false
           total_length: false
-    float32:
-      title: FLOAT32
-      description: Defines FLOAT32 as a primitive number type
-      type: number
-      minimum: -3.4028234663852886e+38
-      maximum: 3.4028234663852886e+38
-      default: 0
     float32_value:
       title: FLOAT32 Value
       description: Defines FLOAT32 as a primitive number type
@@ -1981,41 +2430,6 @@ components:
       required:
         - float32_value
       additionalProperties: false
-    float32_constraint:
-      title: FLOAT32 Constraint
-      description: |
-        There is currently only one constraint type for FLOAT32, FLOAT_RANGE.
-        The intent of this schema is to allow for future expansion of constraint types.
-      type: object
-      allOf:
-        - if:
-            type: object
-            properties:
-              type:
-                const: FLOAT_RANGE
-          then:
-            type: object
-            properties:
-              type:
-                const: FLOAT_RANGE
-              float32_range:
-                type: object
-                properties:
-                  min_value:
-                    $ref: '#/components/schemas/float32'
-                  max_value:
-                    $ref: '#/components/schemas/float32'
-                  step:
-                    $ref: '#/components/schemas/float32'
-                  display_min:
-                    $ref: '#/components/schemas/float32'
-                  display_max:
-                    $ref: '#/components/schemas/float32'
-                required:
-                  - min_value
-                  - max_value
-                additionalProperties: false
-            additionalProperties: false
     apply_float32:
       title: FLOAT specialism
       description: Applies FLOAT32 values & constraints, disables properties that don't work with this type
@@ -2045,86 +2459,6 @@ components:
       required:
         - string_value
       additionalProperties: false
-    string_choice:
-      title: STRING_CHOICE Constraint
-      description: |
-        Maps strings intended for use in pick-lists to string values.
-        Not multi-lingual.
-        Has a flag, strict, that if true, will only allow values that are in the choices array.
-        If false, will allow any string value.
-      type: object
-      properties:
-        choices:
-          type: array
-          items:
-            type: string
-        strict:
-          type: boolean
-          default: false
-      required:
-        - choices
-      additionalProperties: false
-    string_string_choice:
-      title: STRING_STRING_CHOICE Constraint
-      description: |
-        Maps strings intended for use in pick-lists to string values.
-        Has a flag, strict, that if true, will only allow values that are in the choices array.
-        If false, will allow any string value.
-        Has multi-language support.
-      type: object
-      properties:
-        choices:
-          type: array
-          items:
-            type: object
-            properties:
-              value:
-                type: string
-              name:
-                $ref: '#/components/schemas/polyglot_text'
-            required:
-              - name
-              - value
-            additionalProperties: false
-        strict:
-          type: boolean
-          default: false
-      required:
-        - choices
-      additionalProperties: false
-    string_constraint:
-      title: STRING Constraint
-      description: Provides two ways of constraining a string value to a set of choices
-      type: object
-      allOf:
-        - if:
-            type: object
-            properties:
-              type:
-                const: STRING_CHOICE
-          then:
-            type: object
-            properties:
-              type:
-                const: STRING_CHOICE
-              string_choice:
-                $ref: '#/components/schemas/string_choice'
-            required:
-              - string_choice
-            additionalProperties: false
-        - if:
-            type: object
-            properties:
-              type:
-                const: STRING_STRING_CHOICE
-          then:
-            type: object
-            properties:
-              type:
-                const: STRING_STRING_CHOICE
-              string_string_choice:
-                $ref: '#/components/schemas/string_string_choice'
-            additionalProperties: false
     apply_string:
       title: STRING specialism
       description: Applies STRING values & constraints, disables properties that don't work with this type
@@ -2195,17 +2529,13 @@ components:
         Says which variant of the struct is being used and the value of that variant.
       type: object
       properties:
-        struct_variant_value:
-          type: object
-          properties:
-            struct_variant_type:
-              $ref: '#/components/schemas/simple_oid'
-            value:
-              $ref: '#/components/schemas/value'
-          required:
-            - struct_variant_type
-            - value
-          additionalProperties: false
+        struct_variant_type:
+          $ref: '#/components/schemas/simple_oid'
+        value:
+          $ref: '#/components/schemas/value'
+      required:
+        - struct_variant_type
+        - value
       additionalProperties: false
     apply_struct_variant:
       title: STRUCT_VARIANT specialism
@@ -2219,7 +2549,13 @@ components:
         type: object
         properties:
           value:
-            $ref: '#/components/schemas/struct_variant_value'
+            type: object
+            properties:
+              struct_variant_value:
+                $ref: '#/components/schemas/struct_variant_value'
+            required:
+              - struct_variant_value
+            additionalProperties: false
           constraint: false
           precision: false
           max_length: false
@@ -2648,9 +2984,7 @@ components:
     template_oid:
       title: Template OID
       description: The fully qualified OID of the template that this parameter is based on.
-      type: string
-      format: json-pointer
-      default: ''
+      $ref: '#/components/schemas/fqoid'
     read_only:
       title: Read Only flag
       description: If true, the parameter is read-only
@@ -2792,11 +3126,12 @@ components:
         - $ref: '#/components/schemas/apply_struct_variant_array'
         - $ref: '#/components/schemas/apply_data'
     device:
+      $id: https://smpte.github.io/st2138-a/v1.1.0-pre-fcd/interface/schema/device.yaml
       $schema: https://json-schema.org/draft/2020-12/schema
       title: Schema for Catena's Device Model
       description: |
         Intended to assist humans to author Catena device models as JSON files as
-        some IDEs can use schemata such as this one to lint models.
+        some IDEs can use schema such as this one to lint models.
       type: object
       properties:
         params:
@@ -2822,6 +3157,10 @@ components:
         menu_groups:
           $ref: '#/components/schemas/menu_groups'
       additionalProperties: false
+      required:
+        - slot
+        - access_scopes
+        - default_scope
     component_param:
       title: Component Param
       description: |
@@ -2850,22 +3189,6 @@ components:
         - oid
         - command
       additionalProperties: false
-    fqoid:
-      title: Fully Qualified OID
-      description: |
-        A fully qualified OID is used to uniquely locate a specific item in the
-        device model, and elements of array type objects.
-        It is a "headless" json-pointer with the leading solidus implied.
-        It is composed of segments of two types, separated by a solidus.
-        - simple OIDs
-        - array indices
-        - the one-past-the-end index indicated by '-', only valid at the end of
-        the fqoid
-        An additional restriction is that the last segment cannot be 'stream'
-        because the REST API uses this after the fqoid in the path as a Parameter
-        to indicate that the response is a stream of SSEs.
-      type: string
-      pattern: ^(?!.*\.)(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}(?:/(?:(?!stream(?:$|/))[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\d{0,14}|[1-8]\d{15}))){0,29}(?:/(?:(?!stream$)[A-Za-z][A-Za-z0-9_]{0,30}|(?:0|[1-9]\d{0,14}|[1-8]\d{15})|-))?$
     component_menu:
       title: Component Menu
       description: |
@@ -3140,18 +3463,6 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/fqoid'
-    language_code:
-      title: ISO 639-1 Language Code (well, almost)
-      description: |
-        A (likely) valid ISO 639-1 language code.
-      $comment: |
-        There may be a published reference we can use instead of inlining this here.
-        The regex forces the language code to be in the format of a ISO 639-1
-        language code, but it will also allow invalid codes such as "zz-ZZ" to
-        be used.
-      type: string
-      pattern: ^[a-z]{2}(-[A-Z]{2})?$
-      default: ''
     push_remove_device_components:
       title: Push Remove Device Components
       description: |
@@ -3239,14 +3550,14 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/access_scope'
+      uniqueItems: true
     default_scope:
       title: Default Scope
       description: |
         The default scope for the device.
         Objects in the model will have this access scope unless overridden
         explicitly, or implicitly by inheritance
-      type: string
-      default: ''
+      $ref: '#/components/schemas/access_scope'
     multi_set_enabled:
       title: Multi Set Enabled Flag
       description: |
@@ -3312,6 +3623,57 @@ components:
               $ref: '#/components/schemas/exception'
           required:
             - exception
+          additionalProperties: false
+    component_kind:
+      title: Component Kind
+      description: |
+        The kind of a component within the device model.
+      type: string
+      enum:
+        - PARAM
+        - COMMAND
+        - MENU
+        - CONSTRAINT
+        - LANGUAGE_PACK
+    component_response:
+      title: Component Response
+      description: |
+        The response of a component within the device model.
+      oneOf:
+        - type: object
+          properties:
+            param:
+              $ref: '#/components/schemas/component_param'
+          required:
+            - param
+          additionalProperties: false
+        - type: object
+          properties:
+            command:
+              $ref: '#/components/schemas/component_command'
+          required:
+            - command
+          additionalProperties: false
+        - type: object
+          properties:
+            menu:
+              $ref: '#/components/schemas/component_menu'
+          required:
+            - menu
+          additionalProperties: false
+        - type: object
+          properties:
+            shared_constraint:
+              $ref: '#/components/schemas/component_constraint'
+          required:
+            - constraint
+          additionalProperties: false
+        - type: object
+          properties:
+            language_pack:
+              $ref: '#/components/schemas/component_language_pack'
+          required:
+            - language_pack
           additionalProperties: false
     param_info_response:
       title: Param Info Response
@@ -3495,3 +3857,45 @@ components:
           type: string
           description: e.g. avoid timeout, key rotation, etc.
       additionalProperties: false
+  parameters:
+    RequestStart:
+      name: Request-Start
+      in: header
+      required: false
+      description: |
+        The time at which the request was sent,
+        <number of milliseconds since start of epoch>
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+      example: 1234512345123
+  responses:
+    NotFound:
+      description: The requested resource was not found
+    BadRequest:
+      description: Bad Request - Invalid input parameters or malformed request
+    Unauthorized:
+      description: Unauthorized, access token is either missing or invalid
+    Forbidden:
+      description: Forbidden, insufficient permission for access
+    InternalServerError:
+      description: An error occurred while processing the request
+    ServiceUnavailable:
+      description: The service is temporarily unavailable
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: The authorization server (and therefore the token endpoint) is provided by the device implementer. The tokenUrl below is a non-functional placeholder on the RFC 2606 reserved example.com domain.
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth2/token
+          scopes:
+            st2138:op: Read only access to operate a device
+            st2138:op:w: Read and write access to operate a device
+            st2138:cfg: Read only access to configure a device
+            st2138:cfg:w: Read and write access to configure a device
+            st2138:adm: Read only access to administer a device
+            st2138:adm:w: Read and write access to administer a device
+            st2138:mon: Read only access to monitor a device
+            st2138:mon:w: Read and write access to monitor a device
