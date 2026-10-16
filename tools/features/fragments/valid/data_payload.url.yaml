@@ -1,0 +1,4 @@
+url: https://example.com/image.png
+metadata:
+  mime-type: application/octet-stream
+  encoding: base64
