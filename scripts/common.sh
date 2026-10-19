@@ -81,6 +81,10 @@ get_yq_dir() {
 
 # put yq on PATH in current shell
 put_yq_on_path() {
+  if command -v yq &> /dev/null; then
+    return 0
+  fi
+
   local dir
   dir="$(get_yq_dir)" || return 1
 
