@@ -59,25 +59,34 @@ version_ge() {
   [ "$(printf '%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]
 }
 
-# get path to yq
-get_yq_path() {
-  if ! command -v yq &> /dev/null; then
-    OS="$(detect_os)"   || { echo "❌ Unsupported OS"; exit 1; }
+# get the directory yq is installed into (not the path to the binary itself,
+# PATH entries must be directories). YQ_INSTALL_DIR overrides the default.
+get_yq_dir() {
+  if [[ -n "${YQ_INSTALL_DIR:-}" ]]; then
+    echo "$YQ_INSTALL_DIR"
+    return 0
+  fi
 
-    if [[ "$OS" == "darwin" ]]; then
-      # macOS path
-      echo "/usr/local/bin/yq"
-    else
-      # Linux path
-      echo "$HOME/.local/bin/yq"
-    fi
+  local os
+  os="$(detect_os)" || { echo "❌ Unsupported OS" >&2; return 1; }
+
+  if [[ "$os" == "darwin" ]]; then
+    # macOS path
+    echo "/usr/local/bin"
+  else
+    # Linux path
+    echo "$HOME/.local/bin"
   fi
 }
 
 # put yq on PATH in current shell
 put_yq_on_path() {
-  # Add to PATH for current shell
-  if ! echo "$PATH" | grep -q "$(get_yq_path)"; then
-    export PATH="$(get_yq_path):$PATH"
-  fi
+  local dir
+  dir="$(get_yq_dir)" || return 1
+
+  # wrapping PATH in colons makes the match work for first and last entries too
+  case ":$PATH:" in
+    *":$dir:"*) ;;
+    *) export PATH="$dir:$PATH" ;;
+  esac
 }
