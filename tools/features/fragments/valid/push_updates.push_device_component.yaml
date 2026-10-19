@@ -1,0 +1,10 @@
+slot: 0
+device_component:
+  device:
+    slot: 0
+    access_scopes:
+      - st2138:mon
+      - st2138:op
+      - st2138:cfg
+      - st2138:adm
+    default_scope: st2138:mon
