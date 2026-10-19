@@ -3,6 +3,7 @@
 # This script installs the tools used by build-openapi.sh
 # and /tools/src/validator.js
 # do not run as root
+# use YQ_INSTALL_DIR to override the default installation directory for yq
 
 set -euo pipefail
 
