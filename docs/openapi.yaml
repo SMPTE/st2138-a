@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ST2138 API
-  version: v1.1.0-pre-fcd
+  version: v1.1.1-pre-fcd
   license:
     name: BSD-3-Clause
     url: https://opensource.org/licenses/BSD-3-Clause
@@ -3126,7 +3126,7 @@ components:
         - $ref: '#/components/schemas/apply_struct_variant_array'
         - $ref: '#/components/schemas/apply_data'
     device:
-      $id: https://smpte.github.io/st2138-a/v1.1.0-pre-fcd/interface/schema/device.yaml
+      $id: https://smpte.github.io/st2138-a/v1.1.1-pre-fcd/interface/schema/device.yaml
       $schema: https://json-schema.org/draft/2020-12/schema
       title: Schema for Catena's Device Model
       description: |
