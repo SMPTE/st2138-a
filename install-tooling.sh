@@ -3,6 +3,7 @@
 # This script installs the tools used by build-openapi.sh
 # and /tools/src/validator.js
 # do not run as root
+# use YQ_INSTALL_DIR to override the default installation directory for yq
 
 set -euo pipefail
 
@@ -100,9 +101,9 @@ if ! command -v yq &> /dev/null; then
     VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
       https://github.com/mikefarah/yq/releases/latest | sed 's|.*/tag/||')"
 
-    INSTALL_DIR="$HOME/.local/bin"
+    INSTALL_DIR="$(get_yq_dir)"
 
-    echo "📦 Downloading yq ${VERSION} for ${OS}/${ARCH}..."
+    echo "📦 Downloading yq ${VERSION} for ${OS}/${ARCH} to ${INSTALL_DIR}..."
 
     mkdir -p "$INSTALL_DIR"
 
@@ -111,12 +112,8 @@ if ! command -v yq &> /dev/null; then
 
     chmod +x "$INSTALL_DIR/yq"
 
-    # --- PATH handling ------------------------------------------------------
-
     # Add to PATH for current shell
-    if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
-      export PATH="$INSTALL_DIR:$PATH"
-    fi
+    put_yq_on_path
 
   fi
 

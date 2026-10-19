@@ -50,7 +50,7 @@ servers:
 
 info:
   title: ST2138 API
-  version: 'v1.1.0-pre-fcd'
+  version: 'v1.1.1-pre-fcd'
   license:
     name: BSD-3-Clause
     url: https://opensource.org/licenses/BSD-3-Clause
