@@ -11,15 +11,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24.17.0"
-          cache: "npm"
-          cache-dependency-path: tools/package-lock.json
-
-      - name: Install tooling
-        run: bash ./install-tooling.sh
+      - name: Setup tooling
+        uses: ./.github/actions/setup-tooling
 
       - name: Build Schema
         run: bash ./build-openapi.sh
@@ -54,8 +47,8 @@ jobs:
 
       # Stamping is idempotent, so a clean tree stays clean; any diff means the
       # committed $id/version strings drifted from VERSION (bump it, then run
-      # ./set-version.sh and commit).
+      # ./scripts/set-version.sh and commit).
       - name: Check version stamping is in sync with VERSION
         run: |
-          bash ./set-version.sh
+          bash ./scripts/set-version.sh
           git diff --exit-code

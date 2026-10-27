@@ -28,12 +28,13 @@
  */
 
 /*
- * Internal URL helpers.
+ * URL helpers.
  *
- * These are not part of the package's public surface: `validate` coalesces
- * path/URL inputs on its own, so consumers never need them. They exist to
- * support the CLI, which resolves the input into a URL and schema name for its
- * informational output.
+ * Most are internal: `validate` coalesces path/URL inputs on its own, so
+ * consumers never need them; they support the CLI, which resolves the input
+ * into a URL and schema name for its informational output.
+ * `descriptorIdFromUrl` is the exception — it is re-exported as public API for
+ * callers that need a descriptor's kind/name/format without resolving it.
  */
 
 'use strict';
@@ -55,13 +56,46 @@ function toUrl(input) {
 }
 
 /**
+ * Decompose a descriptor filename into its identity: schema kind, name, and
+ * serialization format, e.g. `device.example.yaml` ->
+ * `{ kind: 'device', name: 'example', format: 'yaml' }`.
+ * The three-part `<kind>.<name>.<ext>` form is required: a stem with too few or
+ * too many dot-separated segments is malformed and throws, so a kind is never
+ * guessed from an ambiguous name.
+ * @param {string|URL} input
+ * @returns {{ kind: string, name: string, format: string }}
+ * @throws {Error} when the filename is not `<kind>.<name>.<ext>`
+ */
+function descriptorIdFromUrl(input) {
+    const parsed = path.parse(toUrl(input).pathname);
+    // feed through decodeURIComponent to handle escaped characters that were
+    // just escaped in toUrl()
+    const segments = decodeURIComponent(parsed.name).split('.');
+    if (segments.length !== 2) {
+        throw new Error(`Descriptor filename must be <kind>.<name>.<ext> (e.g. device.example.yaml), got '${parsed.base}'`);
+    }
+    const [kind, name] = segments;
+    const format = parsed.ext.replace(/^\./, '').toLowerCase();
+    if (kind.length === 0) {
+        throw new Error(`Descriptor filename must have a non-empty kind: '${parsed.base}'`);
+    }
+    if (name.length === 0) {
+        throw new Error(`Descriptor filename must have a non-empty name: '${parsed.base}'`);
+    }
+    if (format.length === 0) {
+        throw new Error(`Descriptor filename must have a non-empty format: '${parsed.base}'`);
+    }
+    return { kind, name, format: format };
+}
+
+/**
  * Derive the schema name from a descriptor filename, e.g. `device.example.yaml`
  * -> `device`.
- * @param {URL} url
+ * @param {string|URL} url
  * @returns {string}
  */
 function schemaNameFromUrl(url) {
-    return path.parse(url.pathname).name.split('.')[0];
+    return descriptorIdFromUrl(url).kind;
 }
 
 /**
@@ -76,4 +110,4 @@ function isRemote(url) {
     return url.protocol !== 'file:';
 }
 
-module.exports = { toUrl, schemaNameFromUrl, isRemote };
+module.exports = { toUrl, descriptorIdFromUrl, schemaNameFromUrl, isRemote };

@@ -30,7 +30,7 @@
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
-const { toUrl, schemaNameFromUrl, isRemote } = require('../src/urls');
+const { toUrl, descriptorIdFromUrl, schemaNameFromUrl, isRemote } = require('../src/urls');
 
 describe('toUrl', () => {
     test('returns a URL instance unchanged', () => {
@@ -70,6 +70,57 @@ describe('toUrl', () => {
         expect(url.href).toBe('https://example.com/device.json');
     });
 });
+
+describe('descriptorIdFromUrl', () => {
+    test('derives the device descriptor id from a URL', () => {
+        expect(descriptorIdFromUrl(new URL('file:///a/b/device.example.yaml'))).toEqual({
+            kind: 'device',
+            name: 'example',
+            format: 'yaml',
+        });
+    });
+
+    test('derives the param descriptor id from a string path', () => {
+        expect(descriptorIdFromUrl('file:///a/b/param.on_off.json')).toEqual({
+            kind: 'param',
+            name: 'on_off',
+            format: 'json',
+        });
+    })
+
+    test('throws when the stem has too few segments', () => {
+        expect(() => descriptorIdFromUrl(new URL('file:///a/b/device.yaml')))
+            .toThrow(/must be <kind>\.<name>\.<ext>/);
+    })
+
+    test('throws when the stem has too many segments', () => {
+        expect(() => descriptorIdFromUrl(new URL('file:///a/b/param.on_off.v2.yaml')))
+            .toThrow(/must be <kind>\.<name>\.<ext>/);
+    })
+
+    test('throws when the kind is empty', () => {
+        expect(() => descriptorIdFromUrl(new URL('file:///a/b/.example.yaml')))
+            .toThrow(/must have a non-empty kind/);
+    });
+
+    test('throws when the name is empty', () => {
+        expect(() => descriptorIdFromUrl(new URL('file:///a/b/device..yaml')))
+            .toThrow(/must have a non-empty name/);
+    });
+
+    test('throws when the format is empty', () => {
+        expect(() => descriptorIdFromUrl(new URL('file:///a/b/device.example.')))
+            .toThrow(/must have a non-empty format/);
+    });
+
+    test('percent-decodes the name so spaces and Unicode round-trip', () => {
+        expect(descriptorIdFromUrl(new URL('file:///a/b/param.my%20param.yaml'))).toEqual({
+            kind: 'param',
+            name: 'my param',
+            format: 'yaml',
+        });
+    })
+})
 
 describe('schemaNameFromUrl', () => {
     test('derives the schema name from a multi-part filename', () => {

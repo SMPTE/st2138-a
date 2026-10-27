@@ -8,7 +8,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+# Repository root relative to this script
+cd "$SCRIPT_DIR/.."
 
 VERSION="$(tr -d '[:space:]' < VERSION)"
 if [[ -z "$VERSION" ]]; then
@@ -25,20 +26,25 @@ files=(
     docs/schema_validation.md
 )
 
+# have to use a temporary file because macOS sed -i behaves differently than GNU sed.
+function psed() {
+    local tmp
+    tmp="$(mktemp)"
+    sed -E "$2" "$1" > "$tmp"
+    cat "$tmp" > "$1"
+    rm -f "$tmp"
+}
+
 # Insert (first run) or replace (later runs) the <version> segment sitting
 # between st2138-a/ and interface/schema/. The optional ([^/]+/) group is the
 # existing version, if any; all other URLs (e.g. OpenAPI servers) are untouched.
 for f in "${files[@]}"; do
-    sed -E -i \
-        "s#(smpte\.github\.io/st2138-a/)([^/]+/)?interface/schema/#\1${VERSION}/interface/schema/#g" \
-        "$f"
+    psed "$f" "s#(smpte\.github\.io/st2138-a/)([^/]+/)?interface/schema/#\1${VERSION}/interface/schema/#g"
 done
 
 # OpenAPI info.version — the sole version: key in the root spec. The bundled
 # docs/openapi.yaml inherits this value when build-openapi.sh runs.
-sed -E -i \
-    "s#^([[:space:]]*version:[[:space:]]*).*#\1'${VERSION}'#" \
-    interface/openapi/openapi.yaml
+psed "interface/openapi/openapi.yaml" "s#^([[:space:]]*version:[[:space:]]*).*#\1'${VERSION}'#"
 
 echo "Stamped version '${VERSION}' into:"
 printf '  %s\n' "${files[@]}" interface/openapi/openapi.yaml

@@ -34,6 +34,11 @@
  */
 export type Level = 'warning' | 'error';
 
+/** Key for the reserved st2138 namespace client_hint key */
+export const ST2138_NAMESPACE_KEY: string;
+/** Key for the reserved st2138 declaration-only client_hint key */
+export const ST2138_DECLARATION_ONLY_KEY: string;
+
 /** A structured validation finding, with source line info where available. */
 export interface Diagnostic {
     /** severity, one of the ERROR/WARNING constants from checks/constants */
@@ -51,6 +56,16 @@ export interface ValidationResult {
     valid: boolean;
     diagnostics: Diagnostic[];
     data: object;
+}
+
+/** A descriptor's identity, parsed from its filename. */
+export interface DescriptorId {
+    /** schema kind: `device`, `param`, or `command` */
+    kind: string;
+    /** the descriptor's name — the second filename segment */
+    name: string;
+    /** serialization format from the file extension, e.g. `json` or `yaml` */
+    format: string;
 }
 
 /**
@@ -106,6 +121,15 @@ export interface CheckOptions {
     disableScopeChecks?: boolean;
     disableDigestChecks?: boolean;
     disableClientHintChecks?: boolean;
+    /**
+     * Mandatory product sub-parameters whose value is supplied by the SDK or
+     * toolchain rather than authored (e.g. `st2138_sdk`, `st2138_sdk_version`).
+     * The mandatory check still enforces their presence, STRING type, scope, and
+     * that they carry no stray `value`/`params` node, but does not require an
+     * authored value. Defaults to none, so every required product value is
+     * enforced unless the caller opts a parameter out here.
+     */
+    sdkSuppliedProductParams?: string[];
 }
 
 /**
@@ -183,6 +207,9 @@ export function digest(
     input: string | URL,
     options?: DigestOptions,
 ): Promise<string>;
+
+/** Parse a descriptor's identity (kind, name, format) from its path or URL. */
+export function descriptorIdFromUrl(input: string | URL): DescriptorId;
 
 /**
  * Options for rendering an SBOM. Carries the "SBOM Author" of the 2026 "Minimum

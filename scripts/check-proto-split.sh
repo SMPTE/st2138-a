@@ -17,7 +17,8 @@
 # This is a fast, dependency-free lint. It is intentionally strict: a service
 # file must contain no top-level message/enum declarations at all.
 #
-# Usage: ./check-proto-split.sh [PROTO_DIR]   (default: interface/proto)
+# Usage: ./scripts/check-proto-split.sh [PROTO_DIR]   (default: interface/proto,
+# relative to the current directory -- run from the repository root)
 
 set -euo pipefail
 
