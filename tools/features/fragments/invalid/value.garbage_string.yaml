@@ -1,0 +1,2 @@
+# A bare string is not a value; #/$defs/value used to accept anything.
+anything

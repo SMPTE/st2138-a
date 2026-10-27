@@ -1,0 +1,5 @@
+# type 4 is FLOAT_RANGE
+type: 4
+float_range:
+  min_value: 0.5
+  max_value: 1.5

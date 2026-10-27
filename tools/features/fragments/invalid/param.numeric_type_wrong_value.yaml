@@ -1,0 +1,4 @@
+# type 4 is INT32; a string_value does not match it.
+type: 4
+value:
+  string_value: x
