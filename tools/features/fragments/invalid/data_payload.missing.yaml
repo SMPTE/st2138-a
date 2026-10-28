@@ -1,0 +1,5 @@
+# no payload OR url
+metadata:
+  mime-type: application/octet-stream
+  encoding: base64
+payload_encoding: GZIP

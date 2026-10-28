@@ -1,0 +1,12 @@
+# payload is "Hello World!\n" compressed with gzip and encoded in base64
+# echo "Hello World!" | gzip | base64
+payload: H4sIAAAAAAAAA/NIzcnJVwjPL8pJUeQCAN3dFH0NAAAA
+# digest = base64-encoded sha256 of the raw (decoded) payload bytes, not the base64 text.
+# regenerate from source, or verify against the stored payload above — both agree:
+# echo "Hello World!" | gzip | openssl dgst -binary -sha256 | base64
+# echo -n 'H4sIAAAAAAAAA/NIzcnJVwjPL8pJUeQCAN3dFH0NAAAA' | base64 -d | openssl dgst -binary -sha256 | base64
+digest: os146N/KKSYH10cOyas3fTwWpCzaQF2zHitR6+mCdlw=
+metadata:
+  mime-type: application/octet-stream
+  encoding: base64
+payload_encoding: GZIP
