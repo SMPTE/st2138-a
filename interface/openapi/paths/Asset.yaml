@@ -44,10 +44,14 @@ get:
     - name: fqoid
       in: path
       required: true
-      description: The fully qualified object ID of the asset to get
+      description: |
+        The fully qualified object ID of the asset to get.
+        Note: fqoids cannot contain '.', so file names such as 'logo.png' are not
+        valid OIDs. The asset's file name and type belong in the payload metadata
+        (e.g. 'filename'), not in the OID.
       schema:
         $ref: "../../schema/device.json#/$defs/fqoid"
-      example: "image.png"
+      example: "branding/logo"
 
     - name: compression
       in: query
@@ -127,10 +131,14 @@ post:
     - name: fqoid
       in: path
       required: true  
-      description: The place to store the asset
+      description: |
+        The place to store the asset.
+        Note: fqoids cannot contain '.', so file names such as 'logo.png' are not
+        valid OIDs. The asset's file name and type belong in the payload metadata
+        (e.g. 'filename'), not in the OID.
       schema:
         $ref: "../../schema/device.json#/$defs/fqoid"
-      example: "image.png"
+      example: "logo"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
@@ -188,10 +196,14 @@ put:
     - name: fqoid
       in: path
       required: true  
-      description: The place to store the asset
+      description: |
+        The place to store the asset.
+        Note: fqoids cannot contain '.', so file names such as 'logo.png' are not
+        valid OIDs. The asset's file name and type belong in the payload metadata
+        (e.g. 'filename'), not in the OID.
       schema:
         $ref: "../../schema/device.json#/$defs/fqoid"
-      example: "image.png"
+      example: "logo"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 
@@ -247,10 +259,14 @@ delete:
     - name: fqoid
       in: path      
       required: true
-      description: The fully qualified object ID of the asset to delete
+      description: |
+        The fully qualified object ID of the asset to delete.
+        Note: fqoids cannot contain '.', so file names such as 'logo.png' are not
+        valid OIDs. The asset's file name and type belong in the payload metadata
+        (e.g. 'filename'), not in the OID.
       schema:
         $ref: "../../schema/device.json#/$defs/fqoid"
-      example: "image.png"
+      example: "logo"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
   
