@@ -2,4 +2,4 @@ slot: 0
 value:
   oid: asdf
   value:
-    empty_value:
+    empty_value: {}
