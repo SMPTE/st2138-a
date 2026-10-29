@@ -515,8 +515,9 @@ $defs:
       - type: object
         properties:
           empty_value:
-            # proto: message Empty {}. A YAML key with no value parses as null.
-            type: [object, "null"]
+            # proto: message Empty {}. Write it as `empty_value: {}`; a bare
+            # `empty_value:` parses as null and is rejected.
+            type: object
             maxProperties: 0
         required:
           - empty_value
