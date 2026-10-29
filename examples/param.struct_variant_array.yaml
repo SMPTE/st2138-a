@@ -34,9 +34,10 @@ value:
       - struct_variant_type: address
         value:
           struct_value:
-            street:
-              string_value: 123 Main St
-            city:
-              string_value: Anytown
-            postcode:
-              string_value: 12345
+            fields:
+              street:
+                string_value: 123 Main St
+              city:
+                string_value: Anytown
+              postcode:
+                string_value: "12345"

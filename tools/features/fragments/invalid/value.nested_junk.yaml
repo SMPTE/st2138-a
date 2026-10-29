@@ -1,0 +1,4 @@
+# Struct fields are themselves values.
+struct_value:
+  fields:
+    a: junk
