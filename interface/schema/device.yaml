@@ -293,7 +293,6 @@ $defs:
           The display order of the menu group.
     required:
       - name
-      - menus
       - order
     additionalProperties: false
 
@@ -1606,7 +1605,7 @@ $defs:
       oid:
         $ref: "#/$defs/simple_oid"
       command:
-        $ref: "#/$defs/param"
+        $ref: "#/$defs/command"
     required:
       - oid
       - command
