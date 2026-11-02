@@ -10,10 +10,12 @@ read_only: true
 
 value:
   data_payload:
-    payload: https://example.com/image.png
+    # payload is "Hello, World!\n" encoded in base64
+    # echo "Hello, World!" | base64
+    payload: SGVsbG8sIFdvcmxkIQo=
     payload_encoding: UNCOMPRESSED
     metadata:
-      mime-type: image/png
-      width: "1024"
-      height: "768"
-    digest: sha256:...
+      mime-type: text/plain
+    # digest is the base64-encoded sha256 of the raw (decoded) payload bytes
+    # echo "Hello, World!" | openssl dgst -binary -sha256 | base64
+    digest: yYwktnfv9Ehgr+pvSTu67FuxxMuyCcb8K7tH9m/yrTE=
