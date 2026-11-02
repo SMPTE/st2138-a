@@ -1,0 +1,8 @@
+slot: 0
+device_component:
+  param:
+    oid: gain
+    param:
+      type: INT32
+      value:
+        int32_value: 5

@@ -82,6 +82,9 @@ class Validator {
         // Compile the device root once and reuse it; the param/command sub-schemas
         // are already cached by addSchemas, but the root has no id to reference.
         this.deviceValidate = this.ajv.compile(schema);
+        // Root document id, used to resolve $def sub-schemas within the root's
+        // context so document-relative refs (e.g. "#") point at the device root.
+        this.rootId = schema.$id;
     }
 
     addSchemas(genus) {
@@ -148,8 +151,12 @@ class Validator {
             valid = this.deviceValidate(data);
             errors = this.deviceValidate.errors;
         } else {
-            valid = this.ajv.validate(schema.$defs[schemaName], data);
-            errors = this.ajv.errors;
+            // Resolve the sub-schema through the root document so document-relative
+            // refs inside it (e.g. device_component's "#") resolve to the device
+            // root rather than the lifted $def, which would otherwise self-recurse.
+            const validateDef = this.ajv.getSchema(`${this.rootId}#/$defs/${schemaName}`);
+            valid = validateDef(data);
+            errors = validateDef.errors;
         }
 
         if (!valid) {

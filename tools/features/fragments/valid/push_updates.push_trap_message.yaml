@@ -1,0 +1,5 @@
+slot: 0
+trap_message:
+    type: PARAM_CHANGED
+    trap_data:
+        - gain

@@ -1351,16 +1351,16 @@ $defs:
       How data is sent to the client.
     type: object
     properties:
+      url:
+        type: string
+        format: uri
+        description: The URL of the data payload
       payload:
-        oneOf:
-          - type: string
-            format: uri
-            description: The URL of the data payload
-          - type: string
-            contentEncoding: base64
-            contentMediaType: application/octet-stream
-            description: The base64-encoded binary payload
-            pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
+        type: string
+        contentEncoding: base64
+        contentMediaType: application/octet-stream
+        description: The base64-encoded binary payload
+        pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
       payload_encoding:
         description: |
           The encoding of the payload.
@@ -1394,8 +1394,13 @@ $defs:
         additionalProperties:
           type: string
         description: key/value pairs about the payload, e.g. mime-type, etc.
-    required:
-      - payload
+    oneOf:
+      - properties:
+          url: true
+        required: [url]
+      - properties:
+          payload: true
+        required: [payload]
     additionalProperties: false
 
   data_value:
@@ -1533,18 +1538,55 @@ $defs:
       component.
     type: object
     oneOf:
-      - $ref: "#"
-      - $ref: "#/$defs/component_param"
-      - $ref: "#/$defs/component_command"
-      - $ref: "#/$defs/component_menu"
-      - $ref: "#/$defs/component_constraint"
-      - $ref: "#/$defs/component_language_pack"
+      - type: object
+        properties:
+          device:
+            # "#" is the device model root, resolved against the root document.
+            $ref: "#"
+        required:
+          - device
+        additionalProperties: false
+      - type: object
+        properties:
+          param:
+            $ref: "#/$defs/component_param"
+        required:
+          - param
+        additionalProperties: false
+      - type: object
+        properties:
+          shared_constraint:
+            $ref: "#/$defs/component_constraint"
+        required:
+          - shared_constraint
+        additionalProperties: false
+      - type: object
+        properties:
+          menu:
+            $ref: "#/$defs/component_menu"
+        required:
+          - menu
+        additionalProperties: false
+      - type: object
+        properties:
+          command:
+            $ref: "#/$defs/component_command"
+        required:
+          - command
+        additionalProperties: false
+      - type: object
+        properties:
+          language_pack:
+            $ref: "#/$defs/component_language_pack"
+        required:
+          - language_pack
+        additionalProperties: false
 
   component_param:
     title: Component Param
     description: |
       A top-level parameter descriptor plus its oid.
-      type: object
+    type: object
     properties:
       oid:
         $ref: "#/$defs/simple_oid"
@@ -1820,6 +1862,7 @@ $defs:
     title: Push Updates
     description: |
       Asynchronous updates of various types to the client.
+    type: object
     allOf:
       - $ref: "#/$defs/with_slot"
       - oneOf:
@@ -1833,6 +1876,7 @@ $defs:
         - $ref: "#/$defs/push_remove_device_components"
         - $ref: "#/$defs/push_slots_added"
         - $ref: "#/$defs/push_slots_removed"
+    unevaluatedProperties: false
  
   with_slot:
     title: With Slot
@@ -1844,7 +1888,6 @@ $defs:
         $ref: "#/$defs/slot"
     required:
       - slot
-    additionalProperties: false
 
   push_value:
     title: Push Value
@@ -1852,14 +1895,19 @@ $defs:
       A value to be pushed to the client.
     type: object
     properties:
-      oid:
-        $ref: "#/$defs/fqoid"
       value:
-        $ref: "#/$defs/value"
+        type: object
+        properties:
+          oid:
+            $ref: "#/$defs/fqoid"
+          value:
+            $ref: "#/$defs/value"
+        required:
+          - oid
+          - value
+        additionalProperties: false
     required:
-      - oid
       - value
-    additionalProperties: false
   
   push_device_component:
     title: Push Device Component
@@ -1867,14 +1915,10 @@ $defs:
       A device component to be pushed to the client.
     type: object
     properties:
-      oid:
-        $ref: "#/$defs/fqoid"
       device_component:
         $ref: "#/$defs/device_component"
     required:
-      - oid
       - device_component
-    additionalProperties: false
 
   push_exception:
     title: Push Exception
@@ -1886,7 +1930,6 @@ $defs:
         $ref: "#/$defs/exception"
     required:
       - refused
-    additionalProperties: false
 
   push_invalidated_external_object_id:
     title: Push Invalidated External Object ID
@@ -1898,7 +1941,6 @@ $defs:
         type: string
     required:
       - invalidated_external_object_id
-    additionalProperties: false
 
   trap_message_type: # see the proto file enum meanings
     title: Trap Message Type
@@ -1953,11 +1995,20 @@ $defs:
       A trap message to be pushed to the client.
     type: object
     properties:
-      type:
-        $ref: "#/$defs/trap_message_type"
+      trap_message:
+        type: object
+        properties:
+          type:
+            $ref: "#/$defs/trap_message_type"
+          trap_data:
+            type: array
+            items:
+              type: string
+        required:
+          - type
+        additionalProperties: false
     required:
       - trap_message
-    additionalProperties: false
 
   push_invalidate_device_model:
     title: Push Invalidate Device Model
@@ -1970,7 +2021,6 @@ $defs:
         default: false
     required:
       - invalidate_device_model
-    additionalProperties: false
 
   push_external_object:
     title: Push External Object
@@ -1978,22 +2028,33 @@ $defs:
       A external object to be pushed to the client.
     type: object
     properties:
-      oid:
-        $ref: "#/$defs/fqoid"
       external_object:
-        $ref: "#/$defs/external_object_payload"
+        type: object
+        properties: 
+          oid:
+            $ref: "#/$defs/fqoid"
+          external_object:
+            $ref: "#/$defs/external_object_payload"
+        required:
+          - oid
+          - external_object
+        additionalProperties: false
     required:
-      - oid
       - external_object
-    additionalProperties: false
-  
+
   id_list:
     title: ID List
     description: |
       A list of object ids (OIDs)
-    type: array
-    items:
-      $ref: "#/$defs/fqoid"
+    type: object
+    properties:
+      oids:
+        type: array
+        items:
+          $ref: "#/$defs/fqoid"
+    required:
+      - oids
+    additionalProperties: false
 
   language_list:
     title: Language List
@@ -2009,49 +2070,59 @@ $defs:
     description: |
       A list of device components to be removed from the client.
     type: object
-    oneOf:
-      - type: object
-        properties:
-          params:
-            $ref: "#/$defs/id_list"
-        required:
-          - params
-        additionalProperties: false
+    properties:
+      remove_device_components:
+        oneOf:
+          - type: object
+            properties:
+              params:
+                $ref: "#/$defs/id_list"
+            required:
+              - params
+            additionalProperties: false
 
-      - type: object
-        properties:
-          shared_constraints:
-            $ref: "#/$defs/id_list"
-        required:
-          - shared_constraints
-        additionalProperties: false
+          - type: object
+            properties:
+              shared_constraints:
+                $ref: "#/$defs/id_list"
+            required:
+              - shared_constraints
+            additionalProperties: false
 
-      - type: object
-        properties:
-          menus:
-            $ref: "#/$defs/id_list"
-        required:
-          - menus
-        additionalProperties: false
+          - type: object
+            properties:
+              menus:
+                $ref: "#/$defs/id_list"
+            required:
+              - menus
+            additionalProperties: false
 
-      - type: object
-        properties:
-          commands:
-            $ref: "#/$defs/id_list"
-        required:
-          - commands
-        additionalProperties: false
+          - type: object
+            properties:
+              commands:
+                $ref: "#/$defs/id_list"
+            required:
+              - commands
+            additionalProperties: false
 
-      - type: object
-        properties:
-          language_packs:
-            type: array
-            items:
-              $ref: "#/$defs/language_code"
-        required:
-          - language_packs
-        additionalProperties: false
-      
+          - type: object
+            properties:
+              language_packs:
+                type: object
+                properties: 
+                  oids:
+                    type: array
+                    items:
+                      $ref: "#/$defs/language_code"
+                required:
+                  - oids
+                additionalProperties: false
+            required:
+              - language_packs
+            additionalProperties: false
+    required:
+      - remove_device_components
+
   push_slots_added:
     title: Push Slots Added
     description: |
@@ -2059,12 +2130,17 @@ $defs:
     type: object
     properties:
       slots_added:
-        type: array
-        items:
-          $ref: "#/$defs/slot"
+        type: object
+        properties:
+          slots:
+            type: array
+            items:
+              $ref: "#/$defs/slot"
+        required:
+          - slots
+        additionalProperties: false
     required:
       - slots_added
-    additionalProperties: false
 
   push_slots_removed:
     title: Push Slots Removed
@@ -2073,12 +2149,17 @@ $defs:
     type: object
     properties:
       slots_removed:
-        type: array
-        items:
-          $ref: "#/$defs/slot"
+        type: object
+        properties:
+          slots:
+            type: array
+            items:
+              $ref: "#/$defs/slot"
+        required:
+          - slots
+        additionalProperties: false
     required:
       - slots_removed
-    additionalProperties: false
 
   language_pack_request_payload:
     title: Language Pack Request Payload
