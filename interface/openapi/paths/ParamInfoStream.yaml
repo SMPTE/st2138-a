@@ -84,7 +84,7 @@ get:
             data: <stringified {info: ParamInfo, array_length: 2}>
           x-sse-event-schema:
             message:
-              $ref: "../../schema/device.json#/$defs/param_info"
+              $ref: "../../schema/device.json#/$defs/param_info_response"
             error:
               $ref: '../openapi.yaml#/components/schemas/SseError'
 
