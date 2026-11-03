@@ -1,0 +1,4 @@
+struct_value:
+  fields:
+    a:
+      string_value: x

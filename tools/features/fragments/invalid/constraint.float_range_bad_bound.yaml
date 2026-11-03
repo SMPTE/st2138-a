@@ -1,0 +1,5 @@
+# float_range bounds are numbers.
+type: FLOAT_RANGE
+float_range:
+  min_value: x
+  max_value: 1

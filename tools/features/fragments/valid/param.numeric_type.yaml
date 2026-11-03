@@ -1,0 +1,4 @@
+# type 4 is INT32
+type: 4
+value:
+  int32_value: 5

@@ -1,0 +1,5 @@
+# type 2 is INT_RANGE; int32_choice is the body for INT_CHOICE (5).
+type: 2
+int32_choice:
+  choices:
+    - value: 1

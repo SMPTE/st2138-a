@@ -1,0 +1,5 @@
+# Same as constraint.float_range_bad_bound, using the integer form of the type.
+type: 4
+float_range:
+  min_value: x
+  max_value: 1
