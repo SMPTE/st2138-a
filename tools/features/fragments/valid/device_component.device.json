@@ -1,0 +1,104 @@
+{
+    "device": {
+        "slot": 0,
+        "detail_level": "FULL",
+        "multi_set_enabled": true,
+        "subscriptions": true,
+        "params": {
+            "product": {
+                "type": "STRUCT",
+                "read_only": true,
+                "value": {
+                    "struct_value": {
+                        "fields": {
+                            "name": {
+                                "string_value": "Counter Slot 0 Product"
+                            },
+                            "serial_number": {
+                                "string_value": "SN-SLOT0-0001"
+                            },
+                            "st2138_sdk": {
+                                "string_value": "https://github.com/rossvideo/Catena"
+                            },
+                            "st2138_sdk_version": {
+                                "string_value": "(devel)"
+                            },
+                            "vendor": {
+                                "string_value": "Ross Video"
+                            },
+                            "version": {
+                                "string_value": "1.0.0"
+                            }
+                        }
+                    }
+                },
+                "access_scope": "st2138:mon",
+                "params": {
+                    "name": {
+                        "type": "STRING",
+                        "read_only": true,
+                        "minimal_set": false,
+                        "stateless": false
+                    },
+                    "serial_number": {
+                        "type": "STRING",
+                        "read_only": true,
+                        "minimal_set": false,
+                        "stateless": false
+                    },
+                    "st2138_sdk": {
+                        "type": "STRING",
+                        "read_only": true,
+                        "minimal_set": false,
+                        "stateless": false
+                    },
+                    "st2138_sdk_version": {
+                        "type": "STRING",
+                        "read_only": true,
+                        "minimal_set": false,
+                        "stateless": false
+                    },
+                    "vendor": {
+                        "type": "STRING",
+                        "read_only": true,
+                        "minimal_set": false,
+                        "stateless": false
+                    },
+                    "version": {
+                        "type": "STRING",
+                        "read_only": true,
+                        "minimal_set": false,
+                        "stateless": false
+                    }
+                },
+                "minimal_set": false,
+                "stateless": false
+            }
+        },
+        "menu_groups": {
+            "config": {
+                "name": {
+                    "display_strings": {
+                        "en": "Configuration"
+                    }
+                },
+                "order": 1
+            },
+            "status": {
+                "name": {
+                    "display_strings": {
+                        "en": "Status"
+                    }
+                },
+                "order": 0
+            }
+        },
+        "access_scopes": [
+            "st2138:mon",
+            "st2138:op",
+            "st2138:cfg",
+            "st2138:adm"
+        ],
+        "default_scope": "st2138:cfg"
+    }
+}

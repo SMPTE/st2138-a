@@ -1,0 +1,8 @@
+device:
+  slot: 0
+param:
+  oid: counter
+  param:
+    type: INT32
+    value:
+      int32_value: 42
