@@ -1637,7 +1637,7 @@ $defs:
     type: object
     properties:
       oid:
-        $ref: "#/$defs/simple_oid"
+        $ref: "#/$defs/fqoid"
       param:
         $ref: "#/$defs/param"
     required:

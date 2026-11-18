@@ -1,0 +1,6 @@
+# make sure that the oid is a fully qualified object ID (fqoid)
+oid: path/to/param
+param:
+  type: STRING
+  value:
+    string_value: example
