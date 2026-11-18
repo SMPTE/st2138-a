@@ -1,0 +1,5 @@
+# type 2 is INT_RANGE
+type: 2
+int32_range:
+  min_value: 0
+  max_value: 10
