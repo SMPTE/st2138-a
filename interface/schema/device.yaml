@@ -293,7 +293,6 @@ $defs:
           The display order of the menu group.
     required:
       - name
-      - menus
       - order
     additionalProperties: false
 
@@ -1655,7 +1654,7 @@ $defs:
       oid:
         $ref: "#/$defs/simple_oid"
       command:
-        $ref: "#/$defs/param"
+        $ref: "#/$defs/command"
     required:
       - oid
       - command
@@ -1869,11 +1868,15 @@ $defs:
     properties:
       oid:
         $ref: "#/$defs/fqoid"
-      param:
-        $ref: "#/$defs/param"
+      type:
+        $ref: "#/$defs/param_type"
+      name:
+        $ref: "#/$defs/polyglot_text"
+      template_oid:
+        $ref: "#/$defs/fqoid"
     required:
       - oid
-      - param
+      - type
     additionalProperties: false
 
   param_info_request:

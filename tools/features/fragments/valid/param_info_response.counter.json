@@ -1,0 +1,11 @@
+{
+    "info": {
+        "oid": "counter",
+        "name": {
+            "display_strings": {
+                "en": "Counter"
+            }
+        },
+        "type": "INT32"
+    }
+}

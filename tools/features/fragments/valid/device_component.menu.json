@@ -1,0 +1,21 @@
+{
+    "menu": {
+        "oid": "config/control",
+        "menu": {
+            "name": {
+                "display_strings": {
+                    "en": "Control"
+                }
+            },
+            "hidden": false,
+            "disabled": false,
+            "command_oids": [
+                "start",
+                "stop",
+                "add10",
+                "reset"
+            ],
+            "order": 0
+        }
+    }
+}
