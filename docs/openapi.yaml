@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ST2138 API
-  version: v1.1.1-pre-fcd
+  version: v1.2.0-pre-fcd
   license:
     name: BSD-3-Clause
     url: https://opensource.org/licenses/BSD-3-Clause
@@ -187,12 +187,48 @@ paths:
                     component.
                   type: object
                   oneOf:
-                    - $ref: '#/components/schemas/device'
-                    - $ref: '#/components/schemas/component_param'
-                    - $ref: '#/components/schemas/component_command'
-                    - $ref: '#/components/schemas/component_menu'
-                    - $ref: '#/components/schemas/component_constraint'
-                    - $ref: '#/components/schemas/component_language_pack'
+                    - type: object
+                      properties:
+                        device:
+                          $ref: '#/components/schemas/device'
+                      required:
+                        - device
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        param:
+                          $ref: '#/components/schemas/component_param'
+                      required:
+                        - param
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        shared_constraint:
+                          $ref: '#/components/schemas/component_constraint'
+                      required:
+                        - shared_constraint
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        menu:
+                          $ref: '#/components/schemas/component_menu'
+                      required:
+                        - menu
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        command:
+                          $ref: '#/components/schemas/component_command'
+                      required:
+                        - command
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        language_pack:
+                          $ref: '#/components/schemas/component_language_pack'
+                      required:
+                        - language_pack
+                      additionalProperties: false
                 error:
                   type: object
                   description: An error event sent in an SSE stream when an error occurs after HTTP headers have already been sent. Carried as an SSE event with event type "error".
@@ -459,10 +495,14 @@ paths:
         - name: fqoid
           in: path
           required: true
-          description: The fully qualified object ID of the asset to get
+          description: |
+            The fully qualified object ID of the asset to get.
+            Note: fqoids cannot contain '.', so file names such as 'logo.png' are not
+            valid OIDs. The asset's file name and type belong in the payload metadata
+            (e.g. 'filename'), not in the OID.
           schema:
             $ref: '#/components/schemas/fqoid'
-          example: image.png
+          example: branding/logo
         - name: compression
           in: query
           required: false
@@ -517,10 +557,14 @@ paths:
         - name: fqoid
           in: path
           required: true
-          description: The place to store the asset
+          description: |
+            The place to store the asset.
+            Note: fqoids cannot contain '.', so file names such as 'logo.png' are not
+            valid OIDs. The asset's file name and type belong in the payload metadata
+            (e.g. 'filename'), not in the OID.
           schema:
             $ref: '#/components/schemas/fqoid'
-          example: image.png
+          example: logo
         - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
@@ -563,10 +607,14 @@ paths:
         - name: fqoid
           in: path
           required: true
-          description: The place to store the asset
+          description: |
+            The place to store the asset.
+            Note: fqoids cannot contain '.', so file names such as 'logo.png' are not
+            valid OIDs. The asset's file name and type belong in the payload metadata
+            (e.g. 'filename'), not in the OID.
           schema:
             $ref: '#/components/schemas/fqoid'
-          example: image.png
+          example: logo
         - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
@@ -609,10 +657,14 @@ paths:
         - name: fqoid
           in: path
           required: true
-          description: The fully qualified object ID of the asset to delete
+          description: |
+            The fully qualified object ID of the asset to delete.
+            Note: fqoids cannot contain '.', so file names such as 'logo.png' are not
+            valid OIDs. The asset's file name and type belong in the payload metadata
+            (e.g. 'filename'), not in the OID.
           schema:
             $ref: '#/components/schemas/fqoid'
-          example: image.png
+          example: logo
         - $ref: '#/components/parameters/RequestStart'
       requestBody:
         required: true
@@ -647,10 +699,14 @@ paths:
         - name: fqoid
           in: path
           required: true
-          description: The fully qualified object ID of the asset to get
+          description: |
+            The fully qualified object ID of the asset to get.
+            Note: fqoids cannot contain '.', so file names such as 'logo.png' are not
+            valid OIDs. The asset's file name and type belong in the payload metadata
+            (e.g. 'filename'), not in the OID.
           schema:
             $ref: '#/components/schemas/fqoid'
-          example: image.png
+          example: branding/logo
         - $ref: '#/components/parameters/RequestStart'
       tags:
         - Assets
@@ -705,7 +761,9 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /{slot}/param-info/{fqoid}:
     get:
-      summary: "Gets information about a parameter within a device model. \nBecause this is a unary request, recursive queries are not supported.\n"
+      summary: |
+        Gets information about a parameter within a device model. 
+        Because this is a unary request, recursive queries are not supported.
       operationId: ParamInfo
       parameters:
         - name: slot
@@ -795,18 +853,17 @@ paths:
                 data: <stringified {info: ParamInfo, array_length: 2}>
               x-sse-event-schema:
                 message:
-                  title: Param Info
+                  title: Param Info Response
                   description: |
                     Information about a parameter - it's id and descriptor.
                   type: object
                   properties:
-                    oid:
-                      $ref: '#/components/schemas/fqoid'
-                    param:
-                      $ref: '#/components/schemas/param'
+                    info:
+                      $ref: '#/components/schemas/param_info'
+                    array_length:
+                      $ref: '#/components/schemas/total_length'
                   required:
-                    - oid
-                    - param
+                    - info
                   additionalProperties: false
                 error:
                   type: object
@@ -869,18 +926,17 @@ paths:
                 data: <stringified {info: ParamInfo, array_length: 2}>
               x-sse-event-schema:
                 message:
-                  title: Param Info
+                  title: Param Info Response
                   description: |
                     Information about a parameter - it's id and descriptor.
                   type: object
                   properties:
-                    oid:
-                      $ref: '#/components/schemas/fqoid'
-                    param:
-                      $ref: '#/components/schemas/param'
+                    info:
+                      $ref: '#/components/schemas/param_info'
+                    array_length:
+                      $ref: '#/components/schemas/total_length'
                   required:
-                    - oid
-                    - param
+                    - info
                   additionalProperties: false
                 error:
                   type: object
@@ -1210,7 +1266,7 @@ paths:
                   title: Component Param
                   description: |
                     A top-level parameter descriptor plus its oid.
-                    type: object
+                  type: object
                   properties:
                     oid:
                       $ref: '#/components/schemas/simple_oid'
@@ -1331,6 +1387,7 @@ paths:
                   title: Push Updates
                   description: |
                     Asynchronous updates of various types to the client.
+                  type: object
                   allOf:
                     - $ref: '#/components/schemas/with_slot'
                     - oneOf:
@@ -1344,6 +1401,7 @@ paths:
                         - $ref: '#/components/schemas/push_remove_device_components'
                         - $ref: '#/components/schemas/push_slots_added'
                         - $ref: '#/components/schemas/push_slots_removed'
+                  unevaluatedProperties: false
                 error:
                   type: object
                   description: An error event sent in an SSE stream when an error occurs after HTTP headers have already been sent. Carried as an SSE event with event type "error".
@@ -1413,7 +1471,9 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     post:
-      summary: "Add a new language pack to the device model. \nAttempts to overwrite an existing language pack will fail with 403 Forbidden.\n"
+      summary: |
+        Add a new language pack to the device model. 
+        Attempts to overwrite an existing language pack will fail with 403 Forbidden.
       operationId: AddLanguagePack
       security:
         - oauth2:
@@ -1505,7 +1565,10 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     put:
-      summary: "Update a language pack in the device model.\nAttempts to update a pack that was shipped with the device will fail with 403 Forbidden.\nOnly packs that are field upgrades can be updated.  \n"
+      summary: |
+        Update a language pack in the device model.
+        Attempts to update a pack that was shipped with the device will fail with 403 Forbidden.
+        Only packs that are field upgrades can be updated.  
       operationId: UpdateLanguagePack
       security:
         - oauth2:
@@ -1716,7 +1779,20 @@ components:
       additionalProperties: false
     detail_level:
       title: Detail Level
-      description: "The level of detail in device messages and parameter updates.\n'full' indicates that all parameters are reported, \n'minimal' that only the minimal set is, \n'subscriptions' reports the minimal set plus identified subscribed\nparameters, \n'commands' reports only descriptors for commands and not for parameters,\nand 'none' indicates that no parameters or commands should be\nautomatically reported by the device (parameter descriptors, command\ndescriptors, and values can still be pulled).\n\nThis is another place where human readability/writeability is important.\nProtobuf uses a numeric value for the detail level so we use a oneOf\nto enable both numeric and string values.\n"
+      description: |
+        The level of detail in device messages and parameter updates.
+        'full' indicates that all parameters are reported, 
+        'minimal' that only the minimal set is, 
+        'subscriptions' reports the minimal set plus identified subscribed
+        parameters, 
+        'commands' reports only descriptors for commands and not for parameters,
+        and 'none' indicates that no parameters or commands should be
+        automatically reported by the device (parameter descriptors, command
+        descriptors, and values can still be pulled).
+
+        This is another place where human readability/writeability is important.
+        Protobuf uses a numeric value for the detail level so we use a oneOf
+        to enable both numeric and string values.
       oneOf:
         - type: string
           enum:
@@ -1913,12 +1989,16 @@ components:
             type: object
             properties:
               type:
-                const: INT_CHOICE
+                enum:
+                  - INT_CHOICE
+                  - 5
           then:
             type: object
             properties:
               type:
-                const: INT_CHOICE
+                enum:
+                  - INT_CHOICE
+                  - 5
               int32_choice:
                 type: object
                 properties:
@@ -1934,12 +2014,16 @@ components:
             type: object
             properties:
               type:
-                const: INT_RANGE
+                enum:
+                  - INT_RANGE
+                  - 2
           then:
             type: object
             properties:
               type:
-                const: INT_RANGE
+                enum:
+                  - INT_RANGE
+                  - 2
               int32_range:
                 type: object
                 properties:
@@ -1962,12 +2046,16 @@ components:
             type: object
             properties:
               type:
-                const: ALARM_TABLE
+                enum:
+                  - ALARM_TABLE
+                  - 8
           then:
             type: object
             properties:
               type:
-                const: ALARM_TABLE
+                enum:
+                  - ALARM_TABLE
+                  - 8
               alarm_table:
                 type: object
                 properties:
@@ -1998,12 +2086,16 @@ components:
             type: object
             properties:
               type:
-                const: FLOAT_RANGE
+                enum:
+                  - FLOAT_RANGE
+                  - 4
           then:
             type: object
             properties:
               type:
-                const: FLOAT_RANGE
+                enum:
+                  - FLOAT_RANGE
+                  - 4
               float_range:
                 type: object
                 properties:
@@ -2148,12 +2240,16 @@ components:
             type: object
             properties:
               type:
-                const: STRING_CHOICE
+                enum:
+                  - STRING_CHOICE
+                  - 6
           then:
             type: object
             properties:
               type:
-                const: STRING_CHOICE
+                enum:
+                  - STRING_CHOICE
+                  - 6
               string_choice:
                 $ref: '#/components/schemas/string_choice'
             required:
@@ -2163,12 +2259,16 @@ components:
             type: object
             properties:
               type:
-                const: STRING_STRING_CHOICE
+                enum:
+                  - STRING_STRING_CHOICE
+                  - 7
           then:
             type: object
             properties:
               type:
-                const: STRING_STRING_CHOICE
+                enum:
+                  - STRING_STRING_CHOICE
+                  - 7
               string_string_choice:
                 $ref: '#/components/schemas/string_string_choice'
             required:
@@ -2178,12 +2278,16 @@ components:
             type: object
             properties:
               type:
-                const: FORMATTED_STRING
+                enum:
+                  - FORMATTED_STRING
+                  - 9
           then:
             type: object
             properties:
               type:
-                const: FORMATTED_STRING
+                enum:
+                  - FORMATTED_STRING
+                  - 9
               formatted_string:
                 $ref: '#/components/schemas/formatted_string'
             required:
@@ -2237,17 +2341,17 @@ components:
                 - const: 0
                   title: UNDEFINED
                 - const: 2
-                  title: INT_CHOICE
-                - const: 4
                   title: INT_RANGE
-                - const: 5
-                  title: ALARM_TABLE
-                - const: 6
+                - const: 4
                   title: FLOAT_RANGE
-                - const: 7
+                - const: 5
+                  title: INT_CHOICE
+                - const: 6
                   title: STRING_CHOICE
-                - const: 8
+                - const: 7
                   title: STRING_STRING_CHOICE
+                - const: 8
+                  title: ALARM_TABLE
                 - const: 9
                   title: FORMATTED_STRING
       required:
@@ -2365,7 +2469,6 @@ components:
             The display order of the menu group.
       required:
         - name
-        - menus
         - order
       additionalProperties: false
     int32_value:
@@ -2407,7 +2510,9 @@ components:
         type: object
         properties:
           type:
-            const: INT32
+            enum:
+              - INT32
+              - 4
       then:
         type: object
         properties:
@@ -2437,7 +2542,9 @@ components:
         type: object
         properties:
           type:
-            const: FLOAT32
+            enum:
+              - FLOAT32
+              - 6
       then:
         type: object
         properties:
@@ -2466,7 +2573,9 @@ components:
         type: object
         properties:
           type:
-            const: STRING
+            enum:
+              - STRING
+              - 7
       then:
         type: object
         properties:
@@ -2478,18 +2587,6 @@ components:
               - $ref: '#/components/schemas/constraint_ref'
           precision: false
           total_length: false
-    value:
-      title: Parameter Value
-      description: Value of the parameter. Its schema is polymorphic dependent on type.
-    struct_fields:
-      title: STRUCT Fields
-      description: Defines a map of string keys to values
-      type: object
-      patternProperties:
-        ^[a-zA-Z]\w{0,30}$:
-          $ref: '#/components/schemas/value'
-      minProperties: 1
-      additionalProperties: false
     struct_value:
       title: STRUCT Value
       description: Defines STRUCT as a map of string keys to values
@@ -2500,29 +2597,57 @@ components:
       required:
         - fields
       additionalProperties: false
-    apply_struct:
-      title: STRUCT specialism
-      description: Applies STRUCT values & constraints, disables properties that don't work with this type
-      if:
-        type: object
-        properties:
-          type:
-            const: STRUCT
-      then:
-        type: object
-        properties:
-          value:
-            type: object
-            properties:
-              struct_value:
-                $ref: '#/components/schemas/struct_value'
-            required:
-              - struct_value
-            additionalProperties: false
-          constraint: false
-          precision: false
-          max_length: false
-          total_length: false
+    value:
+      title: Parameter Value
+      description: Value of the parameter. Its schema is polymorphic dependent on type.
+      type: object
+      oneOf:
+        - type: object
+          properties:
+            undefined_value:
+              enum:
+                - UNDEFINED_VALUE
+                - 0
+          required:
+            - undefined_value
+          additionalProperties: false
+        - type: object
+          properties:
+            empty_value:
+              type: object
+              maxProperties: 0
+          required:
+            - empty_value
+          additionalProperties: false
+        - $ref: '#/components/schemas/int32_value'
+        - $ref: '#/components/schemas/float32_value'
+        - $ref: '#/components/schemas/string_value'
+        - type: object
+          properties:
+            struct_value:
+              $ref: '#/components/schemas/struct_value'
+          required:
+            - struct_value
+          additionalProperties: false
+        - type: object
+          properties:
+            struct_variant_value:
+              $ref: '#/components/schemas/struct_variant_value'
+          required:
+            - struct_variant_value
+          additionalProperties: false
+        - $ref: '#/components/schemas/int32_array_values'
+        - $ref: '#/components/schemas/float32_array_values'
+        - $ref: '#/components/schemas/string_array_values'
+        - $ref: '#/components/schemas/struct_array_values'
+        - type: object
+          properties:
+            struct_variant_array_values:
+              $ref: '#/components/schemas/struct_variant_array_values'
+          required:
+            - struct_variant_array_values
+          additionalProperties: false
+        - $ref: '#/components/schemas/data_value'
     struct_variant_value:
       title: STRUCT_VARIANT Value
       description: |
@@ -2537,29 +2662,6 @@ components:
         - struct_variant_type
         - value
       additionalProperties: false
-    apply_struct_variant:
-      title: STRUCT_VARIANT specialism
-      description: Applies STRUCT_VARIANT values, disables properties that don't work with this type
-      if:
-        type: object
-        properties:
-          type:
-            const: STRUCT_VARIANT
-      then:
-        type: object
-        properties:
-          value:
-            type: object
-            properties:
-              struct_variant_value:
-                $ref: '#/components/schemas/struct_variant_value'
-            required:
-              - struct_variant_value
-            additionalProperties: false
-          constraint: false
-          precision: false
-          max_length: false
-          total_length: false
     int32_array_values:
       title: INT32_ARRAY Value
       description: Defines INT32_ARRAY as an array of INT32 values
@@ -2578,26 +2680,6 @@ components:
       required:
         - int32_array_values
       additionalProperties: false
-    apply_int32_array:
-      title: INT32_ARRAY specialism
-      description: Applies INT32_ARRAY values, disables properties that don't work with this type
-      if:
-        type: object
-        properties:
-          type:
-            const: INT32_ARRAY
-      then:
-        type: object
-        properties:
-          value:
-            $ref: '#/components/schemas/int32_array_values'
-          constraint:
-            oneOf:
-              - $ref: '#/components/schemas/int32_constraint'
-              - $ref: '#/components/schemas/constraint_ref'
-          precision: false
-          max_length: false
-          total_length: false
     float32_array_values:
       title: FLOAT32_ARRAY Value
       description: Defines FLOAT32_ARRAY as an array of FLOAT32 values
@@ -2616,25 +2698,6 @@ components:
       required:
         - float32_array_values
       additionalProperties: false
-    apply_float32_array:
-      title: FLOAT32_ARRAY specialism
-      description: Applies FLOAT32_ARRAY values, disables properties that don't work with this type
-      if:
-        type: object
-        properties:
-          type:
-            const: FLOAT32_ARRAY
-      then:
-        type: object
-        properties:
-          value:
-            $ref: '#/components/schemas/float32_array_values'
-          constraint:
-            oneOf:
-              - $ref: '#/components/schemas/float32_constraint'
-              - $ref: '#/components/schemas/constraint_ref'
-          max_length: false
-          total_length: false
     string_array_values:
       title: STRING_ARRAY Value
       description: Defines STRING_ARRAY as an array of STRING values
@@ -2653,24 +2716,6 @@ components:
       required:
         - string_array_values
       additionalProperties: false
-    apply_string_array:
-      title: STRING_ARRAY specialism
-      description: Applies STRING_ARRAY values, disables properties that don't work with this type
-      if:
-        type: object
-        properties:
-          type:
-            const: STRING_ARRAY
-      then:
-        type: object
-        properties:
-          value:
-            $ref: '#/components/schemas/string_array_values'
-          constraint:
-            oneOf:
-              - $ref: '#/components/schemas/string_constraint'
-              - $ref: '#/components/schemas/constraint_ref'
-          precision: false
     struct_array_values:
       title: STRUCT_ARRAY Value
       description: Defines STRUCT_ARRAY as an array of STRUCT values
@@ -2689,23 +2734,6 @@ components:
       required:
         - struct_array_values
       additionalProperties: false
-    apply_struct_array:
-      title: STRUCT_ARRAY specialism
-      description: Applies STRUCT_ARRAY values, disables properties that don't work with this type
-      if:
-        type: object
-        properties:
-          type:
-            const: STRUCT_ARRAY
-      then:
-        type: object
-        properties:
-          value:
-            $ref: '#/components/schemas/struct_array_values'
-          constraint: false
-          precision: false
-          max_length: false
-          total_length: false
     struct_variant_array_values:
       title: STRUCT_VARIANT_ARRAY Value
       description: Defines STRUCT_VARIANT_ARRAY as an array of STRUCT_VARIANT values
@@ -2718,45 +2746,22 @@ components:
       required:
         - struct_variants
       additionalProperties: false
-    apply_struct_variant_array:
-      title: STRUCT_VARIANT_ARRAY specialism
-      description: Applies STRUCT_VARIANT_ARRAY values, disables properties that don't work with this type
-      if:
-        type: object
-        properties:
-          type:
-            const: STRUCT_VARIANT_ARRAY
-      then:
-        type: object
-        properties:
-          value:
-            type: object
-            properties:
-              struct_variant_array_values:
-                $ref: '#/components/schemas/struct_variant_array_values'
-            required:
-              - struct_variant_array_values
-            additionalProperties: false
-          constraint: false
-          precision: false
-          max_length: false
-          total_length: false
     data_payload:
       title: DATA Payload
       description: |
         How data is sent to the client.
       type: object
       properties:
+        url:
+          type: string
+          format: uri
+          description: The URL of the data payload
         payload:
-          oneOf:
-            - type: string
-              format: uri
-              description: The URL of the data payload
-            - type: string
-              contentEncoding: base64
-              contentMediaType: application/octet-stream
-              description: The base64-encoded binary payload
-              pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
+          type: string
+          contentEncoding: base64
+          contentMediaType: application/octet-stream
+          description: The base64-encoded binary payload
+          pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
         payload_encoding:
           description: |
             The encoding of the payload.
@@ -2797,8 +2802,15 @@ components:
           additionalProperties:
             type: string
           description: key/value pairs about the payload, e.g. mime-type, etc.
-      required:
-        - payload
+      oneOf:
+        - properties:
+            url: true
+          required:
+            - url
+        - properties:
+            payload: true
+          required:
+            - payload
       additionalProperties: false
     data_value:
       title: DATA Value
@@ -2809,6 +2821,172 @@ components:
           $ref: '#/components/schemas/data_payload'
       required:
         - data_payload
+    struct_fields:
+      title: STRUCT Fields
+      description: Defines a map of string keys to values
+      type: object
+      patternProperties:
+        ^[a-zA-Z]\w{0,30}$:
+          $ref: '#/components/schemas/value'
+      minProperties: 1
+      additionalProperties: false
+    apply_struct:
+      title: STRUCT specialism
+      description: Applies STRUCT values & constraints, disables properties that don't work with this type
+      if:
+        type: object
+        properties:
+          type:
+            enum:
+              - STRUCT
+              - 10
+      then:
+        type: object
+        properties:
+          value:
+            type: object
+            properties:
+              struct_value:
+                $ref: '#/components/schemas/struct_value'
+            required:
+              - struct_value
+            additionalProperties: false
+          constraint: false
+          precision: false
+          max_length: false
+          total_length: false
+    apply_struct_variant:
+      title: STRUCT_VARIANT specialism
+      description: Applies STRUCT_VARIANT values, disables properties that don't work with this type
+      if:
+        type: object
+        properties:
+          type:
+            enum:
+              - STRUCT_VARIANT
+              - 11
+      then:
+        type: object
+        properties:
+          value:
+            type: object
+            properties:
+              struct_variant_value:
+                $ref: '#/components/schemas/struct_variant_value'
+            required:
+              - struct_variant_value
+            additionalProperties: false
+          constraint: false
+          precision: false
+          max_length: false
+          total_length: false
+    apply_int32_array:
+      title: INT32_ARRAY specialism
+      description: Applies INT32_ARRAY values, disables properties that don't work with this type
+      if:
+        type: object
+        properties:
+          type:
+            enum:
+              - INT32_ARRAY
+              - 14
+      then:
+        type: object
+        properties:
+          value:
+            $ref: '#/components/schemas/int32_array_values'
+          constraint:
+            oneOf:
+              - $ref: '#/components/schemas/int32_constraint'
+              - $ref: '#/components/schemas/constraint_ref'
+          precision: false
+          max_length: false
+          total_length: false
+    apply_float32_array:
+      title: FLOAT32_ARRAY specialism
+      description: Applies FLOAT32_ARRAY values, disables properties that don't work with this type
+      if:
+        type: object
+        properties:
+          type:
+            enum:
+              - FLOAT32_ARRAY
+              - 16
+      then:
+        type: object
+        properties:
+          value:
+            $ref: '#/components/schemas/float32_array_values'
+          constraint:
+            oneOf:
+              - $ref: '#/components/schemas/float32_constraint'
+              - $ref: '#/components/schemas/constraint_ref'
+          max_length: false
+          total_length: false
+    apply_string_array:
+      title: STRING_ARRAY specialism
+      description: Applies STRING_ARRAY values, disables properties that don't work with this type
+      if:
+        type: object
+        properties:
+          type:
+            enum:
+              - STRING_ARRAY
+              - 17
+      then:
+        type: object
+        properties:
+          value:
+            $ref: '#/components/schemas/string_array_values'
+          constraint:
+            oneOf:
+              - $ref: '#/components/schemas/string_constraint'
+              - $ref: '#/components/schemas/constraint_ref'
+          precision: false
+    apply_struct_array:
+      title: STRUCT_ARRAY specialism
+      description: Applies STRUCT_ARRAY values, disables properties that don't work with this type
+      if:
+        type: object
+        properties:
+          type:
+            enum:
+              - STRUCT_ARRAY
+              - 32
+      then:
+        type: object
+        properties:
+          value:
+            $ref: '#/components/schemas/struct_array_values'
+          constraint: false
+          precision: false
+          max_length: false
+          total_length: false
+    apply_struct_variant_array:
+      title: STRUCT_VARIANT_ARRAY specialism
+      description: Applies STRUCT_VARIANT_ARRAY values, disables properties that don't work with this type
+      if:
+        type: object
+        properties:
+          type:
+            enum:
+              - STRUCT_VARIANT_ARRAY
+              - 33
+      then:
+        type: object
+        properties:
+          value:
+            type: object
+            properties:
+              struct_variant_array_values:
+                $ref: '#/components/schemas/struct_variant_array_values'
+            required:
+              - struct_variant_array_values
+            additionalProperties: false
+          constraint: false
+          precision: false
+          max_length: false
+          total_length: false
     apply_data:
       title: DATA specialism
       description: Applies DATA values, disables properties that don't work with this type
@@ -2816,7 +2994,9 @@ components:
         type: object
         properties:
           type:
-            const: DATA
+            enum:
+              - DATA
+              - 50
       then:
         type: object
         properties:
@@ -2999,7 +3179,9 @@ components:
       maximum: 10
     max_length:
       title: Maximum String Length
-      description: "The maximum length of a string value, \nor the maximum length of an element in a string array\n"
+      description: |
+        The maximum length of a string value, 
+        or the maximum length of an element in a string array
       type: integer
       default: 0
       minimum: 0
@@ -3126,7 +3308,7 @@ components:
         - $ref: '#/components/schemas/apply_struct_variant_array'
         - $ref: '#/components/schemas/apply_data'
     device:
-      $id: https://smpte.github.io/st2138-a/v1.1.1-pre-fcd/interface/schema/device.yaml
+      $id: https://smpte.github.io/st2138-a/v1.2.0-pre-fcd/interface/schema/device.yaml
       $schema: https://json-schema.org/draft/2020-12/schema
       title: Schema for Catena's Device Model
       description: |
@@ -3165,7 +3347,7 @@ components:
       title: Component Param
       description: |
         A top-level parameter descriptor plus its oid.
-        type: object
+      type: object
       properties:
         oid:
           $ref: '#/components/schemas/simple_oid'
@@ -3175,19 +3357,19 @@ components:
         - oid
         - param
       additionalProperties: false
-    component_command:
-      title: Component Command
+    component_constraint:
+      title: Component Constraint
       description: |
-        A command descriptor plus its oid.
+        A constraint descriptor plus its oid.
       type: object
       properties:
         oid:
           $ref: '#/components/schemas/simple_oid'
-        command:
-          $ref: '#/components/schemas/param'
+        constraint:
+          $ref: '#/components/schemas/constraint'
       required:
         - oid
-        - command
+        - constraint
       additionalProperties: false
     component_menu:
       title: Component Menu
@@ -3203,19 +3385,19 @@ components:
         - oid
         - menu
       additionalProperties: false
-    component_constraint:
-      title: Component Constraint
+    component_command:
+      title: Component Command
       description: |
-        A constraint descriptor plus its oid.
+        A command descriptor plus its oid.
       type: object
       properties:
         oid:
           $ref: '#/components/schemas/simple_oid'
-        constraint:
-          $ref: '#/components/schemas/constraint'
+        command:
+          $ref: '#/components/schemas/command'
       required:
         - oid
-        - constraint
+        - command
       additionalProperties: false
     component_language_pack:
       title: Component Language Pack
@@ -3258,11 +3440,15 @@ components:
       properties:
         oid:
           $ref: '#/components/schemas/fqoid'
-        param:
-          $ref: '#/components/schemas/param'
+        type:
+          $ref: '#/components/schemas/param_type'
+        name:
+          $ref: '#/components/schemas/polyglot_text'
+        template_oid:
+          $ref: '#/components/schemas/fqoid'
       required:
         - oid
-        - param
+        - type
       additionalProperties: false
     with_slot:
       title: With Slot
@@ -3274,21 +3460,25 @@ components:
           $ref: '#/components/schemas/slot'
       required:
         - slot
-      additionalProperties: false
     push_value:
       title: Push Value
       description: |
         A value to be pushed to the client.
       type: object
       properties:
-        oid:
-          $ref: '#/components/schemas/fqoid'
         value:
-          $ref: '#/components/schemas/value'
+          type: object
+          properties:
+            oid:
+              $ref: '#/components/schemas/fqoid'
+            value:
+              $ref: '#/components/schemas/value'
+          required:
+            - oid
+            - value
+          additionalProperties: false
       required:
-        - oid
         - value
-      additionalProperties: false
     device_component:
       title: Device Component
       description: |
@@ -3297,26 +3487,58 @@ components:
         component.
       type: object
       oneOf:
-        - $ref: '#/components/schemas/device'
-        - $ref: '#/components/schemas/component_param'
-        - $ref: '#/components/schemas/component_command'
-        - $ref: '#/components/schemas/component_menu'
-        - $ref: '#/components/schemas/component_constraint'
-        - $ref: '#/components/schemas/component_language_pack'
+        - type: object
+          properties:
+            device:
+              $ref: '#/components/schemas/device'
+          required:
+            - device
+          additionalProperties: false
+        - type: object
+          properties:
+            param:
+              $ref: '#/components/schemas/component_param'
+          required:
+            - param
+          additionalProperties: false
+        - type: object
+          properties:
+            shared_constraint:
+              $ref: '#/components/schemas/component_constraint'
+          required:
+            - shared_constraint
+          additionalProperties: false
+        - type: object
+          properties:
+            menu:
+              $ref: '#/components/schemas/component_menu'
+          required:
+            - menu
+          additionalProperties: false
+        - type: object
+          properties:
+            command:
+              $ref: '#/components/schemas/component_command'
+          required:
+            - command
+          additionalProperties: false
+        - type: object
+          properties:
+            language_pack:
+              $ref: '#/components/schemas/component_language_pack'
+          required:
+            - language_pack
+          additionalProperties: false
     push_device_component:
       title: Push Device Component
       description: |
         A device component to be pushed to the client.
       type: object
       properties:
-        oid:
-          $ref: '#/components/schemas/fqoid'
         device_component:
           $ref: '#/components/schemas/device_component'
       required:
-        - oid
         - device_component
-      additionalProperties: false
     push_exception:
       title: Push Exception
       description: |
@@ -3327,7 +3549,6 @@ components:
           $ref: '#/components/schemas/exception'
       required:
         - refused
-      additionalProperties: false
     push_invalidated_external_object_id:
       title: Push Invalidated External Object ID
       description: |
@@ -3338,7 +3559,6 @@ components:
           type: string
       required:
         - invalidated_external_object_id
-      additionalProperties: false
     trap_message_type:
       title: Trap Message Type
       description: |
@@ -3411,11 +3631,20 @@ components:
         A trap message to be pushed to the client.
       type: object
       properties:
-        type:
-          $ref: '#/components/schemas/trap_message_type'
+        trap_message:
+          type: object
+          properties:
+            type:
+              $ref: '#/components/schemas/trap_message_type'
+            trap_data:
+              type: array
+              items:
+                type: string
+          required:
+            - type
+          additionalProperties: false
       required:
         - trap_message
-      additionalProperties: false
     push_invalidate_device_model:
       title: Push Invalidate Device Model
       description: |
@@ -3427,7 +3656,6 @@ components:
           default: false
       required:
         - invalidate_device_model
-      additionalProperties: false
     external_object_payload:
       title: External Object Payload
       description: |
@@ -3448,64 +3676,85 @@ components:
         A external object to be pushed to the client.
       type: object
       properties:
-        oid:
-          $ref: '#/components/schemas/fqoid'
         external_object:
-          $ref: '#/components/schemas/external_object_payload'
+          type: object
+          properties:
+            oid:
+              $ref: '#/components/schemas/fqoid'
+            external_object:
+              $ref: '#/components/schemas/external_object_payload'
+          required:
+            - oid
+            - external_object
+          additionalProperties: false
       required:
-        - oid
         - external_object
-      additionalProperties: false
     id_list:
       title: ID List
       description: |
         A list of object ids (OIDs)
-      type: array
-      items:
-        $ref: '#/components/schemas/fqoid'
+      type: object
+      properties:
+        oids:
+          type: array
+          items:
+            $ref: '#/components/schemas/fqoid'
+      required:
+        - oids
+      additionalProperties: false
     push_remove_device_components:
       title: Push Remove Device Components
       description: |
         A list of device components to be removed from the client.
       type: object
-      oneOf:
-        - type: object
-          properties:
-            params:
-              $ref: '#/components/schemas/id_list'
-          required:
-            - params
-          additionalProperties: false
-        - type: object
-          properties:
-            shared_constraints:
-              $ref: '#/components/schemas/id_list'
-          required:
-            - shared_constraints
-          additionalProperties: false
-        - type: object
-          properties:
-            menus:
-              $ref: '#/components/schemas/id_list'
-          required:
-            - menus
-          additionalProperties: false
-        - type: object
-          properties:
-            commands:
-              $ref: '#/components/schemas/id_list'
-          required:
-            - commands
-          additionalProperties: false
-        - type: object
-          properties:
-            language_packs:
-              type: array
-              items:
-                $ref: '#/components/schemas/language_code'
-          required:
-            - language_packs
-          additionalProperties: false
+      properties:
+        remove_device_components:
+          oneOf:
+            - type: object
+              properties:
+                params:
+                  $ref: '#/components/schemas/id_list'
+              required:
+                - params
+              additionalProperties: false
+            - type: object
+              properties:
+                shared_constraints:
+                  $ref: '#/components/schemas/id_list'
+              required:
+                - shared_constraints
+              additionalProperties: false
+            - type: object
+              properties:
+                menus:
+                  $ref: '#/components/schemas/id_list'
+              required:
+                - menus
+              additionalProperties: false
+            - type: object
+              properties:
+                commands:
+                  $ref: '#/components/schemas/id_list'
+              required:
+                - commands
+              additionalProperties: false
+            - type: object
+              properties:
+                language_packs:
+                  type: object
+                  properties:
+                    oids:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/language_code'
+                  required:
+                    - oids
+                  additionalProperties: false
+              required:
+                - language_packs
+              additionalProperties: false
+      required:
+        - remove_device_components
     push_slots_added:
       title: Push Slots Added
       description: |
@@ -3513,12 +3762,17 @@ components:
       type: object
       properties:
         slots_added:
-          type: array
-          items:
-            $ref: '#/components/schemas/slot'
+          type: object
+          properties:
+            slots:
+              type: array
+              items:
+                $ref: '#/components/schemas/slot'
+          required:
+            - slots
+          additionalProperties: false
       required:
         - slots_added
-      additionalProperties: false
     push_slots_removed:
       title: Push Slots Removed
       description: |
@@ -3526,12 +3780,17 @@ components:
       type: object
       properties:
         slots_removed:
-          type: array
-          items:
-            $ref: '#/components/schemas/slot'
+          type: object
+          properties:
+            slots:
+              type: array
+              items:
+                $ref: '#/components/schemas/slot'
+          required:
+            - slots
+          additionalProperties: false
       required:
         - slots_removed
-      additionalProperties: false
     command_map:
       title: Command Map
       description: |
@@ -3568,7 +3827,9 @@ components:
       default: false
     subscriptions:
       title: Subscriptions
-      description: "When true, indicates that the device supports subscription-based \naccess to subsets of parameters.\n"
+      description: |
+        When true, indicates that the device supports subscription-based 
+        access to subsets of parameters.
       type: boolean
       default: false
     constraint_map:
@@ -3582,7 +3843,13 @@ components:
       additionalProperties: false
     language_packs:
       title: Language Packs
-      description: "Language Packs A map of language identifiers to resource dictionaries\nor language packs for each language supported. The keys are \nfrom the ISO 639-1 language code, e.g. \n\\\"es\\\" for Global Spanish.\n\\\"es-CO\\\" for Colombian Spanish.\n\\\"pl\\\" for Jezyk polski\"\n"
+      description: |
+        Language Packs A map of language identifiers to resource dictionaries
+        or language packs for each language supported. The keys are 
+        from the ISO 639-1 language code, e.g. 
+        \"es\" for Global Spanish.
+        \"es-CO\" for Colombian Spanish.
+        \"pl\" for Jezyk polski"
       type: object
       properties:
         packs:
@@ -3797,6 +4064,7 @@ components:
       title: Push Updates
       description: |
         Asynchronous updates of various types to the client.
+      type: object
       allOf:
         - $ref: '#/components/schemas/with_slot'
         - oneOf:
@@ -3810,6 +4078,7 @@ components:
             - $ref: '#/components/schemas/push_remove_device_components'
             - $ref: '#/components/schemas/push_slots_added'
             - $ref: '#/components/schemas/push_slots_removed'
+      unevaluatedProperties: false
     language_list:
       title: Language List
       description: |
@@ -3850,7 +4119,10 @@ components:
       additionalProperties: false
     refresh_token_payload:
       title: Refresh Token Payload
-      description: "Request to refresh the access token with the one in the request metadata\nand extend the expiry time of all active connections to the exp \nclaim in the new token.\n"
+      description: |
+        Request to refresh the access token with the one in the request metadata
+        and extend the expiry time of all active connections to the exp 
+        claim in the new token.
       type: object
       properties:
         reason:

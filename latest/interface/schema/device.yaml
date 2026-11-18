@@ -27,7 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-$id: https://smpte.github.io/st2138-a/v1.1.1-pre-fcd/interface/schema/device.yaml
+$id: https://smpte.github.io/st2138-a/v1.2.0-pre-fcd/interface/schema/device.yaml
 $schema: https://json-schema.org/draft/2020-12/schema
 title: Schema for Catena's Device Model
 description: |
@@ -100,7 +100,20 @@ $defs:
     additionalProperties: false
   detail_level:
     title: Detail Level
-    description: "The level of detail in device messages and parameter updates.\n'full' indicates that all parameters are reported, \n'minimal' that only the minimal set is, \n'subscriptions' reports the minimal set plus identified subscribed\nparameters, \n'commands' reports only descriptors for commands and not for parameters,\nand 'none' indicates that no parameters or commands should be\nautomatically reported by the device (parameter descriptors, command\ndescriptors, and values can still be pulled).\n\nThis is another place where human readability/writeability is important.\nProtobuf uses a numeric value for the detail level so we use a oneOf\nto enable both numeric and string values.\n"
+    description: |
+      The level of detail in device messages and parameter updates.
+      'full' indicates that all parameters are reported, 
+      'minimal' that only the minimal set is, 
+      'subscriptions' reports the minimal set plus identified subscribed
+      parameters, 
+      'commands' reports only descriptors for commands and not for parameters,
+      and 'none' indicates that no parameters or commands should be
+      automatically reported by the device (parameter descriptors, command
+      descriptors, and values can still be pulled).
+
+      This is another place where human readability/writeability is important.
+      Protobuf uses a numeric value for the detail level so we use a oneOf
+      to enable both numeric and string values.
     oneOf:
       - type: string
         enum:
@@ -138,7 +151,9 @@ $defs:
     default: false
   subscriptions:
     title: Subscriptions
-    description: "When true, indicates that the device supports subscription-based \naccess to subsets of parameters.\n"
+    description: |
+      When true, indicates that the device supports subscription-based 
+      access to subsets of parameters.
     type: boolean
     default: false
   constraint_map:
@@ -152,7 +167,13 @@ $defs:
     additionalProperties: false
   language_packs:
     title: Language Packs
-    description: "Language Packs A map of language identifiers to resource dictionaries\nor language packs for each language supported. The keys are \nfrom the ISO 639-1 language code, e.g. \n\\\"es\\\" for Global Spanish.\n\\\"es-CO\\\" for Colombian Spanish.\n\\\"pl\\\" for Jezyk polski\"\n"
+    description: |
+      Language Packs A map of language identifiers to resource dictionaries
+      or language packs for each language supported. The keys are 
+      from the ISO 639-1 language code, e.g. 
+      \"es\" for Global Spanish.
+      \"es-CO\" for Colombian Spanish.
+      \"pl\" for Jezyk polski"
     type: object
     properties:
       packs:
@@ -201,7 +222,6 @@ $defs:
           The display order of the menu group.
     required:
       - name
-      - menus
       - order
     additionalProperties: false
   menus:
@@ -495,6 +515,55 @@ $defs:
     # the value schema is the union of all of these specialized schemas.
     title: Parameter Value
     description: "Value of the parameter. Its schema is polymorphic dependent on type."
+    type: object
+    oneOf:
+      - type: object
+        properties:
+          undefined_value:
+            # proto: enum UndefinedValue { UNDEFINED_VALUE = 0 }
+            enum: [UNDEFINED_VALUE, 0]
+        required:
+          - undefined_value
+        additionalProperties: false
+      - type: object
+        properties:
+          empty_value:
+            # proto: message Empty {}. Write it as `empty_value: {}`; a bare
+            # `empty_value:` parses as null and is rejected.
+            type: object
+            maxProperties: 0
+        required:
+          - empty_value
+        additionalProperties: false
+      - $ref: "#/$defs/int32_value"
+      - $ref: "#/$defs/float32_value"
+      - $ref: "#/$defs/string_value"
+      - type: object
+        properties:
+          struct_value:
+            $ref: "#/$defs/struct_value"
+        required:
+          - struct_value
+        additionalProperties: false
+      - type: object
+        properties:
+          struct_variant_value:
+            $ref: "#/$defs/struct_variant_value"
+        required:
+          - struct_variant_value
+        additionalProperties: false
+      - $ref: "#/$defs/int32_array_values"
+      - $ref: "#/$defs/float32_array_values"
+      - $ref: "#/$defs/string_array_values"
+      - $ref: "#/$defs/struct_array_values"
+      - type: object
+        properties:
+          struct_variant_array_values:
+            $ref: "#/$defs/struct_variant_array_values"
+        required:
+          - struct_variant_array_values
+        additionalProperties: false
+      - $ref: "#/$defs/data_value"
   constraint:
     title: Constraint to define the parameter's allowed values
     description: Polymorphic depending on the type of constraint applied
@@ -519,17 +588,17 @@ $defs:
               - const: 0
                 title: UNDEFINED
               - const: 2
-                title: INT_CHOICE
-              - const: 4
                 title: INT_RANGE
-              - const: 5
-                title: ALARM_TABLE
-              - const: 6
+              - const: 4
                 title: FLOAT_RANGE
-              - const: 7
+              - const: 5
+                title: INT_CHOICE
+              - const: 6
                 title: STRING_CHOICE
-              - const: 8
+              - const: 7
                 title: STRING_STRING_CHOICE
+              - const: 8
+                title: ALARM_TABLE
               - const: 9
                 title: FORMATTED_STRING
     required:
@@ -587,7 +656,7 @@ $defs:
       type: object
       properties:
         type:
-          const: INT32
+          enum: [INT32, 4]
     then:
       type: object
       properties:
@@ -625,12 +694,12 @@ $defs:
           type: object
           properties:
             type:
-              const: INT_CHOICE
+              enum: [INT_CHOICE, 5]
         then:
           type: object
           properties:
             type:
-              const: INT_CHOICE
+              enum: [INT_CHOICE, 5]
             int32_choice:
               type: object
               properties:
@@ -646,12 +715,12 @@ $defs:
           type: object
           properties:
             type:
-              const: INT_RANGE
+              enum: [INT_RANGE, 2]
         then:
           type: object
           properties:
             type:
-              const: INT_RANGE
+              enum: [INT_RANGE, 2]
             int32_range:
               type: object
               properties:
@@ -674,12 +743,12 @@ $defs:
           type: object
           properties:
             type:
-              const: ALARM_TABLE
+              enum: [ALARM_TABLE, 8]
         then:
           type: object
           properties:
             type:
-              const: ALARM_TABLE
+              enum: [ALARM_TABLE, 8]
             alarm_table:
               type: object
               properties:
@@ -758,7 +827,7 @@ $defs:
       type: object
       properties:
         type:
-          const: FLOAT32
+          enum: [FLOAT32, 6]
     then:
       type: object
       properties:
@@ -798,12 +867,12 @@ $defs:
           type: object
           properties:
             type:
-              const: FLOAT_RANGE
+              enum: [FLOAT_RANGE, 4]
         then:
           type: object
           properties:
             type:
-              const: FLOAT_RANGE
+              enum: [FLOAT_RANGE, 4]
             float_range:
               type: object
               properties:
@@ -829,7 +898,7 @@ $defs:
       type: object
       properties:
         type:
-          const: STRING
+          enum: [STRING, 7]
     then:
       type: object
       properties:
@@ -860,12 +929,12 @@ $defs:
           type: object
           properties:
             type:
-              const: STRING_CHOICE
+              enum: [STRING_CHOICE, 6]
         then:
           type: object
           properties:
             type:
-              const: STRING_CHOICE
+              enum: [STRING_CHOICE, 6]
             string_choice:
               $ref: "#/$defs/string_choice"
           required:
@@ -875,12 +944,12 @@ $defs:
           type: object
           properties:
             type:
-              const: STRING_STRING_CHOICE
+              enum: [STRING_STRING_CHOICE, 7]
         then:
           type: object
           properties:
             type:
-              const: STRING_STRING_CHOICE
+              enum: [STRING_STRING_CHOICE, 7]
             string_string_choice:
               $ref: "#/$defs/string_string_choice"
           required:
@@ -890,12 +959,12 @@ $defs:
           type: object
           properties:
             type:
-              const: FORMATTED_STRING
+              enum: [FORMATTED_STRING, 9]
         then:
           type: object
           properties:
             type:
-              const: FORMATTED_STRING
+              enum: [FORMATTED_STRING, 9]
             formatted_string:
               $ref: "#/$defs/formatted_string"
           required:
@@ -1025,7 +1094,7 @@ $defs:
       type: object
       properties:
         type:
-          const: STRUCT
+          enum: [STRUCT, 10]
     then:
       type: object
       properties:
@@ -1069,7 +1138,7 @@ $defs:
       type: object
       properties:
         type:
-          const: STRUCT_VARIANT
+          enum: [STRUCT_VARIANT, 11]
     then:
       type: object
       properties:
@@ -1106,7 +1175,7 @@ $defs:
       type: object
       properties:
         type:
-          const: INT32_ARRAY
+          enum: [INT32_ARRAY, 14]
     then:
       type: object
       properties:
@@ -1144,7 +1213,7 @@ $defs:
       type: object
       properties:
         type:
-          const: FLOAT32_ARRAY
+          enum: [FLOAT32_ARRAY, 16]
     then:
       type: object
       properties:
@@ -1181,7 +1250,7 @@ $defs:
       type: object
       properties:
         type:
-          const: STRING_ARRAY
+          enum: [STRING_ARRAY, 17]
     then:
       type: object
       properties:
@@ -1217,7 +1286,7 @@ $defs:
       type: object
       properties:
         type:
-          const: STRUCT_ARRAY
+          enum: [STRUCT_ARRAY, 32]
     then:
       type: object
       properties:
@@ -1252,7 +1321,7 @@ $defs:
       type: object
       properties:
         type:
-          const: STRUCT_VARIANT_ARRAY
+          enum: [STRUCT_VARIANT_ARRAY, 33]
     then:
       type: object
       properties:
@@ -1287,7 +1356,7 @@ $defs:
       type: object
       properties:
         type:
-          const: DATA
+          enum: [DATA, 50]
     then:
       type: object
       properties:
@@ -1303,16 +1372,16 @@ $defs:
       How data is sent to the client.
     type: object
     properties:
+      url:
+        type: string
+        format: uri
+        description: The URL of the data payload
       payload:
-        oneOf:
-          - type: string
-            format: uri
-            description: The URL of the data payload
-          - type: string
-            contentEncoding: base64
-            contentMediaType: application/octet-stream
-            description: The base64-encoded binary payload
-            pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
+        type: string
+        contentEncoding: base64
+        contentMediaType: application/octet-stream
+        description: The base64-encoded binary payload
+        pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
       payload_encoding:
         description: |
           The encoding of the payload.
@@ -1344,8 +1413,13 @@ $defs:
         additionalProperties:
           type: string
         description: key/value pairs about the payload, e.g. mime-type, etc.
-    required:
-      - payload
+    oneOf:
+      - properties:
+          url: true
+        required: [url]
+      - properties:
+          payload: true
+        required: [payload]
     additionalProperties: false
   data_value:
     title: DATA Value
@@ -1370,7 +1444,9 @@ $defs:
     maximum: 10
   max_length:
     title: Maximum String Length
-    description: "The maximum length of a string value, \nor the maximum length of an element in a string array\n"
+    description: |
+      The maximum length of a string value, 
+      or the maximum length of an element in a string array
     type: integer
     default: 0
     minimum: 0
@@ -1466,17 +1542,54 @@ $defs:
       component.
     type: object
     oneOf:
-      - $ref: "#"
-      - $ref: "#/$defs/component_param"
-      - $ref: "#/$defs/component_command"
-      - $ref: "#/$defs/component_menu"
-      - $ref: "#/$defs/component_constraint"
-      - $ref: "#/$defs/component_language_pack"
+      - type: object
+        properties:
+          device:
+            # "#" is the device model root, resolved against the root document.
+            $ref: "#"
+        required:
+          - device
+        additionalProperties: false
+      - type: object
+        properties:
+          param:
+            $ref: "#/$defs/component_param"
+        required:
+          - param
+        additionalProperties: false
+      - type: object
+        properties:
+          shared_constraint:
+            $ref: "#/$defs/component_constraint"
+        required:
+          - shared_constraint
+        additionalProperties: false
+      - type: object
+        properties:
+          menu:
+            $ref: "#/$defs/component_menu"
+        required:
+          - menu
+        additionalProperties: false
+      - type: object
+        properties:
+          command:
+            $ref: "#/$defs/component_command"
+        required:
+          - command
+        additionalProperties: false
+      - type: object
+        properties:
+          language_pack:
+            $ref: "#/$defs/component_language_pack"
+        required:
+          - language_pack
+        additionalProperties: false
   component_param:
     title: Component Param
     description: |
       A top-level parameter descriptor plus its oid.
-      type: object
+    type: object
     properties:
       oid:
         $ref: "#/$defs/simple_oid"
@@ -1495,7 +1608,7 @@ $defs:
       oid:
         $ref: "#/$defs/simple_oid"
       command:
-        $ref: "#/$defs/param"
+        $ref: "#/$defs/command"
     required:
       - oid
       - command
@@ -1697,11 +1810,15 @@ $defs:
     properties:
       oid:
         $ref: "#/$defs/fqoid"
-      param:
-        $ref: "#/$defs/param"
+      type:
+        $ref: "#/$defs/param_type"
+      name:
+        $ref: "#/$defs/polyglot_text"
+      template_oid:
+        $ref: "#/$defs/fqoid"
     required:
       - oid
-      - param
+      - type
     additionalProperties: false
   param_info_request:
     title: Param Info Request
@@ -1736,6 +1853,7 @@ $defs:
     title: Push Updates
     description: |
       Asynchronous updates of various types to the client.
+    type: object
     allOf:
       - $ref: "#/$defs/with_slot"
       - oneOf:
@@ -1749,6 +1867,7 @@ $defs:
           - $ref: "#/$defs/push_remove_device_components"
           - $ref: "#/$defs/push_slots_added"
           - $ref: "#/$defs/push_slots_removed"
+    unevaluatedProperties: false
   with_slot:
     title: With Slot
     description: |
@@ -1759,35 +1878,35 @@ $defs:
         $ref: "#/$defs/slot"
     required:
       - slot
-    additionalProperties: false
   push_value:
     title: Push Value
     description: |
       A value to be pushed to the client.
     type: object
     properties:
-      oid:
-        $ref: "#/$defs/fqoid"
       value:
-        $ref: "#/$defs/value"
+        type: object
+        properties:
+          oid:
+            $ref: "#/$defs/fqoid"
+          value:
+            $ref: "#/$defs/value"
+        required:
+          - oid
+          - value
+        additionalProperties: false
     required:
-      - oid
       - value
-    additionalProperties: false
   push_device_component:
     title: Push Device Component
     description: |
       A device component to be pushed to the client.
     type: object
     properties:
-      oid:
-        $ref: "#/$defs/fqoid"
       device_component:
         $ref: "#/$defs/device_component"
     required:
-      - oid
       - device_component
-    additionalProperties: false
   push_exception:
     title: Push Exception
     description: |
@@ -1798,7 +1917,6 @@ $defs:
         $ref: "#/$defs/exception"
     required:
       - refused
-    additionalProperties: false
   push_invalidated_external_object_id:
     title: Push Invalidated External Object ID
     description: |
@@ -1809,7 +1927,6 @@ $defs:
         type: string
     required:
       - invalidated_external_object_id
-    additionalProperties: false
   trap_message_type: # see the proto file enum meanings
     title: Trap Message Type
     description: |
@@ -1862,11 +1979,20 @@ $defs:
       A trap message to be pushed to the client.
     type: object
     properties:
-      type:
-        $ref: "#/$defs/trap_message_type"
+      trap_message:
+        type: object
+        properties:
+          type:
+            $ref: "#/$defs/trap_message_type"
+          trap_data:
+            type: array
+            items:
+              type: string
+        required:
+          - type
+        additionalProperties: false
     required:
       - trap_message
-    additionalProperties: false
   push_invalidate_device_model:
     title: Push Invalidate Device Model
     description: |
@@ -1878,28 +2004,38 @@ $defs:
         default: false
     required:
       - invalidate_device_model
-    additionalProperties: false
   push_external_object:
     title: Push External Object
     description: |
       A external object to be pushed to the client.
     type: object
     properties:
-      oid:
-        $ref: "#/$defs/fqoid"
       external_object:
-        $ref: "#/$defs/external_object_payload"
+        type: object
+        properties:
+          oid:
+            $ref: "#/$defs/fqoid"
+          external_object:
+            $ref: "#/$defs/external_object_payload"
+        required:
+          - oid
+          - external_object
+        additionalProperties: false
     required:
-      - oid
       - external_object
-    additionalProperties: false
   id_list:
     title: ID List
     description: |
       A list of object ids (OIDs)
-    type: array
-    items:
-      $ref: "#/$defs/fqoid"
+    type: object
+    properties:
+      oids:
+        type: array
+        items:
+          $ref: "#/$defs/fqoid"
+    required:
+      - oids
+    additionalProperties: false
   language_list:
     title: Language List
     description: |
@@ -1913,44 +2049,54 @@ $defs:
     description: |
       A list of device components to be removed from the client.
     type: object
-    oneOf:
-      - type: object
-        properties:
-          params:
-            $ref: "#/$defs/id_list"
-        required:
-          - params
-        additionalProperties: false
-      - type: object
-        properties:
-          shared_constraints:
-            $ref: "#/$defs/id_list"
-        required:
-          - shared_constraints
-        additionalProperties: false
-      - type: object
-        properties:
-          menus:
-            $ref: "#/$defs/id_list"
-        required:
-          - menus
-        additionalProperties: false
-      - type: object
-        properties:
-          commands:
-            $ref: "#/$defs/id_list"
-        required:
-          - commands
-        additionalProperties: false
-      - type: object
-        properties:
-          language_packs:
-            type: array
-            items:
-              $ref: "#/$defs/language_code"
-        required:
-          - language_packs
-        additionalProperties: false
+    properties:
+      remove_device_components:
+        oneOf:
+          - type: object
+            properties:
+              params:
+                $ref: "#/$defs/id_list"
+            required:
+              - params
+            additionalProperties: false
+          - type: object
+            properties:
+              shared_constraints:
+                $ref: "#/$defs/id_list"
+            required:
+              - shared_constraints
+            additionalProperties: false
+          - type: object
+            properties:
+              menus:
+                $ref: "#/$defs/id_list"
+            required:
+              - menus
+            additionalProperties: false
+          - type: object
+            properties:
+              commands:
+                $ref: "#/$defs/id_list"
+            required:
+              - commands
+            additionalProperties: false
+          - type: object
+            properties:
+              language_packs:
+                type: object
+                properties:
+                  oids:
+                    type: array
+                    items:
+                      $ref: "#/$defs/language_code"
+                required:
+                  - oids
+                additionalProperties: false
+            required:
+              - language_packs
+            additionalProperties: false
+    required:
+      - remove_device_components
   push_slots_added:
     title: Push Slots Added
     description: |
@@ -1958,12 +2104,17 @@ $defs:
     type: object
     properties:
       slots_added:
-        type: array
-        items:
-          $ref: "#/$defs/slot"
+        type: object
+        properties:
+          slots:
+            type: array
+            items:
+              $ref: "#/$defs/slot"
+        required:
+          - slots
+        additionalProperties: false
     required:
       - slots_added
-    additionalProperties: false
   push_slots_removed:
     title: Push Slots Removed
     description: |
@@ -1971,12 +2122,17 @@ $defs:
     type: object
     properties:
       slots_removed:
-        type: array
-        items:
-          $ref: "#/$defs/slot"
+        type: object
+        properties:
+          slots:
+            type: array
+            items:
+              $ref: "#/$defs/slot"
+        required:
+          - slots
+        additionalProperties: false
     required:
       - slots_removed
-    additionalProperties: false
   language_pack_request_payload:
     title: Language Pack Request Payload
     description: |
@@ -2009,7 +2165,10 @@ $defs:
     additionalProperties: false
   refresh_token_payload:
     title: Refresh Token Payload
-    description: "Request to refresh the access token with the one in the request metadata\nand extend the expiry time of all active connections to the exp \nclaim in the new token.\n"
+    description: |
+      Request to refresh the access token with the one in the request metadata
+      and extend the expiry time of all active connections to the exp 
+      claim in the new token.
     type: object
     properties:
       reason:

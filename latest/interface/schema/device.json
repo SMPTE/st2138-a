@@ -1,5 +1,5 @@
 {
-  "$id": "https://smpte.github.io/st2138-a/v1.1.1-pre-fcd/interface/schema/device.yaml",
+  "$id": "https://smpte.github.io/st2138-a/v1.2.0-pre-fcd/interface/schema/device.yaml",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Schema for Catena's Device Model",
   "description": "Intended to assist humans to author Catena device models as JSON files as\nsome IDEs can use schema such as this one to lint models.\n",
@@ -230,7 +230,6 @@
       },
       "required": [
         "name",
-        "menus",
         "order"
       ],
       "additionalProperties": false
@@ -705,7 +704,98 @@
     },
     "value": {
       "title": "Parameter Value",
-      "description": "Value of the parameter. Its schema is polymorphic dependent on type."
+      "description": "Value of the parameter. Its schema is polymorphic dependent on type.",
+      "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "undefined_value": {
+              "enum": [
+                "UNDEFINED_VALUE",
+                0
+              ]
+            }
+          },
+          "required": [
+            "undefined_value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "empty_value": {
+              "type": "object",
+              "maxProperties": 0
+            }
+          },
+          "required": [
+            "empty_value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/int32_value"
+        },
+        {
+          "$ref": "#/$defs/float32_value"
+        },
+        {
+          "$ref": "#/$defs/string_value"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "struct_value": {
+              "$ref": "#/$defs/struct_value"
+            }
+          },
+          "required": [
+            "struct_value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "struct_variant_value": {
+              "$ref": "#/$defs/struct_variant_value"
+            }
+          },
+          "required": [
+            "struct_variant_value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/int32_array_values"
+        },
+        {
+          "$ref": "#/$defs/float32_array_values"
+        },
+        {
+          "$ref": "#/$defs/string_array_values"
+        },
+        {
+          "$ref": "#/$defs/struct_array_values"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "struct_variant_array_values": {
+              "$ref": "#/$defs/struct_variant_array_values"
+            }
+          },
+          "required": [
+            "struct_variant_array_values"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/data_value"
+        }
+      ]
     },
     "constraint": {
       "title": "Constraint to define the parameter's allowed values",
@@ -760,27 +850,27 @@
                 },
                 {
                   "const": 2,
-                  "title": "INT_CHOICE"
-                },
-                {
-                  "const": 4,
                   "title": "INT_RANGE"
                 },
                 {
-                  "const": 5,
-                  "title": "ALARM_TABLE"
-                },
-                {
-                  "const": 6,
+                  "const": 4,
                   "title": "FLOAT_RANGE"
                 },
                 {
-                  "const": 7,
+                  "const": 5,
+                  "title": "INT_CHOICE"
+                },
+                {
+                  "const": 6,
                   "title": "STRING_CHOICE"
                 },
                 {
-                  "const": 8,
+                  "const": 7,
                   "title": "STRING_STRING_CHOICE"
+                },
+                {
+                  "const": 8,
+                  "title": "ALARM_TABLE"
                 },
                 {
                   "const": 9,
@@ -845,7 +935,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "const": "INT32"
+            "enum": [
+              "INT32",
+              4
+            ]
           }
         }
       },
@@ -902,7 +995,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "INT_CHOICE"
+                "enum": [
+                  "INT_CHOICE",
+                  5
+                ]
               }
             }
           },
@@ -910,7 +1006,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "INT_CHOICE"
+                "enum": [
+                  "INT_CHOICE",
+                  5
+                ]
               },
               "int32_choice": {
                 "type": "object",
@@ -936,7 +1035,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "INT_RANGE"
+                "enum": [
+                  "INT_RANGE",
+                  2
+                ]
               }
             }
           },
@@ -944,7 +1046,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "INT_RANGE"
+                "enum": [
+                  "INT_RANGE",
+                  2
+                ]
               },
               "int32_range": {
                 "type": "object",
@@ -980,7 +1085,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "ALARM_TABLE"
+                "enum": [
+                  "ALARM_TABLE",
+                  8
+                ]
               }
             }
           },
@@ -988,7 +1096,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "ALARM_TABLE"
+                "enum": [
+                  "ALARM_TABLE",
+                  8
+                ]
               },
               "alarm_table": {
                 "type": "object",
@@ -1124,7 +1235,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "const": "FLOAT32"
+            "enum": [
+              "FLOAT32",
+              6
+            ]
           }
         }
       },
@@ -1181,7 +1295,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "FLOAT_RANGE"
+                "enum": [
+                  "FLOAT_RANGE",
+                  4
+                ]
               }
             }
           },
@@ -1189,7 +1306,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "FLOAT_RANGE"
+                "enum": [
+                  "FLOAT_RANGE",
+                  4
+                ]
               },
               "float_range": {
                 "type": "object",
@@ -1229,7 +1349,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "const": "STRING"
+            "enum": [
+              "STRING",
+              7
+            ]
           }
         }
       },
@@ -1278,7 +1401,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "STRING_CHOICE"
+                "enum": [
+                  "STRING_CHOICE",
+                  6
+                ]
               }
             }
           },
@@ -1286,7 +1412,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "STRING_CHOICE"
+                "enum": [
+                  "STRING_CHOICE",
+                  6
+                ]
               },
               "string_choice": {
                 "$ref": "#/$defs/string_choice"
@@ -1303,7 +1432,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "STRING_STRING_CHOICE"
+                "enum": [
+                  "STRING_STRING_CHOICE",
+                  7
+                ]
               }
             }
           },
@@ -1311,7 +1443,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "STRING_STRING_CHOICE"
+                "enum": [
+                  "STRING_STRING_CHOICE",
+                  7
+                ]
               },
               "string_string_choice": {
                 "$ref": "#/$defs/string_string_choice"
@@ -1328,7 +1463,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "FORMATTED_STRING"
+                "enum": [
+                  "FORMATTED_STRING",
+                  9
+                ]
               }
             }
           },
@@ -1336,7 +1474,10 @@
             "type": "object",
             "properties": {
               "type": {
-                "const": "FORMATTED_STRING"
+                "enum": [
+                  "FORMATTED_STRING",
+                  9
+                ]
               },
               "formatted_string": {
                 "$ref": "#/$defs/formatted_string"
@@ -1482,7 +1623,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "const": "STRUCT"
+            "enum": [
+              "STRUCT",
+              10
+            ]
           }
         }
       },
@@ -1541,7 +1685,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "const": "STRUCT_VARIANT"
+            "enum": [
+              "STRUCT_VARIANT",
+              11
+            ]
           }
         }
       },
@@ -1592,7 +1739,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "const": "INT32_ARRAY"
+            "enum": [
+              "INT32_ARRAY",
+              14
+            ]
           }
         }
       },
@@ -1651,7 +1801,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "const": "FLOAT32_ARRAY"
+            "enum": [
+              "FLOAT32_ARRAY",
+              16
+            ]
           }
         }
       },
@@ -1709,7 +1862,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "const": "STRING_ARRAY"
+            "enum": [
+              "STRING_ARRAY",
+              17
+            ]
           }
         }
       },
@@ -1766,7 +1922,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "const": "STRUCT_ARRAY"
+            "enum": [
+              "STRUCT_ARRAY",
+              32
+            ]
           }
         }
       },
@@ -1816,7 +1975,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "const": "STRUCT_VARIANT_ARRAY"
+            "enum": [
+              "STRUCT_VARIANT_ARRAY",
+              33
+            ]
           }
         }
       },
@@ -1866,7 +2028,10 @@
         "type": "object",
         "properties": {
           "type": {
-            "const": "DATA"
+            "enum": [
+              "DATA",
+              50
+            ]
           }
         }
       },
@@ -1888,21 +2053,17 @@
       "description": "How data is sent to the client.\n",
       "type": "object",
       "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL of the data payload"
+        },
         "payload": {
-          "oneOf": [
-            {
-              "type": "string",
-              "format": "uri",
-              "description": "The URL of the data payload"
-            },
-            {
-              "type": "string",
-              "contentEncoding": "base64",
-              "contentMediaType": "application/octet-stream",
-              "description": "The base64-encoded binary payload",
-              "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
-            }
-          ]
+          "type": "string",
+          "contentEncoding": "base64",
+          "contentMediaType": "application/octet-stream",
+          "description": "The base64-encoded binary payload",
+          "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
         },
         "payload_encoding": {
           "description": "The encoding of the payload.\nThis is another place where human readability/writeability is important.\nProtobuf uses a numeric value for the payload encoding so we use a oneOf\nto enable both numeric and string values.\n",
@@ -1960,8 +2121,23 @@
           "description": "key/value pairs about the payload, e.g. mime-type, etc."
         }
       },
-      "required": [
-        "payload"
+      "oneOf": [
+        {
+          "properties": {
+            "url": true
+          },
+          "required": [
+            "url"
+          ]
+        },
+        {
+          "properties": {
+            "payload": true
+          },
+          "required": [
+            "payload"
+          ]
+        }
       ],
       "additionalProperties": false
     },
@@ -2099,28 +2275,83 @@
       "type": "object",
       "oneOf": [
         {
-          "$ref": "#"
+          "type": "object",
+          "properties": {
+            "device": {
+              "$ref": "#"
+            }
+          },
+          "required": [
+            "device"
+          ],
+          "additionalProperties": false
         },
         {
-          "$ref": "#/$defs/component_param"
+          "type": "object",
+          "properties": {
+            "param": {
+              "$ref": "#/$defs/component_param"
+            }
+          },
+          "required": [
+            "param"
+          ],
+          "additionalProperties": false
         },
         {
-          "$ref": "#/$defs/component_command"
+          "type": "object",
+          "properties": {
+            "shared_constraint": {
+              "$ref": "#/$defs/component_constraint"
+            }
+          },
+          "required": [
+            "shared_constraint"
+          ],
+          "additionalProperties": false
         },
         {
-          "$ref": "#/$defs/component_menu"
+          "type": "object",
+          "properties": {
+            "menu": {
+              "$ref": "#/$defs/component_menu"
+            }
+          },
+          "required": [
+            "menu"
+          ],
+          "additionalProperties": false
         },
         {
-          "$ref": "#/$defs/component_constraint"
+          "type": "object",
+          "properties": {
+            "command": {
+              "$ref": "#/$defs/component_command"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "additionalProperties": false
         },
         {
-          "$ref": "#/$defs/component_language_pack"
+          "type": "object",
+          "properties": {
+            "language_pack": {
+              "$ref": "#/$defs/component_language_pack"
+            }
+          },
+          "required": [
+            "language_pack"
+          ],
+          "additionalProperties": false
         }
       ]
     },
     "component_param": {
       "title": "Component Param",
-      "description": "A top-level parameter descriptor plus its oid.\ntype: object\n",
+      "description": "A top-level parameter descriptor plus its oid.\n",
+      "type": "object",
       "properties": {
         "oid": {
           "$ref": "#/$defs/simple_oid"
@@ -2144,7 +2375,7 @@
           "$ref": "#/$defs/simple_oid"
         },
         "command": {
-          "$ref": "#/$defs/param"
+          "$ref": "#/$defs/command"
         }
       },
       "required": [
@@ -2421,13 +2652,19 @@
         "oid": {
           "$ref": "#/$defs/fqoid"
         },
-        "param": {
-          "$ref": "#/$defs/param"
+        "type": {
+          "$ref": "#/$defs/param_type"
+        },
+        "name": {
+          "$ref": "#/$defs/polyglot_text"
+        },
+        "template_oid": {
+          "$ref": "#/$defs/fqoid"
         }
       },
       "required": [
         "oid",
-        "param"
+        "type"
       ],
       "additionalProperties": false
     },
@@ -2472,6 +2709,7 @@
     "push_updates": {
       "title": "Push Updates",
       "description": "Asynchronous updates of various types to the client.\n",
+      "type": "object",
       "allOf": [
         {
           "$ref": "#/$defs/with_slot"
@@ -2510,7 +2748,8 @@
             }
           ]
         }
-      ]
+      ],
+      "unevaluatedProperties": false
     },
     "with_slot": {
       "title": "With Slot",
@@ -2523,44 +2762,46 @@
       },
       "required": [
         "slot"
-      ],
-      "additionalProperties": false
+      ]
     },
     "push_value": {
       "title": "Push Value",
       "description": "A value to be pushed to the client.\n",
       "type": "object",
       "properties": {
-        "oid": {
-          "$ref": "#/$defs/fqoid"
-        },
         "value": {
-          "$ref": "#/$defs/value"
+          "type": "object",
+          "properties": {
+            "oid": {
+              "$ref": "#/$defs/fqoid"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          },
+          "required": [
+            "oid",
+            "value"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
-        "oid",
         "value"
-      ],
-      "additionalProperties": false
+      ]
     },
     "push_device_component": {
       "title": "Push Device Component",
       "description": "A device component to be pushed to the client.\n",
       "type": "object",
       "properties": {
-        "oid": {
-          "$ref": "#/$defs/fqoid"
-        },
         "device_component": {
           "$ref": "#/$defs/device_component"
         }
       },
       "required": [
-        "oid",
         "device_component"
-      ],
-      "additionalProperties": false
+      ]
     },
     "push_exception": {
       "title": "Push Exception",
@@ -2573,8 +2814,7 @@
       },
       "required": [
         "refused"
-      ],
-      "additionalProperties": false
+      ]
     },
     "push_invalidated_external_object_id": {
       "title": "Push Invalidated External Object ID",
@@ -2587,8 +2827,7 @@
       },
       "required": [
         "invalidated_external_object_id"
-      ],
-      "additionalProperties": false
+      ]
     },
     "trap_message_type": {
       "title": "Trap Message Type",
@@ -2687,14 +2926,28 @@
       "description": "A trap message to be pushed to the client.\n",
       "type": "object",
       "properties": {
-        "type": {
-          "$ref": "#/$defs/trap_message_type"
+        "trap_message": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "$ref": "#/$defs/trap_message_type"
+            },
+            "trap_data": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
         "trap_message"
-      ],
-      "additionalProperties": false
+      ]
     },
     "push_invalidate_device_model": {
       "title": "Push Invalidate Device Model",
@@ -2708,34 +2961,50 @@
       },
       "required": [
         "invalidate_device_model"
-      ],
-      "additionalProperties": false
+      ]
     },
     "push_external_object": {
       "title": "Push External Object",
       "description": "A external object to be pushed to the client.\n",
       "type": "object",
       "properties": {
-        "oid": {
-          "$ref": "#/$defs/fqoid"
-        },
         "external_object": {
-          "$ref": "#/$defs/external_object_payload"
+          "type": "object",
+          "properties": {
+            "oid": {
+              "$ref": "#/$defs/fqoid"
+            },
+            "external_object": {
+              "$ref": "#/$defs/external_object_payload"
+            }
+          },
+          "required": [
+            "oid",
+            "external_object"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
-        "oid",
         "external_object"
-      ],
-      "additionalProperties": false
+      ]
     },
     "id_list": {
       "title": "ID List",
       "description": "A list of object ids (OIDs)\n",
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/fqoid"
-      }
+      "type": "object",
+      "properties": {
+        "oids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fqoid"
+          }
+        }
+      },
+      "required": [
+        "oids"
+      ],
+      "additionalProperties": false
     },
     "language_list": {
       "title": "Language List",
@@ -2749,70 +3018,86 @@
       "title": "Push Remove Device Components",
       "description": "A list of device components to be removed from the client.\n",
       "type": "object",
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "params": {
-              "$ref": "#/$defs/id_list"
+      "properties": {
+        "remove_device_components": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "params": {
+                  "$ref": "#/$defs/id_list"
+                }
+              },
+              "required": [
+                "params"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "shared_constraints": {
+                  "$ref": "#/$defs/id_list"
+                }
+              },
+              "required": [
+                "shared_constraints"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "menus": {
+                  "$ref": "#/$defs/id_list"
+                }
+              },
+              "required": [
+                "menus"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "commands": {
+                  "$ref": "#/$defs/id_list"
+                }
+              },
+              "required": [
+                "commands"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "language_packs": {
+                  "type": "object",
+                  "properties": {
+                    "oids": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/language_code"
+                      }
+                    }
+                  },
+                  "required": [
+                    "oids"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "language_packs"
+              ],
+              "additionalProperties": false
             }
-          },
-          "required": [
-            "params"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "shared_constraints": {
-              "$ref": "#/$defs/id_list"
-            }
-          },
-          "required": [
-            "shared_constraints"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "menus": {
-              "$ref": "#/$defs/id_list"
-            }
-          },
-          "required": [
-            "menus"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "commands": {
-              "$ref": "#/$defs/id_list"
-            }
-          },
-          "required": [
-            "commands"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "language_packs": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/language_code"
-              }
-            }
-          },
-          "required": [
-            "language_packs"
-          ],
-          "additionalProperties": false
+          ]
         }
+      },
+      "required": [
+        "remove_device_components"
       ]
     },
     "push_slots_added": {
@@ -2821,16 +3106,24 @@
       "type": "object",
       "properties": {
         "slots_added": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/slot"
-          }
+          "type": "object",
+          "properties": {
+            "slots": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/slot"
+              }
+            }
+          },
+          "required": [
+            "slots"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
         "slots_added"
-      ],
-      "additionalProperties": false
+      ]
     },
     "push_slots_removed": {
       "title": "Push Slots Removed",
@@ -2838,16 +3131,24 @@
       "type": "object",
       "properties": {
         "slots_removed": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/slot"
-          }
+          "type": "object",
+          "properties": {
+            "slots": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/slot"
+              }
+            }
+          },
+          "required": [
+            "slots"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
         "slots_removed"
-      ],
-      "additionalProperties": false
+      ]
     },
     "language_pack_request_payload": {
       "title": "Language Pack Request Payload",
