@@ -63,7 +63,7 @@ jobs:
         run: |
           echo "Assembling publish tree for $VERSION"
           stage="$(mktemp -d)"
-          mkdir -p "$stage/interface/schema" "$stage/docs"
+          mkdir -p "$stage/interface/schema" "$stage/interface/proto" "$stage/docs"
           cp interface/schema/* "$stage/interface/schema/"
           cp interface/proto/* "$stage/interface/proto/"
           cp build/device.yaml "$stage/interface/schema/device.yaml"
