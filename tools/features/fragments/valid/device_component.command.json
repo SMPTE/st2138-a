@@ -1,0 +1,17 @@
+{
+    "command": {
+        "oid": "start",
+        "command": {
+            "name": {
+                "display_strings": {
+                    "en": "Start Counter"
+                }
+            },
+            "type": "EMPTY",
+            "read_only": false,
+            "response": false,
+            "minimal_set": false,
+            "stateless": false
+        }
+    }
+}

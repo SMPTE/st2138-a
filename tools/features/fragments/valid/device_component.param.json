@@ -1,0 +1,22 @@
+{
+    "param": {
+        "oid": "counter",
+        "param": {
+            "name": {
+                "display_strings": {
+                    "en": "Counter",
+                    "es": "Contador",
+                    "fr": "Compteur",
+                    "ja": "カウンター"
+                }
+            },
+            "type": "INT32",
+            "read_only": false,
+            "value": {
+                "int32_value": 27
+            },
+            "minimal_set": true,
+            "stateless": false
+        }
+    }
+}

@@ -44,10 +44,14 @@ get:
     - name: fqoid
       in: path
       required: true
-      description: The fully qualified object ID of the asset to get
+      description: |
+        The fully qualified object ID of the asset to get.
+        Note: fqoids cannot contain '.', so file names such as 'logo.png' are not
+        valid OIDs. The asset's file name and type belong in the payload metadata
+        (e.g. 'filename'), not in the OID.
       schema:
         $ref: "../../schema/device.json#/$defs/fqoid"
-      example: "image.png"
+      example: "branding/logo"
 
     - $ref: '../openapi.yaml#/components/parameters/RequestStart'
 

@@ -43,13 +43,16 @@ option optimize_for = SPEED;
 message Alarm {
   int32 bit_value = 1; // range 0 to 31
 
-  /* The severity of an Alarm. */
+  /* The severity of an Alarm. The Syslog severity levels are used. */
   enum Severity {
-    INFO = 0;
-    WARNING = 1;
-    SEVERE = 2;
-    UNKNOWN = 3;
-    REFUSED = 4;
+    EMERGENCY = 0; // System is unusable
+    ALERT = 1; // Immediate action required
+    CRITICAL = 2; // Critical conditions
+    ERROR = 3; // Error conditions
+    WARNING = 4; // Warning conditions
+    NOTICE = 5; // Normal but significant condition
+    INFORMATIONAL = 6; // Informational messages
+    DEBUG = 7; // Debug-level messages
   }
   Severity severity = 2;
 
