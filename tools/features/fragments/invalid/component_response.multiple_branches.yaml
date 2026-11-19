@@ -1,0 +1,8 @@
+param:
+  oid: counter
+  param:
+    type: INT32
+command:
+  oid: start
+  command:
+    type: EMPTY
