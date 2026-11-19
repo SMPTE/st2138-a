@@ -1,0 +1,7 @@
+language_pack:
+  language: en
+  language_pack:
+    name: English
+    words:
+      on: "On"
+      off: "Off"
