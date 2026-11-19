@@ -27,7 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-$id: https://smpte.github.io/st2138-a/v1.2.0-pre-fcd/interface/schema/device.yaml
+$id: https://smpte.github.io/st2138-a/v1.2.1-pre-fcd/interface/schema/device.yaml
 $schema: https://json-schema.org/draft/2020-12/schema
 title: Schema for Catena's Device Model
 description: |
@@ -1698,7 +1698,7 @@ $defs:
           shared_constraint:
             $ref: "#/$defs/component_constraint"
         required:
-          - constraint
+          - shared_constraint
         additionalProperties: false
       - type: object
         properties:
