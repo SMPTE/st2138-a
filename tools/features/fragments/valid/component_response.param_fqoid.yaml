@@ -1,0 +1,5 @@
+# component response with addressed param using fqoid
+param:
+  oid: some/fully/qualified/oid
+  param:
+    type: EMPTY
