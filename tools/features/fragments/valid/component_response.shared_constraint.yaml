@@ -1,0 +1,14 @@
+shared_constraint:
+  oid: on_off
+  constraint:
+    type: INT_CHOICE
+    int32_choice:
+      choices:
+        - value: 0
+          name:
+            display_strings:
+              en: Off
+        - value: 1
+          name:
+            display_strings:
+              en: On

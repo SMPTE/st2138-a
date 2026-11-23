@@ -1749,7 +1749,7 @@ $defs:
           shared_constraint:
             $ref: "#/$defs/component_constraint"
         required:
-          - constraint
+          - shared_constraint
         additionalProperties: false
       - type: object
         properties:
