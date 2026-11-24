@@ -1597,7 +1597,7 @@ $defs:
       - type: object
         properties:
           param:
-            $ref: "#/$defs/component_param"
+            $ref: "#/$defs/device_param"
         required:
           - param
         additionalProperties: false
@@ -1630,14 +1630,29 @@ $defs:
           - language_pack
         additionalProperties: false
 
-  component_param:
-    title: Component Param
+  device_param:
+    title: Device Param
     description: |
       A top-level parameter descriptor plus its oid.
     type: object
     properties:
       oid:
         $ref: "#/$defs/simple_oid"
+      param:
+        $ref: "#/$defs/param"
+    required:
+      - oid
+      - param
+    additionalProperties: false
+
+  component_param:
+    title: Component Param
+    description: |
+      A parameter descriptor at any level plus its oid.
+    type: object
+    properties:
+      oid:
+        $ref: "#/$defs/fqoid"
       param:
         $ref: "#/$defs/param"
     required:

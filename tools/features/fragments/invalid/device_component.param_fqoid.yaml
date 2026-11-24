@@ -1,0 +1,5 @@
+# device component params must be top level
+param:
+  oid: some/fully/qualified/oid
+  param:
+    type: EMPTY
