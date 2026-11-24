@@ -1597,7 +1597,7 @@ $defs:
       - type: object
         properties:
           param:
-            $ref: "#/$defs/component_param"
+            $ref: "#/$defs/device_param"
         required:
           - param
         additionalProperties: false
@@ -1630,14 +1630,29 @@ $defs:
           - language_pack
         additionalProperties: false
 
-  component_param:
-    title: Component Param
+  device_param:
+    title: Device Param
     description: |
       A top-level parameter descriptor plus its oid.
     type: object
     properties:
       oid:
         $ref: "#/$defs/simple_oid"
+      param:
+        $ref: "#/$defs/param"
+    required:
+      - oid
+      - param
+    additionalProperties: false
+
+  component_param:
+    title: Component Param
+    description: |
+      A parameter descriptor at any level plus its oid.
+    type: object
+    properties:
+      oid:
+        $ref: "#/$defs/fqoid"
       param:
         $ref: "#/$defs/param"
     required:
@@ -1706,21 +1721,6 @@ $defs:
       - language_pack
     additionalProperties: false
 
-  addressed_param:
-    title: Component Addressed Param
-    description: |
-      A parameter descriptor at any level plus its oid.
-    type: object
-    properties:
-      oid:
-        $ref: "#/$defs/fqoid"
-      param:
-        $ref: "#/$defs/param"
-    required:
-      - oid
-      - param
-    additionalProperties: false
-
   component_kind:
     title: Component Kind
     description: |
@@ -1741,7 +1741,7 @@ $defs:
       - type: object
         properties:
           param:
-            $ref: "#/$defs/addressed_param"
+            $ref: "#/$defs/component_param"
         required:
           - param
         additionalProperties: false
